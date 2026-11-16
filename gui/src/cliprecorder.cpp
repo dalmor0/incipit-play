@@ -146,6 +146,7 @@ void ClipRecorder::beginStream(bool is_hevc, const QString &t, int width, int he
 		video_w = width > 0 ? width : 1920;
 		video_h = height > 0 ? height : 1080;
 		last_key_us = -1;
+		params_latest.clear();
 		session_dir.clear();
 		last_key_request_us = -1;
 		is_streaming = true;
@@ -189,6 +190,12 @@ void ClipRecorder::pushVideo(const uint8_t *buf, size_t size)
 		if(!is_streaming)
 			return;
 		ring.push_back({QByteArray(reinterpret_cast<const char *>(buf), int(size)), now, true, key});
+		if(key)
+		{
+			const QByteArray ps = ParameterSets(ring.back().data, hevc);
+			if(ps.size() > 8)
+				params_latest = ps;
+		}
 		buffer_bytes += qint64(size);
 		if(key)
 			last_key_us = now;
@@ -352,7 +359,7 @@ static QString NovoNome(const QString &dir, const QString &title)
 	return dir + QLatin1Char('/') + base + QLatin1Char(' ') + QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH-mm-ss")) + QStringLiteral(".mp4");
 }
 
-struct Recorte { std::vector<QByteArray> data; std::vector<qint64> t; std::vector<char> video; std::vector<char> key; };
+struct Recorte { std::vector<QByteArray> data; std::vector<qint64> t; std::vector<char> video; std::vector<char> key; QByteArray params; };
 
 static QString EscreverMp4(const QString &out, const Recorte &r, bool hevc, int w, int h, int channels, int rate, double *dur)
 {
@@ -366,6 +373,9 @@ static QString EscreverMp4(const QString &out, const Recorte &r, bool hevc, int 
 	size_t first = 0;
 	for(; first < r.data.size(); first++)
 		if(r.video[first] && r.key[first]) { params = ParameterSets(r.data[first], hevc); break; }
+	const bool sem_params_no_quadro = params.size() <= 8;
+	if(sem_params_no_quadro)
+		params = r.params;       // o quadro-chave do meio da sessão vem sem eles
 	AVStream *vs = avformat_new_stream(fmt, nullptr);
 	vs->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 	vs->codecpar->codec_id = hevc ? AV_CODEC_ID_HEVC : AV_CODEC_ID_H264;
@@ -375,6 +385,7 @@ static QString EscreverMp4(const QString &out, const Recorte &r, bool hevc, int 
 	memcpy(vs->codecpar->extradata, params.constData(), size_t(params.size()));
 	vs->codecpar->extradata_size = params.size();
 	vs->time_base = AVRational{1, 90000};
+	vs->avg_frame_rate = AVRational{60, 1};
 
 	// áudio: Opus como veio, com o cabeçalho OpusHead
 	AVStream *as = avformat_new_stream(fmt, nullptr);
@@ -416,9 +427,11 @@ static QString EscreverMp4(const QString &out, const Recorte &r, bool hevc, int 
 		if(rel < 0)
 			continue;
 		av_packet_unref(pkt);
-		if(av_new_packet(pkt, r.data[i].size()) < 0)
+		// o primeiro quadro leva os parâmetros na frente, pra qualquer player abrir sem depender do cabeçalho
+		const QByteArray &dado = (i == first && sem_params_no_quadro) ? (params + r.data[i]) : r.data[i];
+		if(av_new_packet(pkt, dado.size()) < 0)
 			break;
-		memcpy(pkt->data, r.data[i].constData(), size_t(r.data[i].size()));
+		memcpy(pkt->data, dado.constData(), size_t(dado.size()));
 		if(r.video[i])
 		{
 			qint64 pts = av_rescale_q(rel, AVRational{1, 1000000}, vs->time_base);
@@ -496,6 +509,7 @@ QString ClipRecorder::saveNow()
 			r.video.push_back(ring[i].video);
 			r.key.push_back(ring[i].key);
 		}
+		r.params = params_latest;
 		is_hevc = hevc;
 		ch = audio_channels;
 		rate = audio_rate;

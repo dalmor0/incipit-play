@@ -34,7 +34,8 @@ Item {
                 Layout.bottomMargin: 28
                 spacing: 24
                 ColumnLayout {
-                    Layout.fillWidth: true
+                    Layout.fillWidth: false
+                    Layout.maximumWidth: 720
                     spacing: 8
                     Text {
                         text: pg.titulo
@@ -54,6 +55,7 @@ Item {
                         color: pg.tema.texto2
                     }
                 }
+                Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
                 Row {
                     id: acoesRow
                     Layout.alignment: Qt.AlignTop | Qt.AlignRight

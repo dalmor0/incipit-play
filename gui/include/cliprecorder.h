@@ -83,6 +83,7 @@ private:
 	qint64 buffer_bytes = 0;
 	QElapsedTimer clock;
 	qint64 last_key_us = -1;
+	QByteArray params_latest;   // VPS/SPS/PPS mais recentes: o PS5 só manda no começo da sessão
 	qint64 last_key_request_us = -1;
 	bool is_streaming = false;
 	bool hevc = true;

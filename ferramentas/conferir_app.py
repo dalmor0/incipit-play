@@ -98,18 +98,17 @@ def caixa_cliente(h):
 
 
 def limpar_geometria():
-    """o app lembra o último tamanho (e a tela cheia); cada print começa do zero"""
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, CHAVE + "\settings", 0, winreg.KEY_ALL_ACCESS) as k:
-            for nome in ("geometry", "stream_geometry"):
-                try:
-                    winreg.DeleteValue(k, nome)
-                except FileNotFoundError:
-                    pass
-    except FileNotFoundError:
-        pass
-    subprocess.run(["taskkill", "/F", "/IM", "IncipitPlay.exe"], capture_output=True)
+    """cada print começa numa janela normal de 1280x800 (o app lembra o último tamanho e a tela cheia)"""
+    # fecha só a cópia de teste (nunca o Incipit Play que a pessoa estiver usando)
+    for p in psutil.process_iter(["name", "exe"]):
+        try:
+            if p.info["name"] == "IncipitPlay.exe" and p.info["exe"] and os.path.normcase(p.info["exe"]).startswith(os.path.normcase(os.path.abspath(APP))):
+                p.kill()
+        except Exception:
+            pass
     time.sleep(0.5)
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CHAVE + r"\settings") as k:
+        winreg.SetValueEx(k, "geometry", 0, winreg.REG_SZ, "@Rect(40 60 1280 800)")
 
 
 def abrir(app, ui, env_extra=None):
@@ -122,7 +121,7 @@ def abrir(app, ui, env_extra=None):
     pr = subprocess.Popen([os.path.join(app, "IncipitPlay.exe")], cwd=app, env=env,
                           stdout=subprocess.DEVNULL, stderr=open(os.path.join(SAIDA, "app-stderr.log"), "ab"))
     h = None
-    while time.perf_counter() - t0 < 45 and not h:
+    while time.perf_counter() - t0 < 90 and not h:
         h = janela_do_pid(pr.pid)
         time.sleep(0.02)
     return pr, h, time.perf_counter() - t0
@@ -147,10 +146,27 @@ if __name__ == "__main__":
     APP, SAIDA = sys.argv[1], sys.argv[2]
     UI = sys.argv[sys.argv.index("--ui") + 1] if "--ui" in sys.argv else None
     os.makedirs(SAIDA, exist_ok=True)
+    GUARDAR = [("aparencia", "modo"), ("aparencia", "destaque"), ("hub", "aba"), ("hub", "secao"), ("settings", "geometry")]
+    guardado = {}
+    for g, n in GUARDAR:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, CHAVE + "\\" + g) as k:
+                guardado[(g, n)] = winreg.QueryValueEx(k, n)
+        except FileNotFoundError:
+            pass
+    import atexit
+
+    def devolver():
+        for (g, n), (v, t) in guardado.items():
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CHAVE + "\\" + g) as k:
+                winreg.SetValueEx(k, n, 0, t, v)
+    atexit.register(devolver)
+    gravar("aparencia", "destaque", "hora-azul")
     rel = {"app": APP, "ui": UI or "(compilada)"}
 
     # 1) abertura e RAM parada (aba PlayStation, 1280x800)
     gravar("hub", "aba", "playstation")
+    gravar("aparencia", "modo", "dark")
     pr, h, t = abrir(APP, UI)
     rel["abertura_s"] = round(t, 2)
     time.sleep(20)
@@ -205,7 +221,5 @@ if __name__ == "__main__":
             img.save(arq)
             print(arq, img.size)
             fechar(pr)
-    gravar("hub", "aba", "playstation")
-    gravar("aparencia", "modo", "dark")
     with open(os.path.join(SAIDA, "medidas.json"), "w", encoding="utf-8") as f:
         json.dump(rel, f, ensure_ascii=False, indent=2)
