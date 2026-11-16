@@ -122,9 +122,19 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l)
 			HDC dc = BeginPaint(h, &ps);
 			RECT r;
 			GetClientRect(h, &r);
-			desenhar(dc, &r);
+			/* desenha fora da tela e copia de uma vez: a barra anda sem piscar */
+			HDC mem = CreateCompatibleDC(dc);
+			HBITMAP bmp = CreateCompatibleBitmap(dc, r.right, r.bottom);
+			HGDIOBJ velho = SelectObject(mem, bmp);
+			desenhar(mem, &r);
+			BitBlt(dc, 0, 0, r.right, r.bottom, mem, 0, 0, SRCCOPY);
+			SelectObject(mem, velho);
+			DeleteObject(bmp);
+			DeleteDC(mem);
 			EndPaint(h, &ps);
 			return 0;
+		case WM_ERASEBKGND:
+			return 1;
 		}
 		case WM_TIMER:
 			if(w == 1) { passo++; InvalidateRect(h, NULL, FALSE); }
