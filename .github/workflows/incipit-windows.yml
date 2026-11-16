@@ -103,7 +103,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ./scripts/deploy-windows-msys2.sh IncipitPlay-Win build/gui/IncipitPlay.exe "${{ github.workspace }}/build/third-party/cpp-steam-tools" /mingw64 gui/src/qml
+          ./scripts/deploy-windows-msys2.sh IncipitPlay-Win build/gui/IncipitPlay-app.exe "${{ github.workspace }}/build/third-party/cpp-steam-tools" /mingw64 gui/src/qml
           # plugins that windeployqt added (multimedia, image formats) may need DLLs the first pass did not copy
           for pass in 1 2 3; do
             find IncipitPlay-Win -name '*.dll' | while read -r f; do
@@ -116,6 +116,12 @@ jobs:
               done
             done
           done
+          # lançador nativo (IncipitPlay.exe): abertura na hora e uma cópia só; o app de verdade é o IncipitPlay-app.exe
+          windres --include-dir gui gui/chiaking.rc -O coff -o launcher.res
+          gcc -O2 -municode -mwindows -static launcher/incipit-play-launcher.c launcher.res -o IncipitPlay-Win/IncipitPlay.exe -lgdi32 -luser32
+          objdump -p IncipitPlay-Win/IncipitPlay.exe | grep "DLL Name"
+          mkdir -p IncipitPlay-Win/fontes
+          cp gui/src/qml/fonts/YoungSerif-Regular.ttf gui/src/qml/fonts/Archivo-Regular.ttf gui/src/qml/fonts/OFL-*.txt IncipitPlay-Win/fontes/
           cp LICENSES/AGPL-3.0-only-OpenSSL.txt IncipitPlay-Win/LICENSE-AGPL-3.0.txt
           cp COPYING IncipitPlay-Win/COPYING.txt
           echo "Incipit Play is based on chiaki-ng (https://github.com/streetpea/chiaki-ng), AGPL-3.0. Source code: https://github.com/dalmor0/incipit-play" > IncipitPlay-Win/CODIGO-FONTE.txt

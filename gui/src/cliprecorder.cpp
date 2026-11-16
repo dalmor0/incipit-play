@@ -1,5 +1,7 @@
 // Incipit Play · clipes. Ver cliprecorder.h.
 #include "cliprecorder.h"
+#include "incipitcofre.h"
+#include <QSettings>
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -47,6 +49,15 @@ ClipRecorder::ClipRecorder(QObject *parent) : QObject(parent)
 {
 	clock.start();
 	clips_dir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation) + QStringLiteral("/Incipit Play");
+	// senha do OBS: a versão anterior guardava em texto aberto (clipes/obsSenha); passa pro cofre e apaga a aberta
+	QSettings s;
+	const QString aberta = s.value(QStringLiteral("clipes/obsSenha")).toString();
+	if(s.contains(QStringLiteral("clipes/obsSenha")))
+	{
+		if(!aberta.isEmpty())
+			s.setValue(QStringLiteral("clipes/obsSenhaCofre"), IncipitCofre::Proteger(aberta));
+		s.remove(QStringLiteral("clipes/obsSenha"));
+	}
 	QCoreApplication::instance()->installNativeEventFilter(this);
 }
 
@@ -813,6 +824,17 @@ void ClipRecorder::setObs(bool enabled, int port, const QString &password)
 	obs_enabled = enabled;
 	obs_port = port > 0 ? port : 4455;
 	obs_password = password;
+	QSettings s;
+	if(password.isEmpty())
+		s.remove(QStringLiteral("clipes/obsSenhaCofre"));
+	else
+		s.setValue(QStringLiteral("clipes/obsSenhaCofre"), IncipitCofre::Proteger(password));
+}
+
+QString ClipRecorder::obsPassword() const
+{
+	QSettings s;
+	return IncipitCofre::Abrir(s.value(QStringLiteral("clipes/obsSenhaCofre")).toString());
 }
 
 static void ObsRequest(ClipRecorder *self, int port, const QString &password, const QString &request,

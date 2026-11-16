@@ -55,6 +55,7 @@ public:
 	Q_INVOKABLE bool removeTemp(const QString &path);
 	Q_INVOKABLE void setObs(bool enabled, int port, const QString &password);
 	Q_INVOKABLE void testObs();
+	Q_INVOKABLE QString obsPassword() const;
 
 	bool nativeEventFilter(const QByteArray &type, void *message, qintptr *result) override;
 

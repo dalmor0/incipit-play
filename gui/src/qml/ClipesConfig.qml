@@ -16,7 +16,6 @@ QtObject {
         property string pastaEdicao: ""
         property bool obs: false
         property int obsPorta: 4455
-        property string obsSenha: ""
     }
     readonly property bool ligado: guardado.ligado
     readonly property int segundos: guardado.segundos
@@ -28,7 +27,7 @@ QtObject {
     function aplicar() {
         Clips.setSeconds(guardado.segundos);
         if (guardado.pasta !== "") Clips.setClipsDir(guardado.pasta);
-        Clips.setObs(guardado.obs, guardado.obsPorta, guardado.obsSenha);
+        Clips.setObs(guardado.obs, guardado.obsPorta, Clips.obsPassword());
         if (!guardado.ligado) { Clips.setHotkey(""); return; }
         if (Clips.setHotkey(guardado.atalho)) return;
         // o padrão (Alt+F10) costuma ser do replay da NVIDIA: se a pessoa nunca escolheu, cai no próximo livre
@@ -43,7 +42,7 @@ QtObject {
     function mudarAtalho(a) { guardado.atalho = a; guardado.escolhido = true; return Clips.setHotkey(guardado.ligado ? a : ""); }
     function mudarPasta(p) { guardado.pasta = p; Clips.setClipsDir(p); }
     function mudarPastaEdicao(p) { guardado.pastaEdicao = p; }
-    function mudarObs(ligar, porta, senha) { guardado.obs = ligar; guardado.obsPorta = porta; guardado.obsSenha = senha; Clips.setObs(ligar, porta, senha); }
+    function mudarObs(ligar, porta, senha) { guardado.obs = ligar; guardado.obsPorta = porta; Clips.setObs(ligar, porta, senha); }
 
     Component.onCompleted: aplicar()
 }

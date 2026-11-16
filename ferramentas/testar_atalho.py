@@ -19,11 +19,15 @@ pr = subprocess.Popen([os.path.join(app, "IncipitPlay.exe"), "stream", apelido, 
                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(espera)
 p = psutil.Process(pr.pid)
+filhos = [c for c in p.children(recursive=True) if c.name() == "IncipitPlay-app.exe"]
+p = filhos[0] if filhos else p   # o lançador repassa o "stream" pro IncipitPlay-app.exe
 print("ram jogando (MB):", round(p.memory_info().rss / 2**20), "privada", round(p.memory_info().private / 2**20))
 u.keybd_event(0x12, 0, 0, 0); u.keybd_event(0x77, 0, 0, 0); time.sleep(0.05)
 u.keybd_event(0x77, 0, 2, 0); u.keybd_event(0x12, 0, 2, 0)
 time.sleep(12)
 print("ram depois (MB):", round(p.memory_info().rss / 2**20), "privada", round(p.memory_info().private / 2**20))
+for c in psutil.Process(pr.pid).children(recursive=True):
+    c.kill()
 pr.kill()
 novos = sorted(set(glob.glob(os.path.join(pasta, "**", "*.mp4"), recursive=True)) - antes)
 for n in novos:

@@ -88,7 +88,7 @@ InPagina {
                         Layout.fillWidth: true
                         tipo: "apoio"
                         text: cfg.psnConectada
-                            ? "Conectada. ID da conta " + (Chiaki.settings.streamerMode ? "oculto" : Chiaki.settings.psnAccountId)
+                            ? (Chiaki.settings.streamerMode ? "Conectada." : "Conectada · conta terminada em " + String(Chiaki.settings.psnAccountId).slice(-4))
                             : "Não conectada. Conectar libera o registro automático e jogar fora de casa."
                     }
                 }
@@ -172,13 +172,14 @@ InPagina {
         }
 
         InCartao {
-            InTexto { tipo: "titulo"; text: "Cor de destaque" }
+            InTexto { tipo: "titulo"; text: "Cor de destaque"; Layout.bottomMargin: -8 }
             InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Vale pros botões, a aba ativa e a porta da marca. O padrão é Hora azul." }
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
                 columns: 4
                 uniformCellWidths: true
+                Layout.maximumWidth: 920
                 columnSpacing: 10
                 rowSpacing: 10
                 Repeater {
@@ -210,7 +211,7 @@ InPagina {
                 columnSpacing: 24
                 rowSpacing: 12
 
-                InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.alignment: Qt.AlignVCenter }
+                InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["360p", "540p", "720p", "1080p (padrão)"]
@@ -218,7 +219,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.resolutionLocalPS5 = i + 1
                 }
 
-                InTexto { text: "Quadros por segundo"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+                InTexto { text: "Quadros por segundo"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["30", "60 (padrão)"]
@@ -226,7 +227,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.fpsLocalPS5 = (i + 1) * 30
                 }
 
-                InTexto { text: "Formato do vídeo"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+                InTexto { text: "Formato do vídeo"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["H.264 (PC mais antigo)", "H.265 (padrão)", "H.265 HDR"]
@@ -234,7 +235,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.codecLocalPS5 = i
                 }
 
-                InTexto { text: "Qualidade (bitrate)"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+                InTexto { text: "Qualidade (bitrate)"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     readonly property var valores: [0, 10000, 20000, 30000, 40000, 50000]

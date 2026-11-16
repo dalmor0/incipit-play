@@ -28,38 +28,39 @@ def gravar(grupo, nome, valor):
         winreg.SetValueEx(k, nome, 0, winreg.REG_SZ, valor)
 
 
-def janela_do_pid(pid):
+def janelas_visiveis(pids, classe_abertura=False):
+    """janelas visíveis "Incipit Play" dos processos; a abertura do lançador (classe IncipitPlayAbertura) à parte"""
     achou = []
     proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wt.HWND, wt.LPARAM)
 
     def cb(h, _):
         p = wt.DWORD()
         user32.GetWindowThreadProcessId(h, ctypes.byref(p))
-        if p.value == pid and user32.IsWindowVisible(h):
+        if p.value in pids and user32.IsWindowVisible(h):
             n = ctypes.create_unicode_buffer(256)
             user32.GetWindowTextW(h, n, 256)
-            if n.value.startswith("Incipit Play"):
+            c = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(h, c, 256)
+            e_abertura = c.value == "IncipitPlayAbertura"
+            if n.value.startswith("Incipit Play") and e_abertura == classe_abertura:
                 achou.append(h)
         return True
 
     user32.EnumWindows(proc(cb), 0)
-    return achou[0] if achou else None
+    return achou
 
 
-def frente(h):
-    """traz a janela pra frente mesmo vindo de outro processo (prende a entrada na thread da janela da frente)"""
-    k32 = ctypes.windll.kernel32
-    atual = user32.GetForegroundWindow()
-    t_atual = user32.GetWindowThreadProcessId(atual, None)
-    t_eu = k32.GetCurrentThreadId()
-    user32.AttachThreadInput(t_eu, t_atual, True)
-    user32.BringWindowToTop(h)
-    user32.SetForegroundWindow(h)
-    user32.SetFocus(h)
-    user32.AttachThreadInput(t_eu, t_atual, False)
+def familia(pid):
+    try:
+        p = psutil.Process(pid)
+        return {pid} | {c.pid for c in p.children(recursive=True)}
+    except Exception:
+        return {pid}
 
 
-Y_MENU = {"playstation": 118, "xbox": 166, "switch": 214, "clipes": 262, "config": 755}
+def janela_do_pid(pid):
+    j = janelas_visiveis(familia(pid))
+    return j[0] if j else None
 
 
 def sem_moldura(h, w, ht, aba="playstation"):
@@ -148,7 +149,7 @@ def limpar_geometria():
     # fecha só a cópia de teste (nunca o Incipit Play que a pessoa estiver usando)
     for p in psutil.process_iter(["name", "exe"]):
         try:
-            if p.info["name"] == "IncipitPlay.exe" and p.info["exe"] and os.path.normcase(p.info["exe"]).startswith(os.path.normcase(os.path.abspath(APP))):
+            if p.info["name"] in ("IncipitPlay.exe", "IncipitPlay-app.exe") and p.info["exe"] and os.path.normcase(p.info["exe"]).startswith(os.path.normcase(os.path.abspath(APP))):
                 p.kill()
         except Exception:
             pass
@@ -166,14 +167,32 @@ def abrir(app, ui, env_extra=None):
     if ui:
         env["INCIPIT_UI_DIR"] = ui
     env.update(env_extra or {})
+    global ABERTURA_S
+    ABERTURA_S = None
     t0 = time.perf_counter()
     pr = subprocess.Popen([os.path.join(app, "IncipitPlay.exe")], cwd=app, env=env,
                           stdout=subprocess.DEVNULL, stderr=open(os.path.join(SAIDA, "app-stderr.log"), "ab"))
     h = None
     while time.perf_counter() - t0 < 90 and not h:
+        fam = familia(pr.pid)
+        if ABERTURA_S is None and janelas_visiveis(fam, classe_abertura=True):
+            ABERTURA_S = time.perf_counter() - t0
         h = janela_do_pid(pr.pid)
         time.sleep(0.02)
     return pr, h, time.perf_counter() - t0
+
+
+ABERTURA_S = None
+
+
+def processo_app(pr):
+    for p in psutil.process_iter(["pid", "name"]):
+        if p.info["name"] == "IncipitPlay-app.exe" and p.info["pid"] in familia(pr.pid):
+            return p.info["pid"]
+    for p in psutil.process_iter(["pid", "name", "exe"]):
+        if p.info["name"] == "IncipitPlay-app.exe" and p.info["exe"] and os.path.normcase(p.info["exe"]).startswith(os.path.normcase(os.path.abspath(APP))):
+            return p.info["pid"]
+    return pr.pid
 
 
 def ram_mb(pid):
@@ -184,11 +203,11 @@ def ram_mb(pid):
 
 
 def fechar(pr):
-    try:
-        pr.terminate()
-        pr.wait(10)
-    except Exception:
-        pr.kill()
+    for pid in sorted(familia(pr.pid), reverse=True):
+        try:
+            psutil.Process(pid).kill()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
@@ -218,8 +237,9 @@ if __name__ == "__main__":
     gravar("aparencia", "modo", "dark")
     pr, h, t = abrir(APP, UI)
     rel["abertura_s"] = round(t, 2)
+    rel["tela_de_abertura_s"] = round(ABERTURA_S, 2) if ABERTURA_S is not None else None
     time.sleep(20)
-    rel["ram_parada_mb"] = dict(zip(["working_set", "privada", "filhos"], ram_mb(pr.pid)))
+    rel["ram_parada_mb"] = dict(zip(["working_set", "privada", "filhos"], ram_mb(processo_app(pr))))
     fechar(pr)
     print(json.dumps(rel, ensure_ascii=False))
     if "--so-medir" in sys.argv:

@@ -127,7 +127,7 @@ InPagina {
     // ------------------------------------------------------------ sem placa
     InCartao {
         visible: !sw.temPlaca
-        InTexto { tipo: "titulo"; text: "Nenhuma placa de captura ligada" }
+        InTexto { tipo: "titulo"; text: "Nenhuma placa de captura ligada"; Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"

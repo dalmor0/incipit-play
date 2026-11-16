@@ -119,14 +119,14 @@ InPagina {
             RowLayout {
                 spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: Clips.clipsDir(); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: "Trocar"; compacto: true; onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
+                InBotao { text: "Trocar"; onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
             }
 
             InTexto { text: "Pasta da edição"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: cl.cfg.pastaEdicao || "ainda não escolhida"; tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: "Escolher"; compacto: true; onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
+                InBotao { text: "Escolher"; onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
             }
         }
 
@@ -143,7 +143,7 @@ InPagina {
             spacing: 12
             InOpcao { texto: "Salvar no OBS também"; marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
             InCampo { id: porta; Layout.preferredWidth: 120; placeholderText: "porta"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
-            InCampo { id: senha; Layout.preferredWidth: 240; placeholderText: "senha do WebSocket"; text: cl.cfg.guardado.obsSenha; echoMode: TextInput.Password }
+            InCampo { id: senha; Layout.preferredWidth: 240; placeholderText: "senha do WebSocket"; text: Clips.obsPassword(); echoMode: TextInput.Password }
             InBotao { text: "Testar"; onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
         }
 
@@ -159,7 +159,7 @@ InPagina {
     InCartao {
         Layout.topMargin: 12
         visible: cl.total === 0
-        InTexto { tipo: "titulo"; text: "Nenhum clipe ainda" }
+        InTexto { tipo: "titulo"; text: "Nenhum clipe ainda"; Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
@@ -182,6 +182,7 @@ InPagina {
                 spacing: 12
                 InTexto {
                     tipo: "rotulo"
+                    Layout.alignment: Qt.AlignBaseline
                     wrapMode: Text.NoWrap
                     text: {
                         if (sessao.modelData.atual) return "Clipes desta transmissão";
@@ -189,9 +190,9 @@ InPagina {
                         return m ? m[3] + "/" + m[2] + " " + m[4] + ":" + m[5] + " · " + m[6] : sessao.modelData.nome;
                     }
                 }
-                InTexto { tipo: "pequeno"; wrapMode: Text.NoWrap; text: sessao.modelData.clipes.length + (sessao.modelData.clipes.length === 1 ? " clipe" : " clipes") }
+                InTexto { tipo: "pequeno"; Layout.alignment: Qt.AlignBaseline; lineHeight: 1.0; lineHeightMode: Text.ProportionalHeight; wrapMode: Text.NoWrap; text: sessao.modelData.clipes.length + (sessao.modelData.clipes.length === 1 ? " clipe" : " clipes") }
                 Item { Layout.fillWidth: true }
-                InBotao { compacto: true; tipo: "quieto"; text: "Abrir pasta"; icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + sessao.modelData.pasta) }
+                InBotao { tipo: "quieto"; text: "Abrir pasta"; icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + sessao.modelData.pasta) }
             }
 
             GridLayout {
@@ -243,19 +244,19 @@ InPagina {
                                 Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                                 Layout.margins: 16
                                 spacing: 4
-                                InTexto { Layout.fillWidth: true; text: item.modelData.jogo || "Clipe"; font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }
-                                InTexto { tipo: "pequeno"; text: Qt.formatDateTime(item.modelData.criado, "dd/MM HH:mm") + " · " + String(item.modelData.tamanhoMb).replace(".", ",") + " MB" + (item.modelData.enviado ? " · já foi pra edição" : "") }
+                                InTexto { Layout.fillWidth: true; text: Qt.formatDateTime(item.modelData.criado, "HH:mm"); font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }
+                                InTexto { tipo: "pequeno"; text: String(item.modelData.tamanhoMb).replace(".", ",") + " MB" + (item.modelData.enviado ? " · já foi pra edição" : "") }
                                 RowLayout {
                                     Layout.topMargin: 10
                                     spacing: 8
                                     InBotao {
-                                        tipo: item.modelData.enviado ? "normal" : "forte"; compacto: true
+                                        tipo: item.modelData.enviado ? "normal" : "forte"
                                         text: item.modelData.enviado ? "Mandar de novo" : "Mandar pra edição"
                                         onClicked: pedido.abrir(item.modelData.caminho)
                                     }
                                     Item { Layout.fillWidth: true }
                                     InBotao {
-                                        tipo: "quieto"; compacto: true; icone: "lixo"
+                                        tipo: "quieto"; icone: "lixo"
                                         Accessible.name: "Apagar clipe"
                                         ToolTip.visible: hovered; ToolTip.text: "Apagar (vai pra Lixeira)"
                                         onClicked: root.showConfirmDialog("Apagar clipe", "Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá.", () => Clips.trash(item.modelData.caminho))

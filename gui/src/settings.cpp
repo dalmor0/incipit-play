@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <settings.h>
+#include <incipitcofre.h>
 #include <SDL.h>
 #include <QFile>
 #include <QFileInfo>
@@ -933,22 +934,34 @@ void Settings::SetEchoSuppressLevel(int reduceby)
 
 QString Settings::GetPsnAuthToken() const
 {
-	return settings.value("settings/psn_auth_token").toString();
+	// Incipit Play: guardado cifrado (DPAPI); o que ainda estiver em texto aberto é cifrado na primeira leitura
+	const QString guardado = settings.value("settings/psn_auth_token").toString();
+	bool estava_aberto = false;
+	const QString puro = IncipitCofre::Abrir(guardado, &estava_aberto);
+	if(estava_aberto)
+		const_cast<QSettings &>(settings).setValue("settings/psn_auth_token", IncipitCofre::Proteger(puro));
+	return puro;
 }
 
 void Settings::SetPsnAuthToken(QString auth_token)
 {
-	settings.setValue("settings/psn_auth_token", auth_token);
+	settings.setValue("settings/psn_auth_token", IncipitCofre::Proteger(auth_token));
 }
 
 QString Settings::GetPsnRefreshToken() const
 {
-	return settings.value("settings/psn_refresh_token").toString();
+	// Incipit Play: guardado cifrado (DPAPI); o que ainda estiver em texto aberto é cifrado na primeira leitura
+	const QString guardado = settings.value("settings/psn_refresh_token").toString();
+	bool estava_aberto = false;
+	const QString puro = IncipitCofre::Abrir(guardado, &estava_aberto);
+	if(estava_aberto)
+		const_cast<QSettings &>(settings).setValue("settings/psn_refresh_token", IncipitCofre::Proteger(puro));
+	return puro;
 }
 
 void Settings::SetPsnRefreshToken(QString refresh_token)
 {
-	settings.setValue("settings/psn_refresh_token", refresh_token);
+	settings.setValue("settings/psn_refresh_token", IncipitCofre::Proteger(refresh_token));
 }
 
 QString Settings::GetPsnAuthTokenExpiry() const

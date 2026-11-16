@@ -34,7 +34,12 @@ InPagina {
                         Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 8; color: root.tema.fundo } }
                 }
             }
-            InTexto { text: "Procurando consoles na rede"; tipo: "apoio"; wrapMode: Text.NoWrap; anchors.verticalCenter: parent.verticalCenter }
+            InTexto {
+                text: ps.visiveis > 0 ? "Procurando outros consoles" : "Procurando consoles na rede"
+                tipo: "apoio"; wrapMode: Text.NoWrap; lineHeight: 1.0
+                height: 44; verticalAlignment: Text.AlignVCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
             Item { width: 6; height: 1 }
         },
         InBotao {
@@ -155,7 +160,7 @@ InPagina {
     // ------------------------------------------------------------ vazio
     InCartao {
         visible: ps.visiveis === 0
-        InTexto { tipo: "titulo"; text: Chiaki.discoveryEnabled ? "Procurando consoles na sua rede" : "A procura na rede está desligada" }
+        InTexto { tipo: "titulo"; text: Chiaki.discoveryEnabled ? "Procurando consoles na sua rede" : "A procura na rede está desligada"; Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"

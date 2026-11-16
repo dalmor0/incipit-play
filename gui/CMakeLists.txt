@@ -44,6 +44,8 @@ set(SOURCE_FILES
 	src/qml/qml.qrc
 	include/qmlmainwindow.h
 	include/cliprecorder.h
+	include/incipitcofre.h
+	src/incipitcofre.cpp
 	src/cliprecorder.cpp
 	src/qmlmainwindow.cpp
 	include/qmlbackend.h
@@ -106,7 +108,10 @@ if(CHIAKI_ENABLE_CLI)
 	target_link_libraries(chiaki chiaki-cli-lib)
 endif()
 
-set_target_properties(chiaki PROPERTIES OUTPUT_NAME "IncipitPlay")
+set_target_properties(chiaki PROPERTIES OUTPUT_NAME "IncipitPlay-app")
+if(WIN32)
+	target_link_libraries(chiaki crypt32)
+endif()
 target_link_libraries(chiaki Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick Qt::Widgets Qt::Multimedia Qt::WebSockets FFMPEG::avformat FFMPEG::avcodec FFMPEG::avutil)
 if (${Qt6DBus_FOUND} AND NOT WIN32)
 	target_link_libraries(chiaki Qt::DBus)

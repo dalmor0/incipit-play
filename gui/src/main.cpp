@@ -39,6 +39,9 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 
 #include <QCommandLineParser>
 #include <QSettings>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 #include <QMap>
 #include <QSurfaceFormat>
 
@@ -92,6 +95,11 @@ int real_main(int argc, char *argv[])
 	qRegisterMetaType<ChiakiLogLevel>();
 
 	// Incipit Play: own settings (HKCU\Software\Incipit\Incipit Play), so chiaki-ng's stay untouched
+#ifdef Q_OS_WIN
+	// o lançador (IncipitPlay.exe) vê este mutex e traz a janela pra frente em vez de abrir outra cópia
+	static HANDLE incipit_aberto = CreateMutexW(nullptr, FALSE, L"Local\\IncipitPlay-aberto");
+	(void)incipit_aberto;
+#endif
 	QGuiApplication::setOrganizationName("Incipit");
 	QGuiApplication::setApplicationName("Incipit Play");
 	QGuiApplication::setApplicationVersion(CHIAKI_VERSION);
