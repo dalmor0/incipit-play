@@ -1,4 +1,6 @@
 #include "qmlbackend.h"
+#include <QFileInfo>
+#include <QCoreApplication>
 #include "qmlsettings.h"
 #include "qmlmainwindow.h"
 #include "streamsession.h"
@@ -2670,4 +2672,31 @@ void PsnConnectionWorker::ConnectPsnConnection(StreamSession *session, const QSt
 {
     ChiakiErrorCode result = session->ConnectPsnConnection(duid, ps5);
     emit resultReady(result);
+}
+
+
+// ---------------------------------------------------------------- Incipit Play hub helpers
+#include <QProcess>
+#include <QStandardPaths>
+
+bool QmlBackend::launchDetached(const QString &program, const QStringList &arguments)
+{
+    if(program.isEmpty() || !QFileInfo(program).isAbsolute() || !QFileInfo::exists(program))
+        return false;
+    return QProcess::startDetached(program, arguments);
+}
+
+bool QmlBackend::pathExists(const QString &path) const
+{
+    return !path.isEmpty() && QFileInfo::exists(path);
+}
+
+QString QmlBackend::localDataPath() const
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+}
+
+QString QmlBackend::appVersion() const
+{
+    return QCoreApplication::applicationVersion();
 }

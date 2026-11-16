@@ -1,4 +1,6 @@
 #include "qmlmainwindow.h"
+#include <QFileInfo>
+#include <QCoreApplication>
 #include "qmlbackend.h"
 #include "qmlsvgprovider.h"
 #include "chiaki/log.h"
@@ -2881,15 +2883,23 @@ void QmlMainWindow::setSettings(Settings *new_settings)
     QString profile = settings->GetCurrentProfile();
     qCCritical(chiakiGui) << "Current Profile: " << profile;
     if(profile.isEmpty())
-        QGuiApplication::setApplicationDisplayName("chiaki-ng");
+        QGuiApplication::setApplicationDisplayName("Incipit Play");
     else
-        QGuiApplication::setApplicationDisplayName(QString("chiaki-ng:%1").arg(profile));
+        QGuiApplication::setApplicationDisplayName(QString("Incipit Play:%1").arg(profile));
     this->setTitle(QGuiApplication::applicationDisplayName());
 }
 
 void QmlMainWindow::show()
 {
-    QQmlComponent component(qml_engine, QUrl(QStringLiteral("qrc:/Main.qml")));
+    // Incipit Play: the interface can come from a folder (INCIPIT_UI_DIR or <app>/ui) so it can be
+    // updated without rebuilding; otherwise the copy compiled into the app
+    QUrl main_url(QStringLiteral("qrc:/Main.qml"));
+    QString ui_dir = qEnvironmentVariable("INCIPIT_UI_DIR");
+    if(ui_dir.isEmpty())
+        ui_dir = QCoreApplication::applicationDirPath() + QStringLiteral("/ui");
+    if(QFileInfo::exists(ui_dir + QStringLiteral("/Main.qml")))
+        main_url = QUrl::fromLocalFile(ui_dir + QStringLiteral("/Main.qml"));
+    QQmlComponent component(qml_engine, main_url);
     if (!component.isReady()) {
         qCCritical(chiakiGui) << "Component not ready\n" << component.errors();
         QMetaObject::invokeMethod(QGuiApplication::instance(), &QGuiApplication::quit, Qt::QueuedConnection);

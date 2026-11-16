@@ -210,6 +210,11 @@ public:
     Q_INVOKABLE void controllerMappingButtonQuit();
     Q_INVOKABLE void controllerMappingApply();
     Q_INVOKABLE void autoRegister();
+    // Incipit Play hub helpers
+    Q_INVOKABLE bool launchDetached(const QString &program, const QStringList &arguments);
+    Q_INVOKABLE bool pathExists(const QString &path) const;
+    Q_INVOKABLE QString localDataPath() const;
+    Q_INVOKABLE QString appVersion() const;
 #if CHIAKI_GUI_ENABLE_STEAM_SHORTCUT
     Q_INVOKABLE void createSteamShortcut(QString shortcutName, QString launchOptions, const QJSValue &callback, QString steamDir);
 #endif

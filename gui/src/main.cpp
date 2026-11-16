@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #endif
 
 #include <QCommandLineParser>
+#include <QSettings>
 #include <QMap>
 #include <QSurfaceFormat>
 
@@ -62,6 +63,21 @@ static const QMap<QString, CLICommand> cli_commands = {
 #endif
 
 int RunStream(QGuiApplication &app, const StreamSessionConnectInfo &connect_info);
+
+// First run of Incipit Play: copy chiaki-ng's settings (registered consoles, PSN account) into ours.
+// Only reads the old ones; nothing in chiaki-ng's settings is changed or deleted.
+static void ImportChiakiNgSettings()
+{
+	QSettings mine(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+	if(mine.contains("incipit/import_done") || !mine.allKeys().isEmpty())
+		return;
+	QSettings old(QStringLiteral("Chiaki"), QStringLiteral("Chiaki"));
+	const QStringList keys = old.allKeys();
+	for(const QString &key : keys)
+		mine.setValue(key, old.value(key));
+	mine.setValue("incipit/import_done", keys.size());
+	mine.sync();
+}
 int RunMain(QGuiApplication &app, Settings *settings, bool exit_app_on_stream_exit);
 
 int real_main(int argc, char *argv[])
@@ -73,10 +89,14 @@ int real_main(int argc, char *argv[])
 	qRegisterMetaType<ChiakiRegistEventType>();
 	qRegisterMetaType<ChiakiLogLevel>();
 
-	QGuiApplication::setOrganizationName("Chiaki");
-	QGuiApplication::setApplicationName("Chiaki");
+	// Incipit Play: own settings (HKCU\Software\Incipit\Incipit Play), so chiaki-ng's stay untouched
+	QGuiApplication::setOrganizationName("Incipit");
+	QGuiApplication::setApplicationName("Incipit Play");
 	QGuiApplication::setApplicationVersion(CHIAKI_VERSION);
-	QGuiApplication::setApplicationDisplayName("chiaki-ng");
+	QGuiApplication::setApplicationDisplayName("Incipit Play");
+	// capture card tab (Switch): Media Foundation backend, no extra FFmpeg needed
+	if(!qEnvironmentVariableIsSet("QT_MEDIA_BACKEND"))
+		qputenv("QT_MEDIA_BACKEND", "windows");
 #if defined(Q_OS_MACOS)
 	// Use a plain CAMetalLayer for Vulkan windows. Qt's own layer presents in step with each
 	// live resize, but our swapchain presents from the render thread, so every resize step
@@ -97,7 +117,7 @@ int real_main(int argc, char *argv[])
 		QGuiApplication::setDesktopFileName(qEnvironmentVariable("FLATPAK_ID"));
 	else
 #endif
-		QGuiApplication::setDesktopFileName("chiaki-ng");
+		QGuiApplication::setDesktopFileName("incipit-play");
 
 	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu");
 #if defined(Q_OS_WIN)
@@ -129,7 +149,7 @@ int real_main(int argc, char *argv[])
 		return 1;
 	}
 
-    SDL_SetHint(SDL_HINT_APP_NAME, "chiaki-ng");
+    SDL_SetHint(SDL_HINT_APP_NAME, "Incipit Play");
 
 	if(SDL_Init(SDL_INIT_AUDIO) < 0)
 	{
@@ -198,13 +218,14 @@ int real_main(int argc, char *argv[])
 	parser.process(app);
 	QStringList args = parser.positionalArguments();
 
+	ImportChiakiNgSettings();
 	Settings settings(parser.isSet(profile_option) ? parser.value(profile_option) : QString());
 	bool exit_app_on_stream_exit = parser.isSet(stream_exit_option);
 	if(parser.isSet(profile_option))
 		settings.SetCurrentProfile(parser.value(profile_option));
 	Settings alt_settings(parser.isSet(profile_option) ? "" : settings.GetCurrentProfile());
 	if(!settings.GetCurrentProfile().isEmpty())
-		QGuiApplication::setApplicationDisplayName(QString("chiaki-ng:%1").arg(settings.GetCurrentProfile()));
+		QGuiApplication::setApplicationDisplayName(QString("Incipit Play:%1").arg(settings.GetCurrentProfile()));
 	bool use_alt_settings = false;
 	if(!parser.isSet(profile_option))
 		use_alt_settings = true;

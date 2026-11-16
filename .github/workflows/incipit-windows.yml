@@ -1,4 +1,4 @@
-name: Build chiaki-ng msys2 x86 Windows
+name: Incipit Play Windows
 
 on:
   workflow_dispatch:
@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  build-windows_x64-msys2:
-    name: Build windows msys2 version
+  build:
+    name: Build Incipit Play (MSYS2 x64)
     runs-on: windows-latest
     defaults:
       run:
@@ -60,18 +60,19 @@ jobs:
             qt6-base:p
             qt6-declarative:p
             qt6-svg:p
+            qt6-multimedia:p
             shaderc:p
             speexdsp:p
             spirv-cross:p
             vulkan:p
             vulkan-headers:p
-            
+
       - name: Install python protobuf and zip
         run: |
           pip install protobuf
           pacman -S git make unzip zip --noconfirm
 
-      - name: Build libbplacebo
+      - name: Build libplacebo
         run: |
           scripts/build-libplacebo-windows.sh
         env:
@@ -80,7 +81,7 @@ jobs:
       - name: Setup ffmpeg
         run: |
           curl -LO https://github.com/streetpea/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip
-          unzip ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip
+          unzip -q ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip
           cp -a "ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/." /mingw64/bin
           cp -a "ffmpeg-n9.0-latest-win64-gpl-shared-9.0/include/." /mingw64/include
           cp -a "ffmpeg-n9.0-latest-win64-gpl-shared-9.0/lib/." /mingw64/lib
@@ -91,46 +92,60 @@ jobs:
           INSTALL_PREFIX=/mingw64 scripts/build-hidapi.sh .
           cp /mingw64/lib/pkgconfig/sdl2-compat.pc /mingw64/lib/pkgconfig/sdl2.pc
 
-      - name: Configure chiaki-ng
+      - name: Configure
         run: |
           cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCHIAKI_ENABLE_CLI=OFF
 
-      - name: Build chiaki-ng
+      - name: Build
         run: |
           cmake --build build --config Release --clean-first --target chiaki
-          
-      - name: Deploy chiaki-ng
-        run: |
-          ./scripts/deploy-windows-msys2.sh chiaki-ng-Win build/gui/chiaki.exe "${{ github.workspace }}/build/third-party/cpp-steam-tools" /mingw64 gui/src/qml
 
-      - name: Package chiaki-ng
+      - name: Deploy
         run: |
-          CHIAKI_VERSION_MAJOR="$(grep 'CHIAKI_VERSION_MAJOR' CMakeLists.txt | grep -Eo '[0-9]+')"
-          CHIAKI_VERSION_MINOR="$(grep 'CHIAKI_VERSION_MINOR' CMakeLists.txt | grep -Eo '[0-9]+')"
-          CHIAKI_VERSION_PATCH="$(grep 'CHIAKI_VERSION_PATCH' CMakeLists.txt | grep -Eo '[0-9]+')"
-          RELEASE_PACKAGE_FILE="chiaki-ng-win_x64-MSYS2-portable-$CHIAKI_VERSION_MAJOR.$CHIAKI_VERSION_MINOR.$CHIAKI_VERSION_PATCH-test-build-${{ github.sha }}.zip"
-          zip -r $RELEASE_PACKAGE_FILE chiaki-ng-Win
-          echo "RELEASE_PACKAGE_PATH=${RELEASE_PACKAGE_FILE}" >> $GITHUB_ENV
+          ./scripts/deploy-windows-msys2.sh IncipitPlay-Win build/gui/IncipitPlay.exe "${{ github.workspace }}/build/third-party/cpp-steam-tools" /mingw64 gui/src/qml
+          # plugins that windeployqt added (multimedia, image formats) may need DLLs the first pass did not copy
+          for pass in 1 2 3; do
+            find IncipitPlay-Win -name '*.dll' | while read -r f; do
+              objdump -p "$f" | awk '/DLL Name:/ { sub(/\r$/, "", $3); print $3 }' | while read -r n; do
+                [ -n "$n" ] || continue
+                [ "${n,,}" = "vulkan-1.dll" ] && continue
+                if [ ! -f "IncipitPlay-Win/$n" ] && [ -f "/mingw64/bin/$n" ]; then
+                  cp "/mingw64/bin/$n" IncipitPlay-Win/ && echo "extra: $n (for $f)"
+                fi
+              done
+            done
+          done
+          cp LICENSES/AGPL-3.0-only-OpenSSL.txt IncipitPlay-Win/LICENSE-AGPL-3.0.txt
+          cp COPYING IncipitPlay-Win/COPYING.txt
+          echo "Incipit Play is based on chiaki-ng (https://github.com/streetpea/chiaki-ng), AGPL-3.0. Source code: https://github.com/dalmor0/incipit-play" > IncipitPlay-Win/CODIGO-FONTE.txt
+          ls IncipitPlay-Win | head -100
+          du -sh IncipitPlay-Win
 
-      - name: Upload chiaki-ng Artifact
-        uses: actions/upload-artifact@v7
+      - name: Package portable
+        run: |
+          V_MAJ="$(grep 'CHIAKI_VERSION_MAJOR' CMakeLists.txt | grep -Eo '[0-9]+')"
+          V_MIN="$(grep 'CHIAKI_VERSION_MINOR' CMakeLists.txt | grep -Eo '[0-9]+')"
+          V_PAT="$(grep 'CHIAKI_VERSION_PATCH' CMakeLists.txt | grep -Eo '[0-9]+')"
+          PKG="IncipitPlay-portatil-$V_MAJ.$V_MIN.$V_PAT-${GITHUB_SHA::7}.zip"
+          zip -qr "$PKG" IncipitPlay-Win
+          echo "PKG=${PKG}" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v7
         with:
-          name: chiaki-ng-win_x64-MSYS2-Release-portable.zip
-          path: ${{ env.RELEASE_PACKAGE_PATH }}
+          name: IncipitPlay-portatil
+          path: ${{ env.PKG }}
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
 
-      - name: Compile .ISS to .EXE Installer
+      - name: Installer (Inno Setup)
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.9
         with:
-          path: "scripts/chiaki-ng.iss"
+          path: "scripts/incipit-play.iss"
           options: /O+
 
-      - name: Upload chiaki-ng Artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: chiaki-ng-win_x64-MSYS2-Release-installer.exe
-          path: chiaki-ng-windows-installer.exe
+          name: IncipitPlay-instalador
+          path: IncipitPlay-instalador.exe
           if-no-files-found: error
-          retention-days: 7
-          
+          retention-days: 14
