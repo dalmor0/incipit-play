@@ -93,7 +93,7 @@ Rectangle {
                 InTexto { text: "Console"; font.weight: Font.DemiBold }
                 Flow {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: 12
                     Repeater {
                         model: [[1000100, "PS5"], [1000, "PS4 (sistema 8 ou mais)"], [900, "PS4 (sistema 7)"], [800, "PS4 (antes do 7)"]]
                         delegate: InOpcao {
@@ -108,7 +108,7 @@ Rectangle {
 
             Row {
                 visible: rg.alvo !== 800 && !!Chiaki.settings.psnAccountId
-                spacing: 10
+                spacing: 12
                 InIcone { nome: "check"; tamanho: 18; cor: root.tema.ok; anchors.verticalCenter: parent.verticalCenter }
                 InTexto { text: "Conta PSN conectada: o ID da conta vai junto."; anchors.verticalCenter: parent.verticalCenter }
             }
@@ -186,7 +186,7 @@ Rectangle {
             width: coluna.width
             x: coluna.x
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 10
+            spacing: 12
             InTexto {
                 Layout.fillWidth: true
                 tipo: "apoio"

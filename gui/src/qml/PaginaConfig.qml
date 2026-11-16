@@ -44,7 +44,8 @@ InPagina {
                 required property var modelData
                 readonly property bool ativa: cfg.secao === modelData[0]
                 implicitHeight: 44
-                implicitWidth: rot.implicitWidth + 40
+                implicitWidth: medida.advanceWidth + 40
+                TextMetrics { id: medida; text: aba.modelData[1]; font.family: root.tema.sans; font.pixelSize: 15; font.weight: Font.DemiBold }
                 focusPolicy: Qt.StrongFocus
                 hoverEnabled: true
                 Accessible.name: modelData[1]
@@ -77,7 +78,7 @@ InPagina {
         InCartao {
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 20
+                spacing: 12
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
@@ -113,7 +114,7 @@ InPagina {
         InCartao {
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 20
+                spacing: 12
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
@@ -157,7 +158,7 @@ InPagina {
         InCartao {
             InTexto { tipo: "titulo"; text: "Tema" }
             Row {
-                spacing: 10
+                spacing: 12
                 Repeater {
                     model: [["dark", "Escuro"], ["light", "Claro"], ["system", "Do Windows"]]
                     delegate: InOpcao {
@@ -253,13 +254,13 @@ InPagina {
         InCartao {
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 20
+                spacing: 12
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
                     InTexto { tipo: "titulo"; text: "Mais ajustes" }
-                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Fora de casa, controle, áudio, renderização e consoles ocultos: a tela completa do motor do PlayStation." }
+                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Fora de casa, controle, áudio, renderização e consoles ocultos, na tela do motor." }
                 }
                 InBotao { text: "Abrir mais ajustes"; icone: "engrenagem"; onClicked: root.showSettingsDialog() }
             }
@@ -296,7 +297,7 @@ InPagina {
             }
             Row {
                 Layout.topMargin: 8
-                spacing: 10
+                spacing: 12
                 InBotao { text: "Código do Incipit Play"; icone: "externo"; onClicked: Qt.openUrlExternally("https://github.com/dalmor0/incipit-play") }
                 InBotao { text: "chiaki-ng"; icone: "externo"; onClicked: Qt.openUrlExternally("https://github.com/streetpea/chiaki-ng") }
                 InBotao { text: "Licença"; icone: "externo"; onClicked: Qt.openUrlExternally("https://www.gnu.org/licenses/agpl-3.0.html") }

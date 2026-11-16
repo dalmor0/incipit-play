@@ -67,7 +67,7 @@ Rectangle {
 
         Row {
             Layout.topMargin: 8
-            spacing: 10
+            spacing: 12
             InBotao { tipo: "forte"; text: "Adicionar"; icone: "mais"; onClicked: mn.adicionar() }
             InBotao { text: "Cancelar"; onClicked: mn.voltar() }
         }

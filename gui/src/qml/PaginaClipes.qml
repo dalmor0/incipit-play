@@ -117,14 +117,14 @@ InPagina {
 
             InTexto { text: "Pasta dos clipes"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
-                spacing: 10
+                spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: Clips.clipsDir(); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 InBotao { text: "Trocar"; compacto: true; onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
             }
 
             InTexto { text: "Pasta da edição"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
-                spacing: 10
+                spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: cl.cfg.pastaEdicao || "ainda não escolhida"; tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 InBotao { text: "Escolher"; compacto: true; onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
             }
@@ -163,7 +163,7 @@ InPagina {
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
-            text: "Durante o jogo, aperte " + cl.cfg.atalho + ". O clipe é salvo na hora na sua pasta e aparece aqui, em \"Clipes desta transmissão\"."
+            text: "Durante o jogo, aperte " + cl.cfg.atalho + ". O clipe vai pra sua pasta e aparece aqui."
         }
     }
 
@@ -183,7 +183,11 @@ InPagina {
                 InTexto {
                     tipo: "rotulo"
                     wrapMode: Text.NoWrap
-                    text: sessao.modelData.atual ? "Clipes desta transmissão" : sessao.modelData.nome
+                    text: {
+                        if (sessao.modelData.atual) return "Clipes desta transmissão";
+                        const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2}) (.*)$/.exec(sessao.modelData.nome);
+                        return m ? m[3] + "/" + m[2] + " " + m[4] + ":" + m[5] + " · " + m[6] : sessao.modelData.nome;
+                    }
                 }
                 InTexto { tipo: "pequeno"; wrapMode: Text.NoWrap; text: sessao.modelData.clipes.length + (sessao.modelData.clipes.length === 1 ? " clipe" : " clipes") }
                 Item { Layout.fillWidth: true }
@@ -308,7 +312,7 @@ InPagina {
             Row {
                 Layout.alignment: Qt.AlignRight
                 Layout.topMargin: 8
-                spacing: 10
+                spacing: 12
                 InBotao { text: "Cancelar"; onClicked: pedido.close() }
                 InBotao { tipo: "forte"; text: "Mandar"; icone: "seta"; onClicked: pedido.mandar() }
             }

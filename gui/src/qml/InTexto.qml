@@ -12,6 +12,7 @@ Text {
     font.pixelSize: tipo === "titulo" ? 20 : tipo === "secao" ? 24 : tipo === "apoio" ? 15 : tipo === "rotulo" ? 15 : tipo === "pequeno" ? 14 : 16
     font.weight: tipo === "titulo" || tipo === "rotulo" ? Font.DemiBold : Font.Normal
     Layout.maximumWidth: (tipo === "apoio" || tipo === "corpo" || tipo === "pequeno") ? 680 : Number.POSITIVE_INFINITY
-    lineHeight: tipo === "corpo" || tipo === "apoio" ? 1.35 : 1.0
+    lineHeightMode: tipo === "pequeno" ? Text.FixedHeight : Text.ProportionalHeight
+    lineHeight: tipo === "pequeno" ? 20 : (tipo === "corpo" || tipo === "apoio" ? 1.35 : 1.0)
     color: tipo === "apoio" || tipo === "pequeno" ? tema.texto2 : tema.texto
 }

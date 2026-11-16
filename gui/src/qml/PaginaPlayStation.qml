@@ -21,7 +21,7 @@ InPagina {
         Row {
             visible: Chiaki.discoveryEnabled
             height: 44
-            spacing: 10
+            spacing: 12
             Item {
                 width: 14; height: 14
                 anchors.verticalCenter: parent.verticalCenter
@@ -165,7 +165,7 @@ InPagina {
         }
         Row {
             Layout.topMargin: 8
-            spacing: 10
+            spacing: 12
             InBotao { tipo: "forte"; visible: !Chiaki.discoveryEnabled; text: "Procurar na rede"; icone: "busca"; onClicked: Chiaki.discoveryEnabled = true }
             InBotao { text: "Adicionar por IP"; icone: "mais"; onClicked: root.showManualHostDialog() }
         }

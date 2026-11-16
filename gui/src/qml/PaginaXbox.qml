@@ -59,7 +59,7 @@ InPagina {
             model: [
                 ["1", "Ative os recursos remotos", "No Xbox: Configurações > Dispositivos e conexões > Recursos remotos > Habilitar recursos remotos."],
                 ["2", "Deixe em modo de suspensão", "Em Configurações > Geral > Modo de energia. Assim o Xbox acorda sozinho quando você abre."],
-                ["3", "Entre com a mesma conta", "A conta Microsoft do console. A senha você digita na página da Microsoft; o login fica guardado só neste PC."]
+                ["3", "Entre com a mesma conta", "A conta Microsoft do console. Senha só na página da Microsoft; o login fica neste PC."]
             ]
             delegate: RowLayout {
                 required property var modelData
@@ -87,6 +87,6 @@ InPagina {
         Layout.fillWidth: true
         Layout.topMargin: 4
         tipo: "pequeno"
-        text: "Sem Xbox na conta, a página da Microsoft mostra a lista vazia e ensina a ligar um console. Controle no USB ou Bluetooth funciona direto."
+        text: "Sem Xbox na conta, a página da Microsoft mostra a lista vazia. Controle no USB ou Bluetooth funciona."
     }
 }

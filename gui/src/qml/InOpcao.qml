@@ -30,7 +30,7 @@ T.AbstractButton {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
             x: 14 - o.leftPadding
-            spacing: 10
+            spacing: 12
             Rectangle {
                 visible: o.amostra !== ""
                 width: 18; height: 18

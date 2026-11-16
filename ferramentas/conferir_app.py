@@ -195,7 +195,7 @@ if __name__ == "__main__":
     APP, SAIDA = sys.argv[1], sys.argv[2]
     UI = sys.argv[sys.argv.index("--ui") + 1] if "--ui" in sys.argv else None
     os.makedirs(SAIDA, exist_ok=True)
-    GUARDAR = [("aparencia", "modo"), ("aparencia", "destaque"), ("hub", "aba"), ("hub", "secao"), ("settings", "geometry")]
+    GUARDAR = [("aparencia", "modo"), ("aparencia", "destaque"), ("hub", "aba"), ("hub", "secao"), ("settings", "geometry"), ("clipes", "pasta")]
     guardado = {}
     for g, n in GUARDAR:
         try:
@@ -235,6 +235,8 @@ if __name__ == "__main__":
              ("10-playstation-claro", "playstation", None, "light", []),
              ("11-personalizar-claro", "config", "personalizar", "light", []),
              ("12-clipes", "clipes", None, "dark", []),
+             ("14-ip-invalido", "playstation", None, "dark", [(1153, 68), "abc", "ENTER"]),
+             ("15-clipes-vazio", "clipes", None, "dark", ["VAZIO"]),
              ("13-xbox-claro", "xbox", None, "light", [])]
     so = [a for a in sys.argv if a.startswith("--so=")]
     if so:
@@ -247,12 +249,15 @@ if __name__ == "__main__":
     for w, ht in tamanhos:
         GEOMETRIA = "@Rect(0 0 1920 1080)" if (w != 1280 and "--larga" in sys.argv) else "@Rect(40 60 1280 800)"
         for nome, aba, secao, tema, cliques in telas:
-            if cliques and w != 1280:
+            if [c for c in cliques if c != "VAZIO"] and w != 1280:
                 continue
             gravar("hub", "aba", aba)
             gravar("aparencia", "modo", tema)
             if secao:
                 gravar("hub", "secao", secao)
+            vazio = os.path.join(SAIDA, "pasta-vazia")
+            os.makedirs(vazio, exist_ok=True)
+            gravar("clipes", "pasta", vazio if "VAZIO" in cliques else guardado.get(("clipes", "pasta"), ("", 1))[0])
             pr, h, _ = abrir(APP, UI)
             if not h:
                 print("janela não abriu", nome)
@@ -267,8 +272,17 @@ if __name__ == "__main__":
             else:
                 sem_moldura(h, w, ht, aba)
             time.sleep(2.0)
-            for cx_, cy_ in cliques:
-                clicar(h, cx_, cy_)
+            for passo in cliques:
+                if passo == "VAZIO":
+                    continue
+                if passo == "ENTER":
+                    user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0)
+                elif isinstance(passo, str):
+                    for ch in passo.upper():
+                        user32.keybd_event(ord(ch), 0, 0, 0); user32.keybd_event(ord(ch), 0, 2, 0)
+                        time.sleep(0.05)
+                else:
+                    clicar(h, *passo)
                 time.sleep(1.5)
             time.sleep(1.5)
             img = foto_janela(h)

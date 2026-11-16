@@ -456,7 +456,7 @@ DialogView {
                             top: parent.top
                             horizontalCenter: parent.horizontalCenter
                         }
-                        spacing: 10
+                        spacing: 12
                         GridLayout {
                             Layout.alignment: Qt.AlignHCenter
                             columns: 3
@@ -632,7 +632,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             visible: Chiaki.settings.streamMenuEnabled
                             Layout.alignment: Qt.AlignHCenter
                             Label {
@@ -1873,7 +1873,7 @@ DialogView {
                             top: parent.top
                             horizontalCenter: parent.horizontalCenter
                         }
-                        spacing: 10
+                        spacing: 12
 
                         Label {
                             text: ""
@@ -2545,7 +2545,7 @@ DialogView {
                             top: parent.top
                             horizontalCenter: parent.horizontalCenter
                         }
-                        spacing: 10
+                        spacing: 12
                         C.Button {
                             Layout.alignment: Qt.AlignHCenter
                             id: controllerMappingChange
@@ -2565,7 +2565,7 @@ DialogView {
                         }
 
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             Label {
                                 Layout.alignment: Qt.AlignRight
@@ -2586,7 +2586,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             Label {
                                 Layout.alignment: Qt.AlignRight
@@ -2616,7 +2616,7 @@ DialogView {
 
                         RowLayout {
                             id: touchIncrementLayout
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             visible: Chiaki.settings.dpadTouchEnabled
                             Label {
@@ -2658,7 +2658,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             visible: Chiaki.settings.dpadTouchEnabled
                             Layout.alignment: Qt.AlignHCenter
                             Label {
@@ -2748,7 +2748,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             Label {
                                 Layout.alignment: Qt.AlignRight
@@ -2778,7 +2778,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             Label {
                                 Layout.alignment: Qt.AlignRight
@@ -2799,7 +2799,7 @@ DialogView {
                             }
                         }
                         RowLayout {
-                            spacing: 10
+                            spacing: 12
                             Layout.alignment: Qt.AlignHCenter
                             Label {
                                 Layout.alignment: Qt.AlignRight

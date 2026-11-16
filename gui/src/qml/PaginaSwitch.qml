@@ -168,7 +168,7 @@ InPagina {
 
         Row {
             Layout.topMargin: 12
-            spacing: 10
+            spacing: 12
             InBotao { tipo: "forte"; text: "Jogar em tela cheia"; icone: "telacheia"; onClicked: sw.telaCheia = true }
             InBotao { text: sw.testando ? "Parar o teste" : "Testar a imagem"; icone: "olho"; onClicked: sw.testando = !sw.testando }
         }

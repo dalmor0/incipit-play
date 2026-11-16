@@ -71,7 +71,7 @@ T.Dialog {
         Row {
             Layout.alignment: Qt.AlignRight
             Layout.topMargin: 12
-            spacing: 10
+            spacing: 12
             InBotao { text: dialog.textoNao; onClicked: dialog.reject(); Keys.onReturnPressed: dialog.reject() }
             InBotao { id: sim; tipo: "forte"; text: dialog.textoSim; onClicked: dialog.accept(); Keys.onReturnPressed: dialog.accept() }
         }

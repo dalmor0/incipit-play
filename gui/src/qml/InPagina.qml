@@ -62,7 +62,7 @@ Item {
                     id: acoesRow
                     Layout.alignment: Qt.AlignTop | Qt.AlignRight
                     Layout.topMargin: 6
-                    spacing: 10
+                    spacing: 12
                 }
             }
 
