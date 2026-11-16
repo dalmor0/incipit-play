@@ -46,19 +46,39 @@ def janela_do_pid(pid):
     return achou[0] if achou else None
 
 
-def sem_moldura(h, w, ht):
-    """1920x1080 não cabe com moldura numa tela de 1080: usa a tela cheia do próprio app (F11) na tela principal."""
-    por_cliente(h, 40, 60, 1280, 800)
-    user32.keybd_event(0x12, 0, 0, 0)       # Alt solto libera o SetForegroundWindow vindo de outro processo
-    user32.keybd_event(0x12, 0, 2, 0)
+def frente(h):
+    """traz a janela pra frente mesmo vindo de outro processo (prende a entrada na thread da janela da frente)"""
+    k32 = ctypes.windll.kernel32
+    atual = user32.GetForegroundWindow()
+    t_atual = user32.GetWindowThreadProcessId(atual, None)
+    t_eu = k32.GetCurrentThreadId()
+    user32.AttachThreadInput(t_eu, t_atual, True)
+    user32.BringWindowToTop(h)
     user32.SetForegroundWindow(h)
-    time.sleep(0.3)
-    clicar(h, 1000, 600)                    # foco na janela, numa área vazia
-    time.sleep(0.5)
-    user32.keybd_event(0x7A, 0, 0, 0)
-    time.sleep(0.05)
-    user32.keybd_event(0x7A, 0, 2, 0)
-    time.sleep(1.5)
+    user32.SetFocus(h)
+    user32.AttachThreadInput(t_eu, t_atual, False)
+
+
+Y_MENU = {"playstation": 118, "xbox": 166, "switch": 214, "clipes": 262, "config": 755}
+
+
+def sem_moldura(h, w, ht, aba="playstation"):
+    """1920x1080 não cabe com moldura numa tela de 1080: usa a tela cheia do próprio app (F11). Antes, clica no item
+    do menu da aba aberta: ele pega o foco sem trocar de tela, e o F11 chega no app."""
+    por_cliente(h, 40, 60, 1280, 800)
+    for _ in range(3):
+        frente(h)
+        time.sleep(0.4)
+        clicar(h, 100, Y_MENU.get(aba, 118))
+        time.sleep(0.6)
+        user32.keybd_event(0x7A, 0, 0, 0)
+        time.sleep(0.05)
+        user32.keybd_event(0x7A, 0, 2, 0)
+        time.sleep(1.5)
+        c = wt.RECT()
+        user32.GetClientRect(h, ctypes.byref(c))
+        if (c.right, c.bottom) == (w, ht):
+            return
 
 
 def clicar(h, x, y):
@@ -108,7 +128,10 @@ def limpar_geometria():
             pass
     time.sleep(0.5)
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CHAVE + r"\settings") as k:
-        winreg.SetValueEx(k, "geometry", 0, winreg.REG_SZ, "@Rect(40 60 1280 800)")
+        winreg.SetValueEx(k, "geometry", 0, winreg.REG_SZ, GEOMETRIA)
+
+
+GEOMETRIA = "@Rect(40 60 1280 800)"
 
 
 def abrir(app, ui, env_extra=None):
@@ -193,7 +216,10 @@ if __name__ == "__main__":
     tamanhos = [(1280, 800), (1920, 1080)]
     if "--so-1280" in sys.argv:
         tamanhos = tamanhos[:1]
+    if "--so-1920" in sys.argv:
+        tamanhos = tamanhos[1:]
     for w, ht in tamanhos:
+        GEOMETRIA = "@Rect(0 0 1920 1080)" if (w != 1280 and "--larga" in sys.argv) else "@Rect(40 60 1280 800)"
         for nome, aba, secao, tema, cliques in telas:
             if cliques and w != 1280:
                 continue
@@ -209,8 +235,11 @@ if __name__ == "__main__":
             time.sleep(1.0)
             if w == 1280:
                 por_cliente(h, 40, 60, w, ht)
+            elif "--larga" in sys.argv:
+                user32.SetWindowPos(h, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)
+                frente(h)
             else:
-                sem_moldura(h, w, ht)
+                sem_moldura(h, w, ht, aba)
             time.sleep(2.0)
             for cx_, cy_ in cliques:
                 clicar(h, cx_, cy_)

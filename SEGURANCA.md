@@ -18,6 +18,12 @@ Checklist base: `SEGURANCA/checklist-app-com-ia.md` e `EMPRESA/produto-apps/VICI
 | Importar a config do chiaki-ng | Mexer na config dele | Só lê `HKCU\Software\Chiaki\Chiaki`; escreve só em `HKCU\Software\Incipit\Incipit Play`. Não copia a marca de "Vulkan travou" nem o renderizador forçado. |
 | Campos | Texto gigante | Código de registro com 8 dígitos (validador), PIN com 4, porta com 1 a 65535; o IP vai pro motor, que só tenta conectar. |
 
+## Ataque próprio (16/11, builds 3 a 5)
+Interface de teste (`D:\ferramentas\incipit-play\teste-ataque\ui\Main.qml`) chamando as funções direto:
+`launchDetached(cmd.exe)` deu falso; Edge com argumento sem `--`, falso; caminho relativo, falso; Lixeira num .mp4
+fora da pasta de clipes, falso; Lixeira com `..` saindo da pasta, falso; `removeTemp` fora da pasta temporária,
+falso. As iscas continuaram no lugar.
+
 ## O que fica como ressalva (herdado ou pendente)
 
 - **Tokens da PSN e senha do OBS ficam em texto aberto no registro do usuário** (`HKCU`), igual ao chiaki-ng. Quem tem acesso à conta do Windows lê. Conserto certo: cifrar com DPAPI (`CryptProtectData`) antes de gravar. Fica pra próxima versão.

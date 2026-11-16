@@ -191,9 +191,10 @@ InPagina {
             }
 
             GridLayout {
+                id: grade
                 Layout.fillWidth: true
                 columns: Math.max(1, Math.floor((cl.largura + 16) / 340))
-                uniformCellWidths: true
+                readonly property real larguraCartao: (cl.largura - (columns - 1) * columnSpacing) / columns
                 columnSpacing: 16
                 rowSpacing: 16
                 Repeater {
@@ -201,7 +202,8 @@ InPagina {
                     delegate: Rectangle {
                         id: item
                         required property var modelData
-                        Layout.fillWidth: true
+                        Layout.preferredWidth: grade.larguraCartao
+                        Layout.alignment: Qt.AlignTop
                         implicitHeight: col.implicitHeight
                         color: root.tema.sup
                         border.width: 1
