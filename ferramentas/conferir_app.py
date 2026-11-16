@@ -51,11 +51,19 @@ def janelas_visiveis(pids, classe_abertura=False):
 
 
 def familia(pid):
+    """o lançador e o app; o lançador sai quando a janela do app aparece, então o app também é achado pelo caminho"""
+    pids = {pid}
     try:
-        p = psutil.Process(pid)
-        return {pid} | {c.pid for c in p.children(recursive=True)}
+        pids |= {c.pid for c in psutil.Process(pid).children(recursive=True)}
     except Exception:
-        return {pid}
+        pass
+    for p in psutil.process_iter(["pid", "name", "exe"]):
+        try:
+            if p.info["name"] == "IncipitPlay-app.exe" and p.info["exe"] and os.path.normcase(p.info["exe"]).startswith(os.path.normcase(os.path.abspath(APP))):
+                pids.add(p.info["pid"])
+        except Exception:
+            pass
+    return pids
 
 
 def janela_do_pid(pid):

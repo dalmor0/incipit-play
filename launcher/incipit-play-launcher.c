@@ -63,9 +63,9 @@ static void desenhar(HDC dc, RECT *r)
 	SelectObject(dc, antiga);
 	DeleteObject(borda);
 
-	/* porta-I (39,58 x 96 no desenho original), escala 0,5 */
-	const int x0 = 40, y0 = 52;
-	const double k = 0.5;
+	/* porta-I (39,58 x 96 no desenho original), 64 px de altura, centrada na vertical */
+	const int x0 = 40, y0 = (r->bottom - 64) / 2 - 2;
+	const double k = 64.0 / 96.0;
 	HBRUSH azul_claro = CreateSolidBrush(RGB(0xCC, 0xE0, 0xFF));
 	HBRUSH azul = CreateSolidBrush(RGB(0x7D, 0xB0, 0xFF));
 	HBRUSH azul_escuro = CreateSolidBrush(RGB(0x3F, 0x6F, 0xD6));
@@ -90,13 +90,27 @@ static void desenhar(HDC dc, RECT *r)
 	SetBkMode(dc, TRANSPARENT);
 	SetTextColor(dc, RGB(0xE7, 0xEA, 0xF0));
 	SelectObject(dc, fonte_titulo);
-	RECT rt = { x0 + 36, y0 - 4, r->right - 24, y0 + 40 };
+	RECT rt = { x0 + 46, y0 + 2, r->right - 24, y0 + 40 };
 	DrawTextW(dc, TITULO, -1, &rt, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
 	SetTextColor(dc, RGB(0xA0, 0xA7, 0xB4));
 	SelectObject(dc, fonte_apoio);
-	static const wchar_t *frases[] = { L"Abrindo", L"Abrindo.", L"Abrindo..", L"Abrindo..." };
-	RECT ra = { x0 + 38, y0 + 34, r->right - 24, y0 + 60 };
-	DrawTextW(dc, frases[passo % 4], -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+	RECT ra = { x0 + 48, y0 + 44, r->right - 24, y0 + 66 };
+	DrawTextW(dc, L"Abrindo...", -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+
+	/* barra fina andando no pé: diz que está carregando sem enfeitar */
+	RECT trilho = { r->left + 1, r->bottom - 4, r->right - 1, r->bottom - 1 };
+	HBRUSH cinza = CreateSolidBrush(RGB(0x2C, 0x31, 0x3B));
+	FillRect(dc, &trilho, cinza);
+	DeleteObject(cinza);
+	const int largura = r->right - r->left, seg = 96;
+	const int pos = (passo * 18) % (largura + seg) - seg;
+	RECT anda = { r->left + (pos < 1 ? 1 : pos), r->bottom - 4, r->left + (pos + seg > largura - 1 ? largura - 1 : pos + seg), r->bottom - 1 };
+	if(anda.right > anda.left)
+	{
+		HBRUSH az = CreateSolidBrush(RGB(0x7D, 0xB0, 0xFF));
+		FillRect(dc, &anda, az);
+		DeleteObject(az);
+	}
 }
 
 static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l)
@@ -202,7 +216,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR linha, int mostrar)
 	}
 	pid_app = pi.dwProcessId;
 	AllowSetForegroundWindow(pid_app);
-	SetTimer(janela_abertura, 1, 400, NULL);
+	SetTimer(janela_abertura, 1, 30, NULL);
 	SetTimer(janela_abertura, 2, 100, NULL);
 
 	MSG msg;
