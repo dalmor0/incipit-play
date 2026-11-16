@@ -49,5 +49,7 @@
     <file>fonts/Archivo-SemiBold.ttf</file>
     <file>fonts/Archivo-Bold.ttf</file>
     <file>fonts/YoungSerif-Regular.ttf</file>
+    <file>ClipesConfig.qml</file>
+    <file>PaginaClipes.qml</file>
   </qresource>
 </RCC>

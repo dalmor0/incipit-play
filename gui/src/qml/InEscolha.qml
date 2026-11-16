@@ -33,10 +33,9 @@ B.ComboBox {
     indicator: InIcone {
         x: c.width - width - 14
         y: (c.height - height) / 2
-        nome: "seta"
-        tamanho: 16
+        nome: "abaixo"
+        tamanho: 18
         cor: c.tema.texto2
-        rotation: 90
     }
     delegate: B.ItemDelegate {
         required property var modelData

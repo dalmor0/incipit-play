@@ -46,14 +46,46 @@ def janela_do_pid(pid):
     return achou[0] if achou else None
 
 
+def sem_moldura(h, w, ht):
+    """1920x1080 não cabe com moldura numa tela de 1080: usa a tela cheia do próprio app (F11) na tela principal."""
+    por_cliente(h, 40, 60, 1280, 800)
+    user32.keybd_event(0x12, 0, 0, 0)       # Alt solto libera o SetForegroundWindow vindo de outro processo
+    user32.keybd_event(0x12, 0, 2, 0)
+    user32.SetForegroundWindow(h)
+    time.sleep(0.3)
+    clicar(h, 1000, 600)                    # foco na janela, numa área vazia
+    time.sleep(0.5)
+    user32.keybd_event(0x7A, 0, 0, 0)
+    time.sleep(0.05)
+    user32.keybd_event(0x7A, 0, 2, 0)
+    time.sleep(1.5)
+
+
+def clicar(h, x, y):
+    p = wt.POINT(x, y)
+    user32.ClientToScreen(h, ctypes.byref(p))
+    user32.SetCursorPos(p.x, p.y)
+    time.sleep(0.15)
+    user32.mouse_event(2, 0, 0, 0, 0)
+    time.sleep(0.05)
+    user32.mouse_event(4, 0, 0, 0, 0)
+
+
 def por_cliente(h, x, y, w, ht):
     r = wt.RECT(0, 0, w, ht)
     estilo = user32.GetWindowLongW(h, -16)
     exest = user32.GetWindowLongW(h, -20)
     user32.AdjustWindowRectEx(ctypes.byref(r), estilo, False, exest)
     HWND_TOPMOST = -1
-    user32.ShowWindow(h, 9)
-    user32.SetWindowPos(h, HWND_TOPMOST, x + r.left, y + r.top, r.right - r.left, r.bottom - r.top, 0x0040)
+    for _ in range(6):
+        user32.ShowWindow(h, 9)          # sai do maximizado (o app lembra o último tamanho)
+        time.sleep(0.4)
+        user32.SetWindowPos(h, HWND_TOPMOST, x + r.left, y + r.top, r.right - r.left, r.bottom - r.top, 0x0040)
+        time.sleep(0.6)
+        c = wt.RECT()
+        user32.GetClientRect(h, ctypes.byref(c))
+        if (c.right, c.bottom) == (w, ht):
+            break
     user32.SetForegroundWindow(h)
 
 
@@ -112,12 +144,27 @@ if __name__ == "__main__":
     if "--so-medir" in sys.argv:
         sys.exit(0)
 
-    telas = [("1-playstation", "playstation", None), ("2-xbox", "xbox", None), ("3-switch", "switch", None),
-             ("4-config-contas", "config", "contas"), ("5-config-personalizar", "config", "personalizar"),
-             ("6-config-video", "config", "video"), ("7-config-sobre", "config", "sobre")]
-    for w, ht, x, y in [(1280, 800, 40, 60), (1920, 1080, 0, 0)]:
-        for nome, aba, secao in telas:
+    # (nome, aba, seção, tema, cliques em 1280x800 depois de abrir)
+    telas = [("1-playstation", "playstation", None, "dark", []), ("2-xbox", "xbox", None, "dark", []),
+             ("3-switch", "switch", None, "dark", []),
+             ("4-config-contas", "config", "contas", "dark", []), ("5-config-personalizar", "config", "personalizar", "dark", []),
+             ("6-config-video", "config", "video", "dark", []), ("7-config-sobre", "config", "sobre", "dark", []),
+             ("8-registro", "playstation", None, "dark", [(1153, 209)]),
+             ("9-adicionar-ip", "playstation", None, "dark", [(1153, 68)]),
+             ("10-playstation-claro", "playstation", None, "light", []),
+             ("11-personalizar-claro", "config", "personalizar", "light", [])]
+    so = [a for a in sys.argv if a.startswith("--so=")]
+    if so:
+        telas = [t for t in telas if t[0] in so[0][5:].split(",")]
+    tamanhos = [(1280, 800), (1920, 1080)]
+    if "--so-1280" in sys.argv:
+        tamanhos = tamanhos[:1]
+    for w, ht in tamanhos:
+        for nome, aba, secao, tema, cliques in telas:
+            if cliques and w != 1280:
+                continue
             gravar("hub", "aba", aba)
+            gravar("aparencia", "modo", tema)
             if secao:
                 gravar("hub", "secao", secao)
             pr, h, _ = abrir(APP, UI)
@@ -125,14 +172,22 @@ if __name__ == "__main__":
                 print("janela não abriu", nome)
                 fechar(pr)
                 continue
-            por_cliente(h, x, y, w, ht)
-            time.sleep(2.5)
-            cx = caixa_cliente(h)
-            img = ImageGrab.grab(bbox=cx, all_screens=True)
+            time.sleep(1.0)
+            if w == 1280:
+                por_cliente(h, 40, 60, w, ht)
+            else:
+                sem_moldura(h, w, ht)
+            time.sleep(2.0)
+            for cx_, cy_ in cliques:
+                clicar(h, cx_, cy_)
+                time.sleep(1.5)
+            time.sleep(1.5)
+            img = ImageGrab.grab(bbox=caixa_cliente(h), all_screens=True)
             arq = os.path.join(SAIDA, f"{nome}-{w}x{ht}.png")
             img.save(arq)
             print(arq, img.size)
             fechar(pr)
     gravar("hub", "aba", "playstation")
+    gravar("aparencia", "modo", "dark")
     with open(os.path.join(SAIDA, "medidas.json"), "w", encoding="utf-8") as f:
         json.dump(rel, f, ensure_ascii=False, indent=2)

@@ -13,6 +13,7 @@ Item {
     property bool useSeparateStreamSettingsWindows: false
     // Incipit Play: o tema da Incipit vale pra tudo, inclusive as telas herdadas do chiaki-ng
     readonly property Tema tema: Tema {}
+    readonly property ClipesConfig clipes: ClipesConfig {}
     Material.theme: tema.escuro ? Material.Dark : Material.Light
     Material.accent: tema.destaque
     Material.background: tema.fundo
@@ -465,6 +466,39 @@ Item {
             id: errorHideTimer
             interval: 2000
         }
+    }
+
+    // aviso de clipe salvo (aparece por cima de tudo, inclusive do jogo)
+    Rectangle {
+        id: avisoClipe
+        property string texto: ""
+        property bool bom: true
+        anchors { top: parent.top; right: parent.right; topMargin: 24; rightMargin: 24 }
+        width: avisoClipeTexto.implicitWidth + 48
+        height: 48
+        color: root.tema.sup
+        border.width: 1
+        border.color: bom ? root.tema.ok : root.tema.alerta
+        opacity: avisoClipeTempo.running ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 250 } }
+        Text {
+            id: avisoClipeTexto
+            anchors.centerIn: parent
+            text: avisoClipe.texto
+            font.family: root.tema.sans; font.pixelSize: 15; font.weight: Font.DemiBold
+            color: root.tema.texto
+        }
+        Timer { id: avisoClipeTempo; interval: 3500 }
+        function mostrar(t, b) { texto = t; bom = b; avisoClipeTempo.restart(); }
+    }
+    Connections {
+        target: Clips
+        function onClipSaved(path, title, seconds) {
+            const s = Math.round(seconds);
+            avisoClipe.mostrar("Clipe salvo · " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + " · aba Clipes", true);
+        }
+        function onClipFailed(reason) { avisoClipe.mostrar(reason, false); }
     }
 
     Dialog {

@@ -1,4 +1,5 @@
 #include "qmlbackend.h"
+#include "cliprecorder.h"
 #include <QFileInfo>
 #include <QCoreApplication>
 #include "qmlsettings.h"
@@ -294,6 +295,7 @@ QmlBackend::QmlBackend(Settings *settings, QmlMainWindow *window)
 
     const char *uri = "org.streetpea.chiaking";
     qmlRegisterSingletonInstance(uri, 1, 0, "Chiaki", this);
+    qmlRegisterSingletonInstance(uri, 1, 0, "Clips", ClipRecorder::instance());
     qmlRegisterUncreatableType<QmlMainWindow>(uri, 1, 0, "ChiakiWindow", {});
     qmlRegisterUncreatableType<QmlSettings>(uri, 1, 0, "ChiakiSettings", {});
     qmlRegisterUncreatableType<StreamSession>(uri, 1, 0, "ChiakiSession", {});

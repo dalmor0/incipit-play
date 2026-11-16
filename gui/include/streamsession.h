@@ -164,6 +164,7 @@ class StreamSession : public QObject
 		SessionLog log;
 		ChiakiSession session;
 		ChiakiOpusDecoder opus_decoder;
+		ChiakiAudioSink incipit_opus_sink;   // Incipit Play: o sink original do Opus, chamado depois do gravador de clipes
 		ChiakiOpusEncoder opus_encoder;
 		bool connected;
 		bool muted;

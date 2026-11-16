@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtCore
+import QtQuick.Window
 
 import org.streetpea.chiaking
 
@@ -25,12 +26,21 @@ Rectangle {
         root.initialAsk = true;   // as perguntas de primeira abertura do chiaki-ng (Steam, PSN) não aparecem: viram botão
     }
 
-    Keys.onEscapePressed: if (aba !== "playstation") irPara("playstation")
+    // F11 entra e sai da tela cheia; Esc sai da tela cheia ou volta pra aba PlayStation
+    function telaCheia(ligar) { Chiaki.window.visibility = ligar ? Window.FullScreen : Window.Windowed; }
+    Keys.onPressed: (e) => {
+        if (e.key === Qt.Key_F11) { telaCheia(Chiaki.window.visibility !== Window.FullScreen); e.accepted = true; }
+    }
+    Keys.onEscapePressed: {
+        if (Chiaki.window.visibility === Window.FullScreen) telaCheia(false);
+        else if (aba !== "playstation") irPara("playstation");
+    }
 
     readonly property var abas: [
         { id: "playstation", nome: "PlayStation", icone: "controle" },
         { id: "xbox", nome: "Xbox", icone: "tela" },
-        { id: "switch", nome: "Switch", icone: "placa" }
+        { id: "switch", nome: "Switch", icone: "placa" },
+        { id: "clipes", nome: "Clipes", icone: "video" }
     ]
 
     // ------------------------------------------------------------ trilho
@@ -91,12 +101,13 @@ Rectangle {
 
         Loader {
             anchors.fill: parent
-            sourceComponent: hub.aba === "xbox" ? xbox : hub.aba === "switch" ? nintendo : hub.aba === "config" ? config : playstation
+            sourceComponent: hub.aba === "xbox" ? xbox : hub.aba === "switch" ? nintendo : hub.aba === "clipes" ? clipes : hub.aba === "config" ? config : playstation
         }
         Component { id: playstation; PaginaPlayStation {} }
         Component { id: xbox; PaginaXbox {} }
         Component { id: nintendo; PaginaSwitch {} }
         Component { id: config; PaginaConfig {} }
+        Component { id: clipes; PaginaClipes {} }
     }
 
     component ItemTrilho: AbstractButton {

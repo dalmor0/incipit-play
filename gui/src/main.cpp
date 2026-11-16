@@ -74,7 +74,8 @@ static void ImportChiakiNgSettings()
 	QSettings old(QStringLiteral("Chiaki"), QStringLiteral("Chiaki"));
 	const QStringList keys = old.allKeys();
 	for(const QString &key : keys)
-		if(!mine.contains(key))
+		// the Vulkan crash marker and the renderer it forced belong to that app's last run, not to ours
+		if(!mine.contains(key) && key != QStringLiteral("settings/vulkan_startup_pending") && key != QStringLiteral("settings/render_backend"))
 			mine.setValue(key, old.value(key));
 	mine.setValue("incipit/import_done", keys.size());
 	mine.sync();
@@ -95,9 +96,6 @@ int real_main(int argc, char *argv[])
 	QGuiApplication::setApplicationName("Incipit Play");
 	QGuiApplication::setApplicationVersion(CHIAKI_VERSION);
 	QGuiApplication::setApplicationDisplayName("Incipit Play");
-	// capture card tab (Switch): Media Foundation backend, no extra FFmpeg needed
-	if(!qEnvironmentVariableIsSet("QT_MEDIA_BACKEND"))
-		qputenv("QT_MEDIA_BACKEND", "windows");
 #if defined(Q_OS_MACOS)
 	// Use a plain CAMetalLayer for Vulkan windows. Qt's own layer presents in step with each
 	// live resize, but our swapchain presents from the render thread, so every resize step

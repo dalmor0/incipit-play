@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <streamsession.h>
+#include <cliprecorder.h>
 #include <settings.h>
 #include <controllermanager.h>
 
@@ -345,6 +346,10 @@ StreamSessionConnectInfo::StreamSessionConnectInfo(
 
 static void AudioSettingsCb(uint32_t channels, uint32_t rate, void *user);
 static void AudioFrameCb(int16_t *buf, size_t samples_count, void *user);
+// Incipit Play: gravador de clipes no caminho do vídeo e do áudio (copia o pacote e segue pro decodificador)
+static bool IncipitVideoSampleCb(uint8_t *buf, size_t buf_size, int32_t frames_lost, bool frame_recovered, void *user);
+static void IncipitAudioHeaderCb(ChiakiAudioHeader *header, void *user);
+static void IncipitAudioFrameCb(uint8_t *buf, size_t buf_size, void *user);
 static void HapticsFrameCb(uint8_t *buf, size_t buf_size, void *user);
 #ifdef Q_OS_MACOS
 static void MacMicRequestCb(Authorization authorization, void *user);
@@ -556,9 +561,15 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 	display_sink.cantdisplay_cb = CantDisplayCb;
 	chiaki_session_ctrl_set_display_sink(&session, &display_sink);
 	chiaki_opus_decoder_set_cb(&opus_decoder, AudioSettingsCb, AudioFrameCb, this);
+	chiaki_opus_decoder_get_sink(&opus_decoder, &incipit_opus_sink);
 	ChiakiAudioSink audio_sink;
-	chiaki_opus_decoder_get_sink(&opus_decoder, &audio_sink);
+	audio_sink.user = this;
+	audio_sink.header_cb = IncipitAudioHeaderCb;
+	audio_sink.frame_cb = IncipitAudioFrameCb;
 	chiaki_session_set_audio_sink(&session, &audio_sink);
+	ClipRecorder::instance()->beginStream(chiaki_connect_info.video_profile.codec != CHIAKI_CODEC_H264,
+		chiaki_target_is_ps5(connect_info.target) ? QStringLiteral("PS5") : QStringLiteral("PS4"),
+		int(chiaki_connect_info.video_profile.width), int(chiaki_connect_info.video_profile.height));
 	ChiakiAudioHeader audio_header;
 	chiaki_audio_header_set(&audio_header, 2, 16, MICROPHONE_SAMPLES * 100, MICROPHONE_SAMPLES);
 	chiaki_opus_encoder_header(&audio_header, &opus_encoder, &session);
@@ -582,7 +593,7 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 	else
 	{
 #endif
-		chiaki_session_set_video_sample_cb(&session, chiaki_ffmpeg_decoder_video_sample_cb, ffmpeg_decoder);
+		chiaki_session_set_video_sample_cb(&session, IncipitVideoSampleCb, this);
 #if CHIAKI_LIB_ENABLE_PI_DECODER
 	}
 #endif
@@ -743,6 +754,7 @@ StreamSession::~StreamSession()
 		chiaki_session_stop(&session);
 		chiaki_session_join(&session);
 	}
+	ClipRecorder::instance()->endStream();
 	chiaki_session_fini(&session);
 	chiaki_opus_decoder_fini(&opus_decoder);
 	chiaki_opus_encoder_fini(&opus_encoder);
@@ -2831,6 +2843,9 @@ bool StreamSession::RequestIDR()
 class StreamSessionPrivate
 {
 	public:
+		static ChiakiSession *Session(StreamSession *s) { return &s->session; }
+		static ChiakiFfmpegDecoder *Decoder(StreamSession *s) { return s->ffmpeg_decoder; }
+		static ChiakiAudioSink &OpusSink(StreamSession *s) { return s->incipit_opus_sink; }
 		static void InitAudio(StreamSession *session, uint32_t channels, uint32_t rate)
 		{
 			QMetaObject::invokeMethod(session, "InitAudio", Qt::ConnectionType::BlockingQueuedConnection, Q_ARG(unsigned int, channels), Q_ARG(unsigned int, rate));
@@ -2915,4 +2930,34 @@ static void FfmpegFrameCb(ChiakiFfmpegDecoder *decoder, void *user)
 {
 	auto session = reinterpret_cast<StreamSession *>(user);
 	StreamSessionPrivate::TriggerFfmpegFrameAvailable(session);
+}
+
+
+// ---------------------------------------------------------------- Incipit Play: gravador de clipes
+static bool IncipitVideoSampleCb(uint8_t *buf, size_t buf_size, int32_t frames_lost, bool frame_recovered, void *user)
+{
+	auto session = reinterpret_cast<StreamSession *>(user);
+	ClipRecorder *rec = ClipRecorder::instance();
+	rec->pushVideo(buf, buf_size);
+	if(rec->wantsKeyframe())
+		chiaki_session_request_idr(StreamSessionPrivate::Session(session));
+	return chiaki_ffmpeg_decoder_video_sample_cb(buf, buf_size, frames_lost, frame_recovered, StreamSessionPrivate::Decoder(session));
+}
+
+static void IncipitAudioHeaderCb(ChiakiAudioHeader *header, void *user)
+{
+	auto session = reinterpret_cast<StreamSession *>(user);
+	ClipRecorder::instance()->setAudioFormat(header->channels, int(header->rate));
+	ChiakiAudioSink &orig = StreamSessionPrivate::OpusSink(session);
+	if(orig.header_cb)
+		orig.header_cb(header, orig.user);
+}
+
+static void IncipitAudioFrameCb(uint8_t *buf, size_t buf_size, void *user)
+{
+	auto session = reinterpret_cast<StreamSession *>(user);
+	ClipRecorder::instance()->pushAudio(buf, buf_size);
+	ChiakiAudioSink &orig = StreamSessionPrivate::OpusSink(session);
+	if(orig.frame_cb)
+		orig.frame_cb(buf, buf_size, orig.user);
 }

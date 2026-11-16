@@ -11,7 +11,9 @@ Item {
 
     Shape {
         anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
+        // o CurveRenderer deixava a abertura 7 s mais lenta; o comum com 4 amostras fica liso e rápido
+        layer.enabled: true
+        layer.samples: 4
         ShapePath {
             strokeWidth: -1
             scale: Qt.size(m.width / 39.58, m.height / 96)

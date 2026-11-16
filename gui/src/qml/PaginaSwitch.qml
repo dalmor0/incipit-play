@@ -63,6 +63,52 @@ InPagina {
         audioInput: (sw.ligada && sw.somEscolhido >= 0) ? entrada : null
         audioOutput: (sw.ligada && sw.somEscolhido >= 0) ? saida : null
         videoOutput: sw.telaCheia ? videoCheio : videoTeste
+        recorder: gravador
+    }
+
+    // ------------------------------------------------------------ clipes da placa
+    // Enquanto a placa está aberta e os clipes ligados, grava em pedaços de 5 min numa pasta temporária. O atalho
+    // fecha o pedaço atual, corta o fim dos dois últimos (sem recodificar) e começa outro.
+    property int pedaco: 0
+    property var pedacos: []
+    property bool salvarAoParar: false
+    readonly property bool gravar: sw.ligada && sw.temPlaca && root.clipes.ligado
+    function arquivoPedaco(n) { return Clips.tempCaptureDir() + "/placa-" + n + ".mkv"; }
+    function comecarPedaco() {
+        pedaco++;
+        const f = arquivoPedaco(pedaco);
+        pedacos = pedacos.concat([f]);
+        while (pedacos.length > 3) { Clips.removeTemp(pedacos[0]); pedacos = pedacos.slice(1); }
+        gravador.outputLocation = "file:///" + f;
+        gravador.record();
+    }
+    onGravarChanged: {
+        if (gravar) Qt.callLater(comecarPedaco);
+        else if (gravador.recorderState !== MediaRecorder.StoppedState) gravador.stop();
+    }
+    MediaRecorder {
+        id: gravador
+        quality: MediaRecorder.HighQuality
+        mediaFormat {
+            fileFormat: MediaFormat.Matroska
+            videoCodec: MediaFormat.VideoCodec.H264
+            audioCodec: MediaFormat.AudioCodec.AAC
+        }
+        onRecorderStateChanged: {
+            if (recorderState !== MediaRecorder.StoppedState) return;
+            if (sw.salvarAoParar) {
+                sw.salvarAoParar = false;
+                Clips.saveTailOfFiles(sw.pedacos.slice(-2), root.clipes.segundos, "Switch");
+            }
+            if (sw.gravar) Qt.callLater(sw.comecarPedaco);
+        }
+    }
+    Timer { interval: 300000; repeat: true; running: sw.gravar; onTriggered: gravador.stop() }
+    Connections {
+        target: Clips
+        function onClipRequested() {
+            if (gravador.recorderState === MediaRecorder.RecordingState) { sw.salvarAoParar = true; gravador.stop(); }
+        }
     }
     Binding {
         target: camera
@@ -102,7 +148,7 @@ InPagina {
             columnSpacing: 20
             rowSpacing: 14
 
-            InTexto { text: "Placa"; font.weight: Font.DemiBold; Layout.preferredWidth: 120 }
+            InTexto { text: "Placa"; font.weight: Font.DemiBold; Layout.preferredWidth: 120; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.fillWidth: true
                 model: sw.nomes(sw.placas, "")
@@ -110,7 +156,7 @@ InPagina {
                 onActivated: (i) => { sw.placaIdx = i; sw.somIdx = -2; }
             }
 
-            InTexto { text: "Som"; font.weight: Font.DemiBold }
+            InTexto { text: "Som"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.fillWidth: true
                 model: sw.nomes(sw.sons, "Sem som")
@@ -148,6 +194,7 @@ InPagina {
     }
 
     InTexto {
+        visible: sw.temPlaca
         Layout.topMargin: 8
         Layout.fillWidth: true
         tipo: "pequeno"

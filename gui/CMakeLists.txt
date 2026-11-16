@@ -7,7 +7,7 @@ if(APPLE)
 	enable_language(OBJCXX)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Concurrent Svg Qml Quick Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Concurrent Svg Qml Quick Widgets Multimedia WebSockets)
 if(Qt6_VERSION VERSION_GREATER_EQUAL "6.10.0")
 	find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
 endif()
@@ -43,6 +43,8 @@ set(SOURCE_FILES
 	src/jsonrequester.cpp
 	src/qml/qml.qrc
 	include/qmlmainwindow.h
+	include/cliprecorder.h
+	src/cliprecorder.cpp
 	src/qmlmainwindow.cpp
 	include/qmlbackend.h
 	src/qmlbackend.cpp
@@ -105,7 +107,7 @@ if(CHIAKI_ENABLE_CLI)
 endif()
 
 set_target_properties(chiaki PROPERTIES OUTPUT_NAME "IncipitPlay")
-target_link_libraries(chiaki Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick Qt::Widgets)
+target_link_libraries(chiaki Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick Qt::Widgets Qt::Multimedia Qt::WebSockets FFMPEG::avformat FFMPEG::avcodec FFMPEG::avutil)
 if (${Qt6DBus_FOUND} AND NOT WIN32)
 	target_link_libraries(chiaki Qt::DBus)
 if (NOT APPLE)

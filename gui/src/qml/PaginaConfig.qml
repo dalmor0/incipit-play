@@ -172,6 +172,7 @@ InPagina {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
                 columns: Math.max(2, Math.floor((cfg.largura - 48 + 10) / 170))
+                uniformCellWidths: true
                 columnSpacing: 10
                 rowSpacing: 10
                 Repeater {
@@ -203,7 +204,7 @@ InPagina {
                 columnSpacing: 24
                 rowSpacing: 14
 
-                InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 160 }
+                InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.alignment: Qt.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["360p", "540p", "720p", "1080p (padrão)"]
@@ -211,7 +212,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.resolutionLocalPS5 = i + 1
                 }
 
-                InTexto { text: "Quadros por segundo"; font.weight: Font.DemiBold }
+                InTexto { text: "Quadros por segundo"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["30", "60 (padrão)"]
@@ -219,7 +220,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.fpsLocalPS5 = (i + 1) * 30
                 }
 
-                InTexto { text: "Formato do vídeo"; font.weight: Font.DemiBold }
+                InTexto { text: "Formato do vídeo"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     model: ["H.264 (PC mais antigo)", "H.265 (padrão)", "H.265 HDR"]
@@ -227,7 +228,7 @@ InPagina {
                     onActivated: (i) => Chiaki.settings.codecLocalPS5 = i
                 }
 
-                InTexto { text: "Qualidade (bitrate)"; font.weight: Font.DemiBold }
+                InTexto { text: "Qualidade (bitrate)"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     readonly property var valores: [0, 10000, 20000, 30000, 40000, 50000]

@@ -34,6 +34,7 @@ Item {
         "olho": "M2.5 12s3.5-6.5 9.5-6.5s9.5 6.5 9.5 6.5s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z M12 9.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 0 1 0-5z",
         "chave": "M8 15a4 4 0 1 1 0-8a4 4 0 0 1 0 8z M12 11h9 M18 11v3 M15.5 11v2",
         "seta": "M5 12h14 M13 6l6 6l-6 6",
+        "abaixo": "M6 9l6 6l6-6",
         "voltar": "M19 12H5 M11 6l-6 6l6 6",
         "check": "M5 12.5l4.5 4.5L19 7.5",
         "telacheia": "M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5",
@@ -42,7 +43,9 @@ Item {
 
     Shape {
         anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
+        // o CurveRenderer deixava a abertura 7 s mais lenta; o comum com 4 amostras fica liso e rápido
+        layer.enabled: true
+        layer.samples: 4
         ShapePath {
             strokeColor: ic.cor
             strokeWidth: 1.75

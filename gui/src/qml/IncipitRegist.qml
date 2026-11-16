@@ -116,14 +116,20 @@ Rectangle {
                 }
             }
 
+            Row {
+                visible: rg.alvo !== 800 && !!Chiaki.settings.psnAccountId
+                spacing: 10
+                InIcone { nome: "check"; tamanho: 18; cor: root.tema.ok; anchors.verticalCenter: parent.verticalCenter }
+                InTexto { text: "Conta PSN conectada: o ID da conta vai junto."; anchors.verticalCenter: parent.verticalCenter }
+            }
             InCampo {
                 id: contaId
-                visible: rg.alvo !== 800
+                visible: rg.alvo !== 800 && !Chiaki.settings.psnAccountId
                 Layout.fillWidth: true
                 rotulo: "ID da conta PSN"
                 placeholderText: "preenche sozinho ao conectar a PSN"
                 echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
-                dica: Chiaki.settings.psnAccountId ? "Veio da conta PSN conectada." : "É o código da conta, não o nome de usuário."
+                dica: "É o código da conta, não o nome de usuário."
             }
             InBotao {
                 visible: rg.alvo !== 800 && !Chiaki.settings.psnAccountId
