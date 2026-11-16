@@ -7,21 +7,21 @@ ColumnLayout {
     id: cp
     property string rotulo
     property string dica: ""
-    property alias text: campo.text
-    property alias placeholderText: campo.placeholderText
-    property alias validator: campo.validator
-    property alias echoMode: campo.echoMode
-    property alias acceptableInput: campo.acceptableInput
-    property alias inputMethodHints: campo.inputMethodHints
-    property alias maximumLength: campo.maximumLength
-    property alias campo: campo
+    property alias text: caixa.text
+    property alias placeholderText: caixa.placeholderText
+    property alias validator: caixa.validator
+    property alias echoMode: caixa.echoMode
+    property alias acceptableInput: caixa.acceptableInput
+    property alias inputMethodHints: caixa.inputMethodHints
+    property alias maximumLength: caixa.maximumLength
+    property alias campo: caixa
     property real tamanhoFonte: 16
     readonly property var tema: root.tema
     spacing: 6
 
     InTexto { text: cp.rotulo; font.weight: Font.DemiBold; visible: cp.rotulo !== "" }
     B.TextField {
-        id: campo
+        id: caixa
         Layout.fillWidth: true
         implicitHeight: 48
         leftPadding: 14
@@ -35,8 +35,8 @@ ColumnLayout {
         Accessible.name: cp.rotulo
         background: Rectangle {
             color: cp.tema.fundo
-            border.width: campo.activeFocus ? 2 : 1
-            border.color: campo.activeFocus ? cp.tema.texto : (campo.hovered ? cp.tema.texto2 : cp.tema.borda)
+            border.width: caixa.activeFocus ? 2 : 1
+            border.color: caixa.activeFocus ? cp.tema.texto : (caixa.hovered ? cp.tema.texto2 : cp.tema.borda)
         }
     }
     InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: cp.dica; visible: cp.dica !== "" }

@@ -2891,13 +2891,11 @@ void QmlMainWindow::setSettings(Settings *new_settings)
 
 void QmlMainWindow::show()
 {
-    // Incipit Play: the interface can come from a folder (INCIPIT_UI_DIR or <app>/ui) so it can be
-    // updated without rebuilding; otherwise the copy compiled into the app
+    // Incipit Play: for development the interface can come from a folder (INCIPIT_UI_DIR);
+    // otherwise the copy compiled into the app
     QUrl main_url(QStringLiteral("qrc:/Main.qml"));
-    QString ui_dir = qEnvironmentVariable("INCIPIT_UI_DIR");
-    if(ui_dir.isEmpty())
-        ui_dir = QCoreApplication::applicationDirPath() + QStringLiteral("/ui");
-    if(QFileInfo::exists(ui_dir + QStringLiteral("/Main.qml")))
+    const QString ui_dir = qEnvironmentVariable("INCIPIT_UI_DIR");
+    if(!ui_dir.isEmpty() && QFileInfo::exists(ui_dir + QStringLiteral("/Main.qml")))
         main_url = QUrl::fromLocalFile(ui_dir + QStringLiteral("/Main.qml"));
     QQmlComponent component(qml_engine, main_url);
     if (!component.isReady()) {

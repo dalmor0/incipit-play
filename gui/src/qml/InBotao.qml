@@ -1,9 +1,9 @@
 // Botão do Incipit Play: botão de verdade, canto reto, 44 px de altura mínima, foco visível.
 // tipo: "forte" (ação principal, cor de destaque), "normal" (borda) ou "quieto" (sem borda, pra ação de linha)
 import QtQuick
-import QtQuick.Controls.Basic as B
+import QtQuick.Templates as T
 
-B.AbstractButton {
+T.AbstractButton {
     id: b
     property string tipo: "normal"
     property string icone: ""

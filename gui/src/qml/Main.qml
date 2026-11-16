@@ -564,9 +564,9 @@ Item {
             else
             {
                 if(ps5)
-                    root.showConfirmDialog(qsTr("Registration Type"), qsTr("Would you like to use automatic registration?"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(qsTr("Como registrar"), qsTr("Registrar sozinho pela conta PSN? Se preferir, escolha Não e use o código de 8 números do console."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
                 else
-                    root.showConfirmDialog(qsTr("Registration Type"), qsTr("Would you like to use automatic registration (must be main PS4 console registered to your PSN)?"), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(qsTr("Como registrar"), qsTr("Registrar sozinho pela conta PSN? Só funciona se este for o PS4 principal da conta. Se preferir, escolha Não e use o código de 8 números."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
             }
         }
 

@@ -2,6 +2,8 @@
 // windeployqt (scanning this folder) ships them even when the interface comes from the ui/ folder.
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic
+import QtQuick.Templates
 import QtQuick.Layouts
 import QtQuick.Shapes
 import QtQuick.Effects

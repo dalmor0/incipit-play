@@ -32,7 +32,10 @@ Rectangle {
             rotulo: "Endereço do console"
             placeholderText: "ex.: 192.168.0.20"
             echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
-            campo.onAccepted: if (text.trim() !== "") mn.adicionar()
+        }
+        Connections {
+            target: endereco.campo
+            function onAccepted() { if (endereco.text.trim() !== "") mn.adicionar(); }
         }
 
         ColumnLayout {

@@ -1,15 +1,15 @@
 // Opção de escolha única (tema, cor): caixa com borda, marcada com borda dupla do texto e o visto.
 import QtQuick
-import QtQuick.Controls.Basic as B
+import QtQuick.Templates as T
 
-B.AbstractButton {
+T.AbstractButton {
     id: o
     property string texto
     property string amostra: ""
     property bool marcada: false
     readonly property var tema: root.tema
     implicitHeight: 44
-    implicitWidth: linha.implicitWidth + 28
+    implicitWidth: linha.implicitWidth + 28 + 26
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
     checkable: false

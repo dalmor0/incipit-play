@@ -59,11 +59,21 @@ InPagina {
             id: camera
             active: sw.ligada && sw.temPlaca
             cameraDevice: sw.placa ? sw.placa : aparelhos.defaultVideoInput
-            cameraFormat: sw.melhorFormato(sw.placa)
         }
         audioInput: (sw.ligada && sw.somEscolhido >= 0) ? entrada : null
         audioOutput: (sw.ligada && sw.somEscolhido >= 0) ? saida : null
         videoOutput: sw.telaCheia ? videoCheio : videoTeste
+    }
+    Binding {
+        target: camera
+        property: "cameraFormat"
+        when: sw.melhorFormato(sw.placa) !== undefined
+        value: sw.melhorFormato(sw.placa)
+    }
+    function nomes(lista, antes) {
+        let m = antes ? [antes] : [];
+        for (let i = 0; i < lista.length; i++) m.push(lista[i].description);
+        return m;
     }
     AudioInput { id: entrada; device: sw.somEscolhido >= 0 ? sw.sons[sw.somEscolhido] : aparelhos.defaultAudioInput }
     AudioOutput { id: saida }
@@ -95,7 +105,7 @@ InPagina {
             InTexto { text: "Placa"; font.weight: Font.DemiBold; Layout.preferredWidth: 120 }
             InEscolha {
                 Layout.fillWidth: true
-                model: sw.placas.map(p => p.description)
+                model: sw.nomes(sw.placas, "")
                 currentIndex: Math.min(sw.placaIdx, sw.placas.length - 1)
                 onActivated: (i) => { sw.placaIdx = i; sw.somIdx = -2; }
             }
@@ -103,7 +113,7 @@ InPagina {
             InTexto { text: "Som"; font.weight: Font.DemiBold }
             InEscolha {
                 Layout.fillWidth: true
-                model: ["Sem som"].concat(sw.sons.map(s => s.description))
+                model: sw.nomes(sw.sons, "Sem som")
                 currentIndex: sw.somEscolhido + 1
                 onActivated: (i) => sw.somIdx = i - 1
             }
@@ -123,7 +133,6 @@ InPagina {
     InCartao {
         visible: sw.temPlaca && sw.testando
         respiro: 0
-        Layout.preferredHeight: width * 9 / 16
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: (sw.largura) * 9 / 16
@@ -148,7 +157,6 @@ InPagina {
     // ------------------------------------------------------------ tela cheia
     Window {
         id: janelaCheia
-        visible: sw.telaCheia
         visibility: sw.telaCheia ? Window.FullScreen : Window.Hidden
         color: "black"
         title: "Incipit Play · Switch"

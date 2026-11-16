@@ -2681,8 +2681,13 @@ void PsnConnectionWorker::ConnectPsnConnection(StreamSession *session, const QSt
 
 bool QmlBackend::launchDetached(const QString &program, const QStringList &arguments)
 {
-    if(program.isEmpty() || !QFileInfo(program).isAbsolute() || !QFileInfo::exists(program))
+    // only the browser used for the Xbox tab can be started from the interface
+    const QFileInfo info(program);
+    if(program.isEmpty() || !info.isAbsolute() || !info.exists() || info.fileName().compare(QStringLiteral("msedge.exe"), Qt::CaseInsensitive) != 0)
         return false;
+    for(const QString &arg : arguments)
+        if(!arg.startsWith(QStringLiteral("--")))
+            return false;
     return QProcess::startDetached(program, arguments);
 }
 

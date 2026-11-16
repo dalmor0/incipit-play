@@ -38,8 +38,8 @@ QtObject {
     ]
 
     // ------------------------------------------------------------ escuro agora
-    // Application.styleHints.colorScheme: 0 desconhecido, 1 claro, 2 escuro
-    readonly property bool escuro: modo === "system" ? Application.styleHints.colorScheme !== 1 : modo !== "light"
+    // Qt.styleHints.colorScheme: 0 desconhecido, 1 claro, 2 escuro
+    readonly property bool escuro: modo === "system" ? Qt.styleHints.colorScheme !== 1 : modo !== "light"
 
     // ------------------------------------------------------------ contas de cor
     function hexRgb(h) { h = String(h); return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
