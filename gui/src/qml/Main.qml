@@ -11,8 +11,14 @@ Item {
     property bool initialAsk: false
     readonly property bool preferSeparateStreamSettingsWindows: Chiaki.window.runtimeRendererBackend === 1 && Chiaki.session
     property bool useSeparateStreamSettingsWindows: false
-    Material.theme: Material.Dark
-    Material.accent: "#00a7ff"
+    // Incipit Play: o tema da Incipit vale pra tudo, inclusive as telas herdadas do chiaki-ng
+    readonly property Tema tema: Tema {}
+    Material.theme: tema.escuro ? Material.Dark : Material.Light
+    Material.accent: tema.destaque
+    Material.background: tema.fundo
+    Material.foreground: tema.texto
+    Material.primary: tema.sup
+    Material.roundedScale: Material.NotRounded
 
     function controllerButton(name) {
         let type = "deck";
@@ -148,7 +154,7 @@ Item {
     }
 
     function showManualHostDialog() {
-        stack.push(manualHostDialogComponent);
+        stack.push(incipitManualComponent);
     }
 
     function showConfirmDialog(title, text, callback, rejectCallback = null) {
@@ -169,7 +175,7 @@ Item {
 
     function showRendererFallbackDialog(reason) {
         showInfoDialog(qsTr("Renderer Fallback"),
-                       qsTr("Vulkan renderer is unavailable and chiaki-ng switched to OpenGL.\n\nReason: %1").arg(reason));
+                       qsTr("O Vulkan não está disponível e o Incipit Play passou a usar OpenGL.\n\nMotivo: %1").arg(reason));
     }
 
     function showRemindDialog(title, text, remotePlay, callback) {
@@ -183,7 +189,7 @@ Item {
 
 
     function showRegistDialog(host, ps5) {
-        stack.push(registDialogComponent, {host: host, ps5: ps5});
+        stack.push(incipitRegistComponent, {host: host, ps5: ps5});
     }
 
     function showSettingsDialog() {
@@ -249,8 +255,9 @@ Item {
             stack.replace(stack.get(0), autoConnectViewComponent, {}, StackView.Immediate);
     }
 
-    Pane {
+    Rectangle {
         anchors.fill: parent
+        color: tema.fundo
         visible: !Chiaki.window.hasVideo && !Chiaki.window.keepVideo
     }
 
@@ -260,6 +267,7 @@ Item {
         hoverEnabled: false
         initialItem: mainViewComponent
         font.pixelSize: 20
+        font.family: root.tema.sans
 
         replaceEnter: Transition {
             PropertyAnimation {
@@ -421,11 +429,12 @@ Item {
             horizontalCenter: parent.horizontalCenter
             bottomMargin: 30
         }
-        color: Material.accent
-        width: errorLayout.width + 40
-        height: errorLayout.height + 20
-        radius: 8
-        opacity: errorHideTimer.running ? 0.8 : 0.0
+        color: root.tema.sup
+        border.width: 1
+        border.color: root.tema.alerta
+        width: errorLayout.width + 48
+        height: errorLayout.height + 28
+        opacity: errorHideTimer.running ? 1.0 : 0.0
 
         Behavior on opacity { NumberAnimation { duration: 500 } }
 
@@ -436,15 +445,19 @@ Item {
             Label {
                 id: errorTitleLabel
                 Layout.alignment: Qt.AlignCenter
-                font.bold: true
-                font.pixelSize: 24
+                font.family: root.tema.sans
+                font.weight: Font.DemiBold
+                font.pixelSize: 18
+                color: root.tema.alerta
             }
 
             Label {
                 id: errorTextLabel
                 Layout.alignment: Qt.AlignCenter
                 horizontalAlignment: Text.AlignHCenter
-                font.pixelSize: 20
+                font.family: root.tema.sans
+                font.pixelSize: 16
+                color: root.tema.texto
             }
         }
 
@@ -564,7 +577,17 @@ Item {
 
     Component {
         id: mainViewComponent
-        MainView { }
+        IncipitHub { }
+    }
+
+    Component {
+        id: incipitRegistComponent
+        IncipitRegist { }
+    }
+
+    Component {
+        id: incipitManualComponent
+        IncipitManual { }
     }
 
     Component {

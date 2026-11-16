@@ -28,5 +28,26 @@
     <file>controls/RadioButton.qml</file>
     <file>controls/Slider.qml</file>
     <file>controls/TextField.qml</file>
+    <file>Tema.qml</file>
+    <file>InBotao.qml</file>
+    <file>InIcone.qml</file>
+    <file>InMarca.qml</file>
+    <file>InTexto.qml</file>
+    <file>InCartao.qml</file>
+    <file>InPagina.qml</file>
+    <file>InCampo.qml</file>
+    <file>InEscolha.qml</file>
+    <file>InOpcao.qml</file>
+    <file>IncipitHub.qml</file>
+    <file>IncipitRegist.qml</file>
+    <file>IncipitManual.qml</file>
+    <file>PaginaPlayStation.qml</file>
+    <file>PaginaXbox.qml</file>
+    <file>PaginaSwitch.qml</file>
+    <file>PaginaConfig.qml</file>
+    <file>fonts/Archivo-Regular.ttf</file>
+    <file>fonts/Archivo-SemiBold.ttf</file>
+    <file>fonts/Archivo-Bold.ttf</file>
+    <file>fonts/YoungSerif-Regular.ttf</file>
   </qresource>
 </RCC>

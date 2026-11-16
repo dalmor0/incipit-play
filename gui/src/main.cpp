@@ -69,12 +69,13 @@ int RunStream(QGuiApplication &app, const StreamSessionConnectInfo &connect_info
 static void ImportChiakiNgSettings()
 {
 	QSettings mine(QCoreApplication::organizationName(), QCoreApplication::applicationName());
-	if(mine.contains("incipit/import_done") || !mine.allKeys().isEmpty())
+	if(mine.contains("incipit/import_done"))
 		return;
 	QSettings old(QStringLiteral("Chiaki"), QStringLiteral("Chiaki"));
 	const QStringList keys = old.allKeys();
 	for(const QString &key : keys)
-		mine.setValue(key, old.value(key));
+		if(!mine.contains(key))
+			mine.setValue(key, old.value(key));
 	mine.setValue("incipit/import_done", keys.size());
 	mine.sync();
 }
