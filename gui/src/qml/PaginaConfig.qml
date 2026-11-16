@@ -80,6 +80,7 @@ InPagina {
                 spacing: 20
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
                     InTexto { tipo: "titulo"; text: "PlayStation Network" }
                     InTexto {
@@ -115,6 +116,7 @@ InPagina {
                 spacing: 20
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
                     InTexto { tipo: "titulo"; text: "Conta Microsoft (Xbox)" }
                     InTexto {
@@ -254,6 +256,7 @@ InPagina {
                 spacing: 20
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
                     InTexto { tipo: "titulo"; text: "Mais ajustes" }
                     InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Fora de casa, controle, áudio, renderização e consoles ocultos: a tela completa do motor do PlayStation." }

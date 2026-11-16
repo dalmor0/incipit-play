@@ -28,7 +28,6 @@ InPagina {
     }
 
     acoes: [
-        InBotao { text: "Abrir pasta"; icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + Clips.clipsDir()) },
         InBotao { text: cl.mostrarOpcoes ? "Fechar opções" : "Opções"; icone: "engrenagem"; onClicked: cl.mostrarOpcoes = !cl.mostrarOpcoes }
     ]
 
@@ -48,6 +47,7 @@ InPagina {
             }
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                 spacing: 4
                 InTexto {
                     Layout.fillWidth: true
@@ -236,6 +236,7 @@ InPagina {
                             }
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                                 Layout.margins: 16
                                 spacing: 4
                                 InTexto { Layout.fillWidth: true; text: item.modelData.jogo || "Clipe"; font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }

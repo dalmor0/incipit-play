@@ -8,7 +8,7 @@ import org.streetpea.chiaking
 InPagina {
     id: ps
     titulo: "PlayStation"
-    apoio: "PS5 e PS4 da sua rede. Ligado ou em repouso, ele aparece aqui sozinho."
+    apoio: "PS5 e PS4 da sua rede aparecem aqui, ligados ou em repouso."
 
     readonly property bool psnConectada: !!(Chiaki.settings.psnAuthToken && Chiaki.settings.psnAccountId)
     readonly property int visiveis: {
@@ -22,21 +22,26 @@ InPagina {
             visible: Chiaki.discoveryEnabled
             height: 44
             spacing: 10
-            Rectangle {
-                width: 8; height: 8; radius: 4
+            Item {
+                width: 14; height: 14
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.tema.ok
-                SequentialAnimation on opacity { loops: Animation.Infinite; running: Chiaki.discoveryEnabled
-                    NumberAnimation { to: 0.25; duration: 700 } NumberAnimation { to: 1; duration: 700 } }
+                Rectangle { anchors.fill: parent; radius: 7; color: "transparent"; border.width: 2; border.color: root.tema.linha }
+                Item {
+                    anchors.fill: parent
+                    clip: true
+                    RotationAnimation on rotation { from: 0; to: 360; duration: 1100; loops: Animation.Infinite; running: Chiaki.discoveryEnabled }
+                    Rectangle { width: 14; height: 14; radius: 7; color: "transparent"; border.width: 2; border.color: root.tema.texto2
+                        Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 8; color: root.tema.fundo } }
+                }
             }
-            InTexto { text: "Procurando na rede"; tipo: "apoio"; wrapMode: Text.NoWrap; anchors.verticalCenter: parent.verticalCenter }
-            Item { width: 4; height: 1 }
+            InTexto { text: "Procurando consoles na rede"; tipo: "apoio"; wrapMode: Text.NoWrap; anchors.verticalCenter: parent.verticalCenter }
+            Item { width: 6; height: 1 }
         },
         InBotao {
-            text: Chiaki.discoveryEnabled ? "Parar" : "Procurar na rede"
-            tipo: Chiaki.discoveryEnabled ? "quieto" : "normal"
-            icone: Chiaki.discoveryEnabled ? "" : "busca"
-            onClicked: Chiaki.discoveryEnabled = !Chiaki.discoveryEnabled
+            visible: !Chiaki.discoveryEnabled
+            text: "Procurar de novo"
+            icone: "busca"
+            onClicked: Chiaki.discoveryEnabled = true
         },
         InBotao {
             text: "Adicionar por IP"
@@ -87,6 +92,8 @@ InPagina {
 
                 ColumnLayout {
                     Layout.fillWidth: true
+
+                    Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 6
                     InTexto {
                         Layout.fillWidth: true
@@ -172,6 +179,7 @@ InPagina {
             spacing: 20
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                 spacing: 4
                 InTexto { tipo: "titulo"; text: ps.psnConectada ? "Conta PSN conectada" : "Conta PSN" }
                 InTexto {

@@ -24,7 +24,7 @@ T.AbstractButton {
     background: Rectangle {
         color: b.tipo === "forte" ? (b.down ? Qt.darker(b.tema.destaque, 1.08) : b.tema.destaque)
              : b.down ? b.tema.linha : (b.hovered && b.tipo === "quieto" ? b.tema.destaqueFraco : "transparent")
-        border.width: b.tipo === "quieto" ? 0 : 1
+        border.width: 1
         border.color: b.tipo === "forte" ? b.tema.destaque : (b.hovered ? b.tema.texto : b.tema.borda)
         opacity: b.enabled ? 1 : 0.45
         Rectangle {

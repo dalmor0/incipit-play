@@ -109,6 +109,32 @@ def por_cliente(h, x, y, w, ht):
     user32.SetForegroundWindow(h)
 
 
+def foto_janela(h):
+    """copia só a janela do app (PrintWindow com conteúdo completo), mesmo com outra janela por cima"""
+    from PIL import Image
+    gdi = ctypes.windll.gdi32
+    r = wt.RECT()
+    user32.GetClientRect(h, ctypes.byref(r))
+    w, ht = r.right, r.bottom
+    hdc = user32.GetDC(h)
+    mem = gdi.CreateCompatibleDC(hdc)
+    bmp = gdi.CreateCompatibleBitmap(hdc, w, ht)
+    gdi.SelectObject(mem, bmp)
+    user32.PrintWindow(h, mem, 1 | 2)          # PW_CLIENTONLY | PW_RENDERFULLCONTENT
+    class BIH(ctypes.Structure):
+        _fields_ = [("biSize", ctypes.c_uint32), ("biWidth", ctypes.c_int32), ("biHeight", ctypes.c_int32),
+                    ("biPlanes", ctypes.c_uint16), ("biBitCount", ctypes.c_uint16), ("biCompression", ctypes.c_uint32),
+                    ("biSizeImage", ctypes.c_uint32), ("a", ctypes.c_int32), ("b", ctypes.c_int32),
+                    ("c", ctypes.c_uint32), ("d", ctypes.c_uint32)]
+    bi = BIH(ctypes.sizeof(BIH), w, -ht, 1, 32, 0, 0, 0, 0, 0, 0)
+    buf = ctypes.create_string_buffer(w * ht * 4)
+    gdi.GetDIBits(mem, bmp, 0, ht, buf, ctypes.byref(bi), 0)
+    gdi.DeleteObject(bmp)
+    gdi.DeleteDC(mem)
+    user32.ReleaseDC(h, hdc)
+    return Image.frombuffer("RGB", (w, ht), buf, "raw", "BGRX", 0, 1)
+
+
 def caixa_cliente(h):
     r = wt.RECT()
     user32.GetClientRect(h, ctypes.byref(r))
@@ -245,7 +271,7 @@ if __name__ == "__main__":
                 clicar(h, cx_, cy_)
                 time.sleep(1.5)
             time.sleep(1.5)
-            img = ImageGrab.grab(bbox=caixa_cliente(h), all_screens=True)
+            img = foto_janela(h)
             arq = os.path.join(SAIDA, f"{nome}-{w}x{ht}.png")
             img.save(arq)
             print(arq, img.size)

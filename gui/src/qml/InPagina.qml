@@ -34,7 +34,9 @@ Item {
                 Layout.bottomMargin: 28
                 spacing: 24
                 ColumnLayout {
-                    Layout.fillWidth: false
+                    // encolhe quando os botões precisam do espaço (1280 e menor) e para em 720 px em tela larga
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 200
                     Layout.maximumWidth: 720
                     spacing: 8
                     Text {

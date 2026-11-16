@@ -74,6 +74,7 @@ InPagina {
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 2
                     InTexto { Layout.fillWidth: true; text: modelData[1]; font.weight: Font.DemiBold }
                     InTexto { Layout.fillWidth: true; tipo: "apoio"; text: modelData[2] }
