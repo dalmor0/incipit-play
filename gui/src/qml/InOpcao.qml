@@ -14,6 +14,8 @@ T.AbstractButton {
     hoverEnabled: true
     checkable: false
     Accessible.role: Accessible.RadioButton
+    Keys.onReturnPressed: clicked()
+    Keys.onEnterPressed: clicked()
     Accessible.name: texto
     Accessible.checked: marcada
 

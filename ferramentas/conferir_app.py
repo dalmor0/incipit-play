@@ -97,7 +97,23 @@ def caixa_cliente(h):
     return (p.x, p.y, p.x + r.right, p.y + r.bottom)
 
 
+def limpar_geometria():
+    """o app lembra o último tamanho (e a tela cheia); cada print começa do zero"""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, CHAVE + "\settings", 0, winreg.KEY_ALL_ACCESS) as k:
+            for nome in ("geometry", "stream_geometry"):
+                try:
+                    winreg.DeleteValue(k, nome)
+                except FileNotFoundError:
+                    pass
+    except FileNotFoundError:
+        pass
+    subprocess.run(["taskkill", "/F", "/IM", "IncipitPlay.exe"], capture_output=True)
+    time.sleep(0.5)
+
+
 def abrir(app, ui, env_extra=None):
+    limpar_geometria()
     env = dict(os.environ)
     if ui:
         env["INCIPIT_UI_DIR"] = ui
@@ -106,7 +122,7 @@ def abrir(app, ui, env_extra=None):
     pr = subprocess.Popen([os.path.join(app, "IncipitPlay.exe")], cwd=app, env=env,
                           stdout=subprocess.DEVNULL, stderr=open(os.path.join(SAIDA, "app-stderr.log"), "ab"))
     h = None
-    while time.perf_counter() - t0 < 30 and not h:
+    while time.perf_counter() - t0 < 45 and not h:
         h = janela_do_pid(pr.pid)
         time.sleep(0.02)
     return pr, h, time.perf_counter() - t0
@@ -152,7 +168,9 @@ if __name__ == "__main__":
              ("8-registro", "playstation", None, "dark", [(1153, 209)]),
              ("9-adicionar-ip", "playstation", None, "dark", [(1153, 68)]),
              ("10-playstation-claro", "playstation", None, "light", []),
-             ("11-personalizar-claro", "config", "personalizar", "light", [])]
+             ("11-personalizar-claro", "config", "personalizar", "light", []),
+             ("12-clipes", "clipes", None, "dark", []),
+             ("13-xbox-claro", "xbox", None, "light", [])]
     so = [a for a in sys.argv if a.startswith("--so=")]
     if so:
         telas = [t for t in telas if t[0] in so[0][5:].split(",")]

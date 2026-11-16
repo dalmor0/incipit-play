@@ -30,8 +30,12 @@ InPagina {
     }
 
     // ------------------------------------------------------------ seções
-    Row {
+    Item {
+        Layout.fillWidth: true
         Layout.bottomMargin: 8
+        implicitHeight: 44
+        Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 1; color: root.tema.linha }
+    Row {
         spacing: 0
         Repeater {
             model: [["contas", "Contas conectadas"], ["personalizar", "Personalizar"], ["video", "Vídeo"], ["sobre", "Sobre"]]
@@ -47,7 +51,7 @@ InPagina {
                 onClicked: cfg.ir(modelData[0])
                 background: Rectangle {
                     color: aba.hovered && !aba.ativa ? root.tema.destaqueFraco : "transparent"
-                    Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: aba.ativa ? 3 : 1; color: aba.ativa ? root.tema.destaque : root.tema.linha }
+                    Rectangle { visible: aba.ativa; anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 3; color: root.tema.destaque }
                     Rectangle { visible: aba.visualFocus; anchors.fill: parent; anchors.margins: 2; color: "transparent"; border.width: 2; border.color: root.tema.texto }
                 }
                 contentItem: Text {
@@ -62,6 +66,7 @@ InPagina {
             }
         }
     }
+    }
 
     // ============================================================ CONTAS
     ColumnLayout {
@@ -73,7 +78,6 @@ InPagina {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 20
-                SelosConta { sigla: "PSN"; ligado: cfg.psnConectada }
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
@@ -98,8 +102,8 @@ InPagina {
                     })
                 }
                 InBotao {
-                    tipo: cfg.psnConectada ? "normal" : "forte"
-                    text: cfg.psnConectada ? "Entrar de novo" : "Conectar"
+                    implicitWidth: Math.max(120, implicitContentWidth + 36)
+                    text: cfg.psnConectada ? "Conectar de novo" : "Conectar"
                     onClicked: root.showPSNTokenDialog(false)
                 }
             }
@@ -109,7 +113,6 @@ InPagina {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 20
-                SelosConta { sigla: "MS"; ligado: cfg.xboxEntrou }
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
@@ -129,8 +132,8 @@ InPagina {
                     onClicked: cfg.abrirMicrosoft("https://login.live.com/logout.srf")
                 }
                 InBotao {
-                    tipo: cfg.xboxEntrou ? "normal" : "forte"
-                    text: cfg.xboxEntrou ? "Abrir conta" : "Entrar"
+                    implicitWidth: Math.max(120, implicitContentWidth + 36)
+                    text: cfg.xboxEntrou ? "Abrir conta" : "Conectar"
                     onClicked: cfg.abrirMicrosoft("https://www.xbox.com/pt-BR/play/consoles")
                 }
             }
@@ -171,7 +174,7 @@ InPagina {
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
-                columns: Math.max(2, Math.floor((cfg.largura - 48 + 10) / 170))
+                columns: 4
                 uniformCellWidths: true
                 columnSpacing: 10
                 rowSpacing: 10
@@ -197,12 +200,12 @@ InPagina {
         spacing: 16
 
         InCartao {
-            InTexto { tipo: "titulo"; text: "PlayStation em casa" }
+            InTexto { tipo: "titulo"; text: "PlayStation em casa"; Layout.bottomMargin: 8 }
             GridLayout {
                 Layout.fillWidth: true
                 columns: 2
                 columnSpacing: 24
-                rowSpacing: 14
+                rowSpacing: 12
 
                 InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.alignment: Qt.AlignVCenter }
                 InEscolha {

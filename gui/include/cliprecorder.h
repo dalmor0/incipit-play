@@ -46,9 +46,10 @@ public:
 	Q_INVOKABLE void setClipsDir(const QString &dir);
 	Q_INVOKABLE QString saveNow();                            // salva o fim do Remote Play; caminho ou vazio
 	Q_INVOKABLE QString saveTailOfFiles(const QStringList &files, int seconds, const QString &title);
-	Q_INVOKABLE QVariantList library() const;                 // clipes da pasta, mais novo primeiro
+	Q_INVOKABLE QVariantList library() const;                 // sessões (pastas), a atual primeiro, cada uma com seus clipes
+	Q_INVOKABLE QString startSession(const QString &title);   // pasta "<data> <jogo>" desta transmissão
 	Q_INVOKABLE bool trash(const QString &path);              // vai pra Lixeira, não apaga de vez
-	Q_INVOKABLE QString sendToEditing(const QString &path, const QString &inbox);
+	Q_INVOKABLE QString sendToEditing(const QString &path, const QString &inbox, const QString &pedido);
 	Q_INVOKABLE QString defaultEditingInbox() const;
 	Q_INVOKABLE QString tempCaptureDir() const;
 	Q_INVOKABLE bool removeTemp(const QString &path);
@@ -91,6 +92,8 @@ private:
 	QString title;
 	int clip_seconds = 90;
 	QString clips_dir;
+	QString session_dir;
+	QString session_title;
 
 	bool hotkey_registered = false;
 	QString hotkey_text;

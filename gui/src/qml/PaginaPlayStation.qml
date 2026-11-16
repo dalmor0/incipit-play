@@ -18,13 +18,25 @@ InPagina {
     }
 
     acoes: [
+        Row {
+            visible: Chiaki.discoveryEnabled
+            height: 44
+            spacing: 10
+            Rectangle {
+                width: 8; height: 8; radius: 4
+                anchors.verticalCenter: parent.verticalCenter
+                color: root.tema.ok
+                SequentialAnimation on opacity { loops: Animation.Infinite; running: Chiaki.discoveryEnabled
+                    NumberAnimation { to: 0.25; duration: 700 } NumberAnimation { to: 1; duration: 700 } }
+            }
+            InTexto { text: "Procurando na rede"; tipo: "apoio"; wrapMode: Text.NoWrap; anchors.verticalCenter: parent.verticalCenter }
+            Item { width: 4; height: 1 }
+        },
         InBotao {
-            text: Chiaki.discoveryEnabled ? "Procurando na rede" : "Procurar na rede"
-            icone: "busca"
+            text: Chiaki.discoveryEnabled ? "Parar" : "Procurar na rede"
+            tipo: Chiaki.discoveryEnabled ? "quieto" : "normal"
+            icone: Chiaki.discoveryEnabled ? "" : "busca"
             onClicked: Chiaki.discoveryEnabled = !Chiaki.discoveryEnabled
-            ToolTip.visible: hovered
-            ToolTip.delay: 600
-            ToolTip.text: Chiaki.discoveryEnabled ? "Clique pra parar de procurar" : "Clique pra procurar consoles na rede"
         },
         InBotao {
             text: "Adicionar por IP"
@@ -97,11 +109,11 @@ InPagina {
 
                 Row {
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: 10
+                    spacing: 12
 
                     InBotao {
                         visible: modelData.manual || (modelData.discovered && !modelData.registered)
-                        tipo: "quieto"
+                        tipo: "normal"
                         text: modelData.manual ? "Apagar" : "Ocultar"
                         onClicked: {
                             if (modelData.manual)
@@ -136,7 +148,6 @@ InPagina {
     // ------------------------------------------------------------ vazio
     InCartao {
         visible: ps.visiveis === 0
-        respiro: 32
         InTexto { tipo: "titulo"; text: Chiaki.discoveryEnabled ? "Procurando consoles na sua rede" : "A procura na rede está desligada" }
         InTexto {
             Layout.fillWidth: true

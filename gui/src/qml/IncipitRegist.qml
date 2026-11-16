@@ -44,45 +44,35 @@ Rectangle {
                 rg.deuCerto = sucesso;
             });
         registrando = ok;
+        Qt.callLater(() => rolagem.contentY = Math.max(0, rolagem.contentHeight - rolagem.height));
         if (!ok) { terminou = true; deuCerto = false; relato = "Não deu pra começar o registro. Confira o endereço e o código."; }
     }
 
     Flickable {
-        anchors.fill: parent
-        contentHeight: coluna.implicitHeight + 80
+        id: rolagem
+        anchors { top: parent.top; left: parent.left; right: parent.right; bottom: pe.top }
+        contentHeight: coluna.implicitHeight + 64
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ScrollBar { policy: rolagem.contentHeight > rolagem.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
 
         ColumnLayout {
             id: coluna
             width: Math.min(rg.width - 80, 720)
             x: (rg.width - width) / 2
-            y: 40
+            y: 32
             spacing: 16
 
             InBotao { tipo: "quieto"; text: "Voltar"; icone: "voltar"; compacto: true; onClicked: rg.voltar(); Layout.leftMargin: -12 }
 
-            Row {
-                spacing: 14
-                InMarca { altura: 34; anchors.verticalCenter: parent.verticalCenter }
-                InTexto { tipo: "secao"; font.pixelSize: 34; text: rg.ps5 ? "Registrar o PS5" : "Registrar o PS4"; anchors.verticalCenter: parent.verticalCenter }
-            }
+            InTexto { tipo: "secao"; font.pixelSize: 34; text: rg.ps5 ? "Registrar o PS5" : "Registrar o PS4" }
             InTexto {
                 Layout.fillWidth: true
                 tipo: "apoio"
-                text: "Uma vez só. Depois é só clicar em Jogar."
-            }
-
-            InCartao {
-                marcado: true
-                InTexto { tipo: "rotulo"; text: "No console" }
-                InTexto {
-                    Layout.fillWidth: true
-                    text: rg.ps5
-                        ? "Configurações > Sistema > Uso remoto > Vincular dispositivo. Aparece um código de 8 números."
-                        : "Configurações > Configurações da conexão do Uso remoto > Adicionar dispositivo. Aparece um código de 8 números."
-                }
+                text: (rg.ps5
+                    ? "No PS5: Configurações > Sistema > Uso remoto > Vincular dispositivo."
+                    : "No PS4: Configurações > Configurações da conexão do Uso remoto > Adicionar dispositivo.")
+                    + " Digite aqui o código de 8 números que aparecer. É uma vez só."
             }
 
             InCampo {
@@ -157,25 +147,12 @@ Rectangle {
                 }
                 InCampo {
                     id: pinConsole
-                    Layout.preferredWidth: 220
+                    Layout.preferredWidth: 160
                     rotulo: "PIN do console"
                     placeholderText: "opcional"
                     maximumLength: 4
                     validator: RegularExpressionValidator { regularExpression: /^$|[0-9]{4}/ }
                 }
-            }
-
-            Row {
-                Layout.topMargin: 8
-                spacing: 10
-                InBotao {
-                    tipo: "forte"
-                    text: rg.registrando ? "Registrando..." : "Registrar"
-                    icone: "chave"
-                    enabled: rg.podeRegistrar
-                    onClicked: rg.registrar()
-                }
-                InBotao { text: rg.terminou && rg.deuCerto ? "Pronto, voltar" : "Cancelar"; onClicked: rg.voltar() }
             }
 
             InCartao {
@@ -194,6 +171,42 @@ Rectangle {
                     text: "Confira o código (gere um novo se passou do tempo), se o console está na mesma rede e se o ID da conta é o da conta do console."
                 }
                 InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: rg.relato.trim(); visible: rg.relato.trim() !== ""; font.family: "Consolas" }
+            }
+        }
+    }
+
+    // pé fixo: o botão que conclui fica sempre à vista
+    Rectangle {
+        id: pe
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: 76
+        color: root.tema.sup
+        Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top } height: 1; color: root.tema.linha }
+        RowLayout {
+            width: coluna.width
+            x: coluna.x
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 10
+            InTexto {
+                Layout.fillWidth: true
+                tipo: "apoio"
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
+                color: rg.terminou ? (rg.deuCerto ? root.tema.ok : root.tema.alerta) : root.tema.texto2
+                text: rg.registrando ? "Falando com o console..."
+                    : rg.terminou ? (rg.deuCerto ? "Registrado. Já dá pra jogar." : "Não registrou. Veja o motivo acima.")
+                    : !codigo.acceptableInput ? "Falta o código de 8 números."
+                    : !rg.contaPronta ? "Falta a conta PSN."
+                    : endereco.text.trim() === "" ? "Falta o endereço do console."
+                    : "Tudo certo pra registrar."
+            }
+            InBotao { text: rg.terminou && rg.deuCerto ? "Pronto, voltar" : "Cancelar"; onClicked: rg.voltar() }
+            InBotao {
+                tipo: "forte"
+                text: rg.registrando ? "Registrando..." : "Registrar"
+                icone: "chave"
+                enabled: rg.podeRegistrar
+                onClicked: rg.registrar()
             }
         }
     }

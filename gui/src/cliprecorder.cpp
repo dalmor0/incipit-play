@@ -146,6 +146,7 @@ void ClipRecorder::beginStream(bool is_hevc, const QString &t, int width, int he
 		video_w = width > 0 ? width : 1920;
 		video_h = height > 0 ? height : 1080;
 		last_key_us = -1;
+		session_dir.clear();
 		last_key_request_us = -1;
 		is_streaming = true;
 	}
@@ -236,6 +237,21 @@ void ClipRecorder::setSeconds(int s)
 {
 	QMutexLocker l(&mutex);
 	clip_seconds = qBound(30, s, 300);
+}
+
+// uma pasta por transmissão: criada no primeiro clipe, "<data hora> <jogo>"
+QString ClipRecorder::startSession(const QString &t)
+{
+	QString base = t;
+	base.replace(QRegularExpression(QStringLiteral("[^\\w\\- ]")), QString());
+	base = base.simplified();
+	if(base.isEmpty())
+		base = QStringLiteral("Jogo");
+	session_title = t;
+	session_dir = clips_dir + QLatin1Char('/') + QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH-mm")) + QLatin1Char(' ') + base;
+	QDir().mkpath(session_dir);
+	emit libraryChanged();
+	return session_dir;
 }
 
 QString ClipRecorder::clipsDir() const
@@ -487,8 +503,9 @@ QString ClipRecorder::saveNow()
 		h = video_h;
 		t = title;
 	}
-	QDir().mkpath(clips_dir);
-	const QString out = NovoNome(clips_dir, t);
+	if(session_dir.isEmpty() || session_title != t)
+		startSession(t);
+	const QString out = NovoNome(session_dir, t);
 	(void)QtConcurrent::run([this, out, r = std::move(r), is_hevc, w, h, ch, rate, t]() {
 		double dur = 0;
 		const QString erro = EscreverMp4(out, r, is_hevc, w, h, ch, rate, &dur);
@@ -510,8 +527,9 @@ QString ClipRecorder::saveNow()
 // fim dos arquivos da placa de captura (gravados em .mkv pela aba Switch): copia sem recodificar
 QString ClipRecorder::saveTailOfFiles(const QStringList &files, int seconds, const QString &t)
 {
-	QDir().mkpath(clips_dir);
-	const QString out = NovoNome(clips_dir, t);
+	if(session_dir.isEmpty() || session_title != t)
+		startSession(t);
+	const QString out = NovoNome(session_dir, t);
 	const int secs = qBound(5, seconds, 300);
 	(void)QtConcurrent::run([this, files, out, secs, t]() {
 		struct P { AVPacket *p; int stream; double t; bool key; };
@@ -644,36 +662,65 @@ void ClipRecorder::makeThumbnail(const QString &mp4)
 
 // ---------------------------------------------------------------- biblioteca
 
+static QVariantMap DadosDoClipe(const QFileInfo &fi)
+{
+	QVariantMap m;
+	m[QStringLiteral("caminho")] = fi.absoluteFilePath();
+	m[QStringLiteral("nome")] = fi.completeBaseName();
+	m[QStringLiteral("criado")] = fi.lastModified();
+	m[QStringLiteral("tamanhoMb")] = qRound(fi.size() / 1048576.0 * 10) / 10.0;
+	const QString base = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName();
+	QFile js(base + QStringLiteral(".json"));
+	if(js.open(QIODevice::ReadOnly))
+	{
+		const QJsonObject o = QJsonDocument::fromJson(js.readAll()).object();
+		m[QStringLiteral("jogo")] = o.value(QStringLiteral("jogo")).toString();
+		m[QStringLiteral("segundos")] = o.value(QStringLiteral("segundos")).toDouble();
+		m[QStringLiteral("enviado")] = o.value(QStringLiteral("enviado")).toBool();
+	}
+	const QString jpg = base + QStringLiteral(".jpg");
+	m[QStringLiteral("miniatura")] = QFileInfo::exists(jpg) ? QUrl::fromLocalFile(jpg).toString() + QStringLiteral("?") + QString::number(QFileInfo(jpg).lastModified().toMSecsSinceEpoch()) : QString();
+	return m;
+}
+
 QVariantList ClipRecorder::library() const
 {
-	QVariantList lista;
+	QVariantList sessoes;
 	QDir d(clips_dir);
-	const QFileInfoList arquivos = d.entryInfoList({QStringLiteral("*.mp4")}, QDir::Files, QDir::Time);
-	for(const QFileInfo &fi : arquivos)
-	{
-		QVariantMap m;
-		m[QStringLiteral("caminho")] = fi.absoluteFilePath();
-		m[QStringLiteral("nome")] = fi.completeBaseName();
-		m[QStringLiteral("criado")] = fi.lastModified();
-		m[QStringLiteral("tamanhoMb")] = qRound(fi.size() / 1048576.0 * 10) / 10.0;
-		QFile js(fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".json"));
-		if(js.open(QIODevice::ReadOnly))
-		{
-			const QJsonObject o = QJsonDocument::fromJson(js.readAll()).object();
-			m[QStringLiteral("jogo")] = o.value(QStringLiteral("jogo")).toString();
-			m[QStringLiteral("segundos")] = o.value(QStringLiteral("segundos")).toDouble();
-		}
-		const QString jpg = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".jpg");
-		m[QStringLiteral("miniatura")] = QFileInfo::exists(jpg) ? QUrl::fromLocalFile(jpg).toString() + QStringLiteral("?") + QString::number(QFileInfo(jpg).lastModified().toMSecsSinceEpoch()) : QString();
-		lista.append(m);
-	}
-	return lista;
+	const QStringList mp4 = {QStringLiteral("*.mp4")};
+	const QFileInfoList pastas = d.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name | QDir::Reversed);
+	auto juntar = [&](const QFileInfo &pasta, bool atual) {
+		QVariantList clipes;
+		for(const QFileInfo &fi : QDir(pasta.absoluteFilePath()).entryInfoList(mp4, QDir::Files, QDir::Time))
+			clipes.append(DadosDoClipe(fi));
+		if(clipes.isEmpty() && !atual)
+			return;
+		QVariantMap s;
+		s[QStringLiteral("pasta")] = pasta.absoluteFilePath();
+		s[QStringLiteral("nome")] = pasta.fileName();
+		s[QStringLiteral("atual")] = atual;
+		s[QStringLiteral("clipes")] = clipes;
+		sessoes.append(s);
+	};
+	if(!session_dir.isEmpty())
+		juntar(QFileInfo(session_dir), true);
+	for(const QFileInfo &p : pastas)
+		if(QDir(p.absoluteFilePath()) != QDir(session_dir))
+			juntar(p, false);
+	// clipes soltos na raiz (versão antiga ou copiados à mão)
+	QVariantList soltos;
+	for(const QFileInfo &fi : d.entryInfoList(mp4, QDir::Files, QDir::Time))
+		soltos.append(DadosDoClipe(fi));
+	if(!soltos.isEmpty())
+		sessoes.append(QVariantMap{{QStringLiteral("pasta"), clips_dir}, {QStringLiteral("nome"), QStringLiteral("Outros clipes")}, {QStringLiteral("atual"), false}, {QStringLiteral("clipes"), soltos}});
+	return sessoes;
 }
 
 bool ClipRecorder::trash(const QString &path)
 {
 	const QFileInfo fi(path);
-	if(!fi.exists() || QDir(fi.absolutePath()) != QDir(clips_dir) || fi.suffix().compare(QStringLiteral("mp4"), Qt::CaseInsensitive) != 0)
+	const QString raiz = QDir(clips_dir).canonicalPath() + QLatin1Char('/');
+	if(!fi.exists() || !fi.canonicalFilePath().startsWith(raiz, Qt::CaseInsensitive) || fi.suffix().compare(QStringLiteral("mp4"), Qt::CaseInsensitive) != 0)
 		return false;
 	const QString base = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName();
 	const bool ok = QFile::moveToTrash(path);
@@ -683,19 +730,37 @@ bool ClipRecorder::trash(const QString &path)
 	return ok;
 }
 
-QString ClipRecorder::sendToEditing(const QString &path, const QString &inbox)
+QString ClipRecorder::sendToEditing(const QString &path, const QString &inbox, const QString &pedido)
 {
 	const QFileInfo fi(path);
 	if(!fi.exists() || inbox.isEmpty())
 		return QString();
 	QDir().mkpath(inbox);
 	const QString dest = inbox + QLatin1Char('/') + fi.fileName();
-	if(QFileInfo::exists(dest))
-		return dest;
-	if(!QFile::copy(path, dest))
+	if(!QFileInfo::exists(dest) && !QFile::copy(path, dest))
 		return QString();
-	QFile::copy(fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".json"),
-		inbox + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".json"));
+	const QString base = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName();
+	// o pedido vai junto: um .json (pra máquina) e um .txt (pra quem abrir a pasta)
+	QJsonObject o;
+	QFile js(base + QStringLiteral(".json"));
+	if(js.open(QIODevice::ReadOnly))
+		o = QJsonDocument::fromJson(js.readAll()).object();
+	js.close();
+	o[QStringLiteral("pedido")] = pedido.left(2000);
+	o[QStringLiteral("clipe")] = fi.fileName();
+	o[QStringLiteral("enviado_em")] = QDateTime::currentDateTime().toString(Qt::ISODate);
+	QFile out(inbox + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".json"));
+	if(out.open(QIODevice::WriteOnly))
+		out.write(QJsonDocument(o).toJson());
+	QFile txt(inbox + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".txt"));
+	if(txt.open(QIODevice::WriteOnly | QIODevice::Text))
+		txt.write((QStringLiteral("Clipe: ") + fi.fileName() + QStringLiteral("\nPedido: ") + pedido.left(2000) + QStringLiteral("\n")).toUtf8());
+	// marca na biblioteca que já foi
+	QJsonObject marca;
+	if(js.open(QIODevice::ReadOnly)) { marca = QJsonDocument::fromJson(js.readAll()).object(); js.close(); }
+	marca[QStringLiteral("enviado")] = true;
+	if(js.open(QIODevice::WriteOnly)) js.write(QJsonDocument(marca).toJson());
+	emit libraryChanged();
 	return dest;
 }
 

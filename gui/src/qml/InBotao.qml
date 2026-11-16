@@ -17,6 +17,8 @@ T.AbstractButton {
     font.family: tema.sans
     font.pixelSize: compacto ? 14 : 15
     font.weight: Font.DemiBold
+    Keys.onReturnPressed: clicked()
+    Keys.onEnterPressed: clicked()
     Accessible.name: text
 
     background: Rectangle {

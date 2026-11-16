@@ -127,19 +127,17 @@ InPagina {
     // ------------------------------------------------------------ sem placa
     InCartao {
         visible: !sw.temPlaca
-        respiro: 32
         InTexto { tipo: "titulo"; text: "Nenhuma placa de captura ligada" }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
-            text: "Ligue o Switch na placa pelo HDMI e a placa no USB do PC. Qualquer placa que funcione sem programa próprio (UVC) aparece aqui sozinha, sem reabrir o app."
+            text: "Ligue o Switch na placa pelo HDMI e a placa no USB do PC. Placa UVC aparece aqui sozinha."
         }
     }
 
     // ------------------------------------------------------------ com placa
     InCartao {
         visible: sw.temPlaca
-        respiro: 32
         marcado: true
 
         GridLayout {

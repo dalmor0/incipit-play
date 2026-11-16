@@ -11,7 +11,7 @@ Item {
     default property alias conteudo: coluna.data
     readonly property var tema: root.tema
     readonly property real margem: width >= 1400 ? 56 : 40
-    readonly property real largura: Math.min(width - margem * 2, 1080)
+    readonly property real largura: Math.min(width - margem * 2, 1280)
 
     Flickable {
         id: rolagem
@@ -44,6 +44,7 @@ Item {
                     }
                     Text {
                         Layout.fillWidth: true
+                        Layout.maximumWidth: 680
                         visible: pg.apoio !== ""
                         text: pg.apoio
                         wrapMode: Text.WordWrap

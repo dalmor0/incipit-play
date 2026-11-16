@@ -33,54 +33,33 @@ InPagina {
 
     acoes: [
         InBotao {
-            text: "Abrir no navegador padrão"
+            text: "Abrir no navegador"
             icone: "externo"
             onClicked: { Qt.openUrlExternally(xb.endereco); xb.aviso = "Abriu no navegador padrão."; }
+        },
+        InBotao {
+            tipo: "forte"
+            text: "Abrir Remote Play do Xbox"
+            icone: "jogar"
+            onClicked: xb.abrir(xb.endereco)
         }
     ]
 
-    InCartao {
-        respiro: 32
-        marcado: true
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 24
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                InTexto { tipo: "titulo"; text: xb.jaEntrou ? "Pronto pra jogar" : "Primeira vez aqui" }
-                InTexto {
-                    Layout.fillWidth: true
-                    tipo: "apoio"
-                    text: xb.jaEntrou
-                        ? "O login da conta Microsoft fica guardado só neste PC. Abra e escolha o console."
-                        : "Abra, entre com a conta Microsoft do Xbox (a senha você digita na página da Microsoft) e escolha o console."
-                }
-            }
-            InBotao {
-                tipo: "forte"
-                text: "Abrir Remote Play do Xbox"
-                icone: "jogar"
-                onClicked: xb.abrir(xb.endereco)
-            }
-        }
-        InTexto {
-            Layout.fillWidth: true
-            visible: xb.aviso !== ""
-            tipo: "pequeno"
-            color: root.tema.destaque
-            text: xb.aviso
-        }
+    InTexto {
+        Layout.fillWidth: true
+        visible: xb.aviso !== ""
+        color: root.tema.destaque
+        text: xb.aviso
     }
 
-    InTexto { Layout.topMargin: 16; tipo: "rotulo"; text: "Antes da primeira vez, no console" }
+    InTexto { Layout.topMargin: 4; tipo: "rotulo"; text: "Antes da primeira vez, no console" }
 
     InCartao {
         Repeater {
             model: [
                 ["1", "Ative os recursos remotos", "No Xbox: Configurações > Dispositivos e conexões > Recursos remotos > Habilitar recursos remotos."],
-                ["2", "Deixe em Modo instantâneo ou ligado", "Em Configurações > Geral > Modo de energia, escolha Modo de suspensão (o Xbox acorda sozinho quando você abre)."],
-                ["3", "Use a mesma conta", "A conta Microsoft que entra aqui precisa ser a mesma do console. Controle no USB ou Bluetooth funciona direto."]
+                ["2", "Deixe em modo de suspensão", "Em Configurações > Geral > Modo de energia. Assim o Xbox acorda sozinho quando você abre."],
+                ["3", "Entre com a mesma conta", "A conta Microsoft do console. A senha você digita na página da Microsoft; o login fica guardado só neste PC."]
             ]
             delegate: RowLayout {
                 required property var modelData
@@ -103,20 +82,10 @@ InPagina {
         }
     }
 
-    InCartao {
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 20
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                InTexto { tipo: "titulo"; text: "Sem Xbox na conta?" }
-                InTexto {
-                    Layout.fillWidth: true
-                    tipo: "apoio"
-                    text: "A lista da Microsoft aparece vazia e mostra como ligar um console. Nada quebra aqui: quando tiver um Xbox, é só abrir de novo."
-                }
-            }
-        }
+    InTexto {
+        Layout.fillWidth: true
+        Layout.topMargin: 4
+        tipo: "pequeno"
+        text: "Sem Xbox na conta, a página da Microsoft mostra a lista vazia e ensina a ligar um console. Controle no USB ou Bluetooth funciona direto."
     }
 }

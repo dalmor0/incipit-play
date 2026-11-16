@@ -16,6 +16,7 @@ ColumnLayout {
     property alias maximumLength: caixa.maximumLength
     property alias campo: caixa
     property real tamanhoFonte: 16
+    signal mudou()
     readonly property var tema: root.tema
     spacing: 6
 
@@ -33,6 +34,7 @@ ColumnLayout {
         selectionColor: cp.tema.destaque
         selectedTextColor: cp.tema.sobreDestaque
         Accessible.name: cp.rotulo
+        onTextChanged: cp.mudou()
         background: Rectangle {
             color: cp.tema.fundo
             border.width: caixa.activeFocus ? 2 : 1

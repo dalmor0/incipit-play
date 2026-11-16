@@ -28,8 +28,16 @@ Rectangle {
 
     // F11 entra e sai da tela cheia; Esc sai da tela cheia ou volta pra aba PlayStation
     function telaCheia(ligar) { Chiaki.window.visibility = ligar ? Window.FullScreen : Window.Windowed; }
+    // setas (e o direcional do controle, que o motor transforma em setas) andam o foco; Enter aperta
+    function andar(frente) {
+        const atual = Window.activeFocusItem || hub;
+        const prox = atual.nextItemInFocusChain(frente);
+        if (prox) prox.forceActiveFocus(Qt.TabFocusReason);
+    }
     Keys.onPressed: (e) => {
         if (e.key === Qt.Key_F11) { telaCheia(Chiaki.window.visibility !== Window.FullScreen); e.accepted = true; }
+        else if (e.key === Qt.Key_Down || e.key === Qt.Key_Right) { andar(true); e.accepted = true; }
+        else if (e.key === Qt.Key_Up || e.key === Qt.Key_Left) { andar(false); e.accepted = true; }
     }
     Keys.onEscapePressed: {
         if (Chiaki.window.visibility === Window.FullScreen) telaCheia(false);
@@ -119,6 +127,8 @@ Rectangle {
         focusPolicy: Qt.StrongFocus
         hoverEnabled: true
         Accessible.name: texto
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
         background: Rectangle {
             color: it.ativo ? hub.tema.fundo : (it.hovered ? hub.tema.destaqueFraco : "transparent")
             Rectangle { visible: it.ativo; width: 3; anchors { top: parent.top; bottom: parent.bottom; left: parent.left } color: hub.tema.destaque }

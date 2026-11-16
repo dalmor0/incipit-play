@@ -12,14 +12,20 @@ Rectangle {
     property int escolha: Chiaki.settings.registeredHosts.length    // último = registrar na primeira conexão
 
     function voltar() { root.closeDialog(); }
-    function adicionar() { Chiaki.addManualHost(escolha, endereco.text.trim()); voltar(); }
+    property string erro: ""
+    readonly property bool enderecoOk: /^(\d{1,3}\.){3}\d{1,3}$/.test(endereco.text.trim()) || /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(endereco.text.trim())
+    function adicionar() {
+        if (!enderecoOk) { erro = "Digite os 4 números separados por ponto, como 192.168.0.20 (ou o nome do console na rede)."; return; }
+        Chiaki.addManualHost(escolha, endereco.text.trim());
+        voltar();
+    }
     Keys.onEscapePressed: voltar()
     StackView.onActivated: endereco.campo.forceActiveFocus()
 
     ColumnLayout {
         width: Math.min(mn.width - 80, 720)
         x: (mn.width - width) / 2
-        y: 40
+        y: 32
         spacing: 16
 
         InBotao { tipo: "quieto"; text: "Voltar"; icone: "voltar"; compacto: true; onClicked: mn.voltar(); Layout.leftMargin: -12 }
@@ -32,10 +38,13 @@ Rectangle {
             rotulo: "Endereço do console"
             placeholderText: "ex.: 192.168.0.20"
             echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
+            maximumLength: 253
+            onMudou: mn.erro = ""
         }
+        InTexto { Layout.fillWidth: true; visible: mn.erro !== ""; tipo: "apoio"; color: root.tema.alerta; text: mn.erro }
         Connections {
             target: endereco.campo
-            function onAccepted() { if (endereco.text.trim() !== "") mn.adicionar(); }
+            function onAccepted() { mn.adicionar(); }
         }
 
         ColumnLayout {
@@ -59,7 +68,7 @@ Rectangle {
         Row {
             Layout.topMargin: 8
             spacing: 10
-            InBotao { tipo: "forte"; text: "Adicionar"; icone: "mais"; enabled: endereco.text.trim() !== ""; onClicked: mn.adicionar() }
+            InBotao { tipo: "forte"; text: "Adicionar"; icone: "mais"; onClicked: mn.adicionar() }
             InBotao { text: "Cancelar"; onClicked: mn.voltar() }
         }
     }
