@@ -104,7 +104,27 @@ static QByteArray ParameterSets(const QByteArray &pkt, bool hevc)
 			return pkt.left(int(start));
 		i = h;
 	}
-	return QByteArray();
+	return pkt;   // sem fatia nenhuma: o pacote inteiro é cabeçalho (é assim que o chiaki manda o do perfil)
+}
+
+// o pacote é só cabeçalho (VPS/SPS/PPS ou SPS/PPS), sem imagem
+static bool SoCabecalho(const uint8_t *b, size_t n, bool hevc)
+{
+	const size_t lim = n < 64 ? n : 64;
+	for(size_t i = 0; i + 3 < lim; i++)
+	{
+		if(b[i] != 0 || b[i + 1] != 0)
+			continue;
+		size_t h;
+		if(b[i + 2] == 1) h = i + 3;
+		else if(b[i + 2] == 0 && b[i + 3] == 1) h = i + 4;
+		else continue;
+		if(h >= n)
+			return false;
+		const int t = hevc ? (b[h] >> 1) & 0x3F : b[h] & 0x1F;
+		return hevc ? (t >= 32 && t <= 34) : (t == 7 || t == 8);
+	}
+	return false;
 }
 
 // amostras (a 48 kHz) de um pacote Opus, pela TOC
@@ -183,6 +203,14 @@ void ClipRecorder::trimLocked()
 void ClipRecorder::pushVideo(const uint8_t *buf, size_t size)
 {
 	const qint64 now = clock.nsecsElapsed() / 1000;
+	if(SoCabecalho(buf, size, hevc))
+	{
+		QByteArray cab(reinterpret_cast<const char *>(buf), int(size));
+		const QByteArray ps = ParameterSets(cab, hevc);
+		QMutexLocker l(&mutex);
+		params_latest = ps;
+		return;   // não vira amostra do vídeo: só guarda pro cabeçalho do mp4
+	}
 	const bool key = IsKeyframe(buf, size, hevc);
 	bool sinal = false;
 	{
