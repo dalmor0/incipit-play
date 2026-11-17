@@ -130,3 +130,6 @@ windeployqt6.exe --no-translations --qmldir="$qml_dir" "$output_dir/$(basename "
     shopt -s nocaseglob
     rm -f "$output_dir"/d3dcompiler*.dll
 )
+
+# Incipit Play: NOTICE, licenças das bibliotecas e o endereço do código deste build
+bash "$(dirname "${BASH_SOURCE[0]}")/incipit-licencas.sh" "$output_dir" "$msys_prefix" || true

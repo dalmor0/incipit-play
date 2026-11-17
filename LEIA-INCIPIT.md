@@ -1,8 +1,8 @@
 # Incipit Play
 
 Hub de Remote Play da Incipit: PlayStation (motor do chiaki-ng, AGPL-3.0), Xbox (Remote Play oficial da Microsoft
-em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalho. Repositório privado
-`dalmor0/incipit-play`; esta pasta é o clone dele.
+em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalho. Código aberto em
+`dalmor0/incipit-play` (AGPL-3.0). Apresentação pública e como compilar: `README.md`.
 
 ## Onde fica cada coisa
 - Interface nova: `gui/src/qml/` (IncipitHub, Pagina*, In*, Tema, ClipesConfig). A antiga do chiaki-ng continua lá
@@ -14,7 +14,7 @@ em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalh
   repassa.
 - Cofre DPAPI pros segredos: `gui/src/incipitcofre.cpp`.
 - Instalador: `scripts/incipit-play.iss`. Build: `.github/workflows/incipit-windows.yml` (só roda na mão).
-- Binários prontos: `D:\ferramentas\incipit-play\versao-<versão>\`.
+- Binários prontos: os do Actions (passo 3 abaixo); o zip publicado vai no release do Incipit Instalador.
 - Conferência: `ferramentas/conferir_app.py` (abertura, RAM, prints), `ferramentas/testar_atalho.py`
   (transmite e salva um clipe), `ferramentas/testar_conexao.py`.
 

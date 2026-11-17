@@ -1,7 +1,7 @@
 # Incipit Play · revisão de segurança (16/11/2026)
 
 Feita sobre o que a Incipit acrescentou ao chiaki-ng (o motor de PlayStation é o deles, auditado por eles).
-Checklist base: `SEGURANCA/checklist-app-com-ia.md` e `EMPRESA/produto-apps/VICIOS-DE-IA.md`.
+Checklist base: o checklist interno de apps da Incipit.
 
 ## O que foi olhado e o que ficou
 
@@ -20,7 +20,7 @@ Checklist base: `SEGURANCA/checklist-app-com-ia.md` e `EMPRESA/produto-apps/VICI
 | Campos | Texto gigante | Código de registro com 8 dígitos (validador), PIN com 4, porta com 1 a 65535; o IP vai pro motor, que só tenta conectar. |
 
 ## Ataque próprio (16/11, builds 3 a 5)
-Interface de teste (`D:\ferramentas\incipit-play\teste-ataque\ui\Main.qml`) chamando as funções direto:
+Interface de teste (um `Main.qml` próprio, fora do repositório) chamando as funções direto:
 `launchDetached(cmd.exe)` deu falso; Edge com argumento sem `--`, falso; caminho relativo, falso; Lixeira num .mp4
 fora da pasta de clipes, falso; Lixeira com `..` saindo da pasta, falso; `removeTemp` fora da pasta temporária,
 falso. As iscas continuaram no lugar.
@@ -33,7 +33,8 @@ falso. As iscas continuaram no lugar.
   texto aberto e uma senha de OBS de teste plantada em `clipes/obsSenha`; depois de abrir o build 9, os três viraram
   `dpapi1:` e a senha aberta sumiu; a conta PSN continuou conectada. As chaves de registro do console (`rp_key`) continuam
   como o chiaki-ng guarda.
-- **Repositório privado e licença AGPL:** quem receber o binário tem direito ao código. Enquanto o app for só do Gustavo, ok. Antes de dar pra outra pessoa, abrir o repositório (pede o sim) ou mandar o código junto.
+- **Licença AGPL: resolvido em 17/11.** O repositório `dalmor0/incipit-play` é público e o zip leva LICENSE, NOTICE,
+  as licenças das bibliotecas (`licencas/`) e o endereço do código no commit exato do build.
 - **Instalador sem assinatura de código:** o Windows mostra "editor desconhecido". Assinar custa dinheiro (pede o sim).
 - **Login da PSN (rodada 6):** a página da Sony abre num Edge InPrivate com perfil novo e vazio a cada tentativa
   (`%LOCALAPPDATA%\Incipit\Incipit Play\psn-login\<aleatório>`) e porta de depuração local aleatória (41000 a 48999), que

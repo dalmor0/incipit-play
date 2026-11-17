@@ -39,3 +39,8 @@ chiaki.conf
 .cache/
 *.vscode
 site/
+
+# Incipit: notas de trabalho locais e cache do Python
+ONDE-PAROU.md
+__pycache__/
+*.pyc
