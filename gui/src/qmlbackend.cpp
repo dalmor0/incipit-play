@@ -2761,10 +2761,29 @@ void QmlBackend::psnLoginClose()
     {
         const QString dir = psn_login_dir;
         psn_login_dir.clear();
-        // os processos levam um instante pra soltar os arquivos
-        QTimer::singleShot(2000, [dir]() { QDir(dir).removeRecursively(); });
+        // os processos do Edge levam alguns segundos pra soltar os arquivos: tenta agora e de novo até 30 s depois
         QDir(dir).removeRecursively();
+        for(int ms : {1500, 4000, 10000, 30000})
+            QTimer::singleShot(ms, this, [dir]() { if(QFileInfo::exists(dir)) QDir(dir).removeRecursively(); });
     }
+}
+
+// a janela da Sony ainda está aberta? (o processo do Edge que o app abriu)
+bool QmlBackend::psnLoginAlive() const
+{
+    if(psn_login_pid <= 0)
+        return false;
+#ifdef Q_OS_WIN
+    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)psn_login_pid);
+    if(!h)
+        return false;
+    DWORD codigo = 0;
+    const bool vivo = GetExitCodeProcess(h, &codigo) && codigo == STILL_ACTIVE;
+    CloseHandle(h);
+    return vivo;
+#else
+    return true;
+#endif
 }
 
 bool QmlBackend::reduceMotion() const

@@ -217,6 +217,7 @@ public:
     // Incipit Play: janela do login da PSN (Edge com porta de depuração local, perfil novo a cada vez)
     Q_INVOKABLE bool psnLoginOpen(const QString &program, const QStringList &arguments);
     Q_INVOKABLE void psnLoginClose();
+    Q_INVOKABLE bool psnLoginAlive() const;
     Q_INVOKABLE bool reduceMotion() const;
     Q_INVOKABLE QString appVersion() const;
 #if CHIAKI_GUI_ENABLE_STEAM_SHORTCUT

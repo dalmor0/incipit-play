@@ -25,7 +25,10 @@ Rectangle {
 
     // ------------------------------------------------------------ janela da Sony (Edge com porta de depuração local)
     readonly property string edge: {
-        const c = ["C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "C:/Program Files/Microsoft/Edge/Application/msedge.exe"];
+        // Edge da máquina ou instalado só pro usuário (AppData\Local\Microsoft\Edge)
+        const local = String(Chiaki.localDataPath()).replace(/[\/]Incipit[\/]Incipit Play$/, "");
+        const c = ["C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+                   local + "/Microsoft/Edge/Application/msedge.exe"];
         for (let i = 0; i < c.length; i++) if (Chiaki.pathExists(c[i])) return c[i];
         return "";
     }
@@ -71,9 +74,19 @@ Rectangle {
         if (!ok) { abrirNoNavegador(); return; }
         vigia.start();
     }
+    property double pedidoEm: 0
     function olhar() {
-        if (pedindo || pegou) return;
+        if (pegou) return;
+        // a pessoa fechou a janela da Sony: o processo some na hora (a porta fechada demora uns segundos pra responder)
+        if (viuJanela && !Chiaki.psnLoginAlive()) {
+            vigia.stop();
+            fecharJanela();
+            falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
+            return;
+        }
+        if (pedindo && Date.now() - pedidoEm < 4000) return;
         pedindo = true;
+        pedidoEm = Date.now();
         pedir("/json", function (status, corpo) {
             pn.pedindo = false;
             if (pn.pegou) return;
@@ -83,11 +96,11 @@ Rectangle {
                 if (pn.viuJanela) {             // a janela fechou antes de o login voltar
                     vigia.stop();
                     pn.fecharJanela();
-                    pn.falhar(root.t("A janela da Sony fechou antes de o login terminar."), false);
+                    pn.falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
                 } else if (++pn.esperas > 40) { // 20 s sem a janela responder
                     vigia.stop();
                     pn.fecharJanela();
-                    pn.falhar(root.t("A página de login da Sony não abriu."), true);
+                    pn.falhar(root.tk("A página de login da Sony não abriu."), true);
                 }
                 return;
             }
@@ -129,12 +142,12 @@ Rectangle {
     function motivo(msg) {
         const m = String(msg || "");
         if (m.indexOf("Invalid URL") >= 0 || m.indexOf("Invalid code") >= 0)
-            return root.t("Esse endereço não é o da volta do login. Copie o endereço inteiro da barra do navegador.");
+            return root.tk("Esse endereço não é o da volta do login. Copie o endereço inteiro da barra do navegador.");
         if (/server replied/i.test(m))          // a Sony respondeu e recusou (código vencido ou usado)
-            return root.t("A Sony não confirmou o login.");
+            return root.tk("A Sony não confirmou o login.");
         if (/timed out|not found|refused|unreachable|resolve|ssl|closed|temporar|offline/i.test(m))
-            return root.t("Não deu pra falar com a PSN. Confira a internet.");
-        return root.t("A Sony não confirmou o login.");
+            return root.tk("Não deu pra falar com a PSN. Confira a internet.");
+        return root.tk("A Sony não confirmou o login.");
     }
     function falhar(texto, semJanela) {
         console.warn("Incipit Play: PSN não conectou:", texto);
@@ -369,7 +382,7 @@ Rectangle {
                     Layout.maximumWidth: Number.POSITIVE_INFINITY
                     spacing: 6
                     InTexto { tipo: "titulo"; text: root.t("Não deu pra conectar a conta") }
-                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: pn.erro; Accessible.role: Accessible.AlertMessage; Accessible.name: text }
+                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t(pn.erro); Accessible.role: Accessible.AlertMessage; Accessible.name: text }
                     Row {
                         Layout.topMargin: 10
                         spacing: 12

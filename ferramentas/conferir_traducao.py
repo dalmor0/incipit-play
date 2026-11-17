@@ -12,7 +12,7 @@ import sys
 AQUI = os.path.dirname(os.path.abspath(__file__))
 QML = os.path.join(AQUI, "..", "gui", "src", "qml")
 CPP = os.path.join(AQUI, "..", "gui", "src", "cliprecorder.cpp")
-CHAMADA = re.compile(r'root\.t\("((?:[^"\\]|\\.)*)"\)')
+CHAMADA = re.compile(r'root\.tk?\("((?:[^"\\]|\\.)*)"\)')
 CHAVE = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 
 
