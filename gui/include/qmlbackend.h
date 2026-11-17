@@ -346,8 +346,10 @@ private:
     QString wakeup_nickname = "";
     bool wakeup_start = false;
     QMap<QString, PsnHost> psn_hosts = {};
-    qint64 psn_login_pid = 0;
+    void *psn_login_job = nullptr;     // Job Object do Windows com o Edge do login (KILL_ON_JOB_CLOSE)
+    void *psn_login_proc = nullptr;    // processo principal do Edge
     QString psn_login_dir;
+    void psnLoginEncerrar(bool saindo);
     QMap<QString, PsnHost> psn_nickname_hosts = {};
 #ifdef CHIAKI_HAVE_WEBENGINE
     SecUaRequestInterceptor * request_interceptor = {};

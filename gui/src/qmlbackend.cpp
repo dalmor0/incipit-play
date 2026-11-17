@@ -510,7 +510,7 @@ bool QmlBackend::prepareFrameForPresentation(ChiakiFfmpegFrame &frame, bool use_
 
 QmlBackend::~QmlBackend()
 {
-    psnLoginClose();
+    psnLoginEncerrar(true);
     teardownSession();
 #ifdef CHIAKI_HAVE_WEBENGINE
     if(request_interceptor)
@@ -2728,59 +2728,98 @@ bool QmlBackend::psnLoginOpen(const QString &program, const QStringList &argumen
     if(program.isEmpty() || !info.isAbsolute() || !info.exists() || info.fileName().compare(QStringLiteral("msedge.exe"), Qt::CaseInsensitive) != 0)
         return false;
     for(const QString &arg : arguments)
-        if(!arg.startsWith(QStringLiteral("--")) || arg.startsWith(QStringLiteral("--user-data-dir")))
+        if(!arg.startsWith(QStringLiteral("--")) || arg.startsWith(QStringLiteral("--user-data-dir")) || arg.contains(QLatin1Char('"')))
             return false;
+#ifdef Q_OS_WIN
     const QString base = localDataPath() + QStringLiteral("/psn-login");
-    QDir(base).removeRecursively();   // sobra de uma vez anterior (o app fechado à força)
+    QDir(base).removeRecursively();   // sobra de uma vez anterior
     psn_login_dir = base + QStringLiteral("/") + QString::number(QRandomGenerator::global()->generate64(), 36);
     QDir().mkpath(psn_login_dir);
     QStringList args = arguments;
-    args.prepend(QStringLiteral("--user-data-dir=") + psn_login_dir);
-    qint64 pid = 0;
-    if(!QProcess::startDetached(program, args, QString(), &pid) || pid <= 0)
+    args.prepend(QStringLiteral("--user-data-dir=") + QDir::toNativeSeparators(psn_login_dir));
+    QString linha = QStringLiteral("\"") + QDir::toNativeSeparators(program) + QStringLiteral("\"");
+    for(const QString &arg : args)
+        linha += arg.contains(QLatin1Char(' ')) ? QStringLiteral(" \"") + arg + QStringLiteral("\"") : QStringLiteral(" ") + arg;
+
+    // o Edge nasce parado dentro de um Job Object: ele e todos os filhos morrem juntos quando o app fecha o job,
+    // inclusive se o Incipit Play cair (o Windows fecha o handle do job e leva o Edge junto)
+    HANDLE job = CreateJobObjectW(nullptr, nullptr);
+    if(!job)
+        return false;
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limite = {};
+    limite.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    SetInformationJobObject(job, JobObjectExtendedLimitInformation, &limite, sizeof(limite));
+    STARTUPINFOW si = {};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi = {};
+    std::wstring cmd = linha.toStdWString();
+    if(!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_SUSPENDED, nullptr, nullptr, &si, &pi))
     {
+        CloseHandle(job);
         QDir(psn_login_dir).removeRecursively();
         psn_login_dir.clear();
         return false;
     }
-    psn_login_pid = pid;
+    if(!AssignProcessToJobObject(job, pi.hProcess))
+    {
+        TerminateProcess(pi.hProcess, 1);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        CloseHandle(job);
+        QDir(psn_login_dir).removeRecursively();
+        psn_login_dir.clear();
+        return false;
+    }
+    ResumeThread(pi.hThread);
+    CloseHandle(pi.hThread);
+    psn_login_job = job;
+    psn_login_proc = pi.hProcess;
     return true;
+#else
+    return launchDetached(program, arguments);
+#endif
 }
 
 void QmlBackend::psnLoginClose()
 {
-    if(psn_login_pid > 0)
-    {
+    psnLoginEncerrar(false);
+}
+
+void QmlBackend::psnLoginEncerrar(bool saindo)
+{
 #ifdef Q_OS_WIN
-        // o Edge abre vários processos filhos: taskkill /T leva a árvore toda
-        QProcess::execute(QStringLiteral("taskkill"), {QStringLiteral("/PID"), QString::number(psn_login_pid), QStringLiteral("/T"), QStringLiteral("/F")});
-#endif
-        psn_login_pid = 0;
+    if(psn_login_job)
+    {
+        // não bloqueia a tela: o Windows encerra o job inteiro de uma vez
+        TerminateJobObject((HANDLE)psn_login_job, 0);
+        if(saindo && psn_login_proc)
+            WaitForSingleObject((HANDLE)psn_login_proc, 1500);   // o app saindo: espera soltar os arquivos pra apagar a pasta
+        CloseHandle((HANDLE)psn_login_job);
+        psn_login_job = nullptr;
     }
+    if(psn_login_proc)
+    {
+        CloseHandle((HANDLE)psn_login_proc);
+        psn_login_proc = nullptr;
+    }
+#endif
     if(!psn_login_dir.isEmpty())
     {
         const QString dir = psn_login_dir;
         psn_login_dir.clear();
-        // os processos do Edge levam alguns segundos pra soltar os arquivos: tenta agora e de novo até 30 s depois
+        // os processos do Edge levam um instante pra soltar os arquivos: tenta agora e de novo até 30 s depois
         QDir(dir).removeRecursively();
-        for(int ms : {1500, 4000, 10000, 30000})
-            QTimer::singleShot(ms, this, [dir]() { if(QFileInfo::exists(dir)) QDir(dir).removeRecursively(); });
+        if(!saindo)
+            for(int ms : {1500, 4000, 10000, 30000})
+                QTimer::singleShot(ms, this, [dir]() { if(QFileInfo::exists(dir)) QDir(dir).removeRecursively(); });
     }
 }
 
-// a janela da Sony ainda está aberta? (o processo do Edge que o app abriu)
+// a janela da Sony ainda está aberta? (o processo principal do Edge que o app abriu)
 bool QmlBackend::psnLoginAlive() const
 {
-    if(psn_login_pid <= 0)
-        return false;
 #ifdef Q_OS_WIN
-    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)psn_login_pid);
-    if(!h)
-        return false;
-    DWORD codigo = 0;
-    const bool vivo = GetExitCodeProcess(h, &codigo) && codigo == STILL_ACTIVE;
-    CloseHandle(h);
-    return vivo;
+    return psn_login_proc && WaitForSingleObject((HANDLE)psn_login_proc, 0) == WAIT_TIMEOUT;
 #else
     return true;
 #endif

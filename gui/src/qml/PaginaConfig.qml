@@ -210,7 +210,7 @@ InPagina {
 
         InCartao {
             InTexto { tipo: "titulo"; text: root.t("Cor de destaque"); Layout.bottomMargin: -8 }
-            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Vale pros botões, a aba ativa e a porta da marca. O padrão é Hora azul.") }
+            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Vale pros botões, a aba ativa e o logo. O padrão é Hora azul.") }
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4

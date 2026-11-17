@@ -43,19 +43,37 @@ Rectangle {
         const local = root.lingua.en ? "en_US" : "pt_BR";
         return String(Chiaki.psnLoginUrl()).replace("request_locale=en_US", "request_locale=" + local).replace(/ /g, "%20");
     }
+    // cada abertura da janela é uma tentativa; resposta de tentativa velha (ou depois de sair da tela) é ignorada
+    property int tentativa: 0
+    property bool saindo: false
+    property var pedidoAberto: null
     function pedir(caminho, aoTerminar) {
         const x = new XMLHttpRequest();
+        const minha = tentativa;
         x.onreadystatechange = function () {
             if (x.readyState !== XMLHttpRequest.DONE) return;
+            if (pn.pedidoAberto === x) pn.pedidoAberto = null;
+            if (pn.saindo || minha !== pn.tentativa) return;
             if (aoTerminar) aoTerminar(x.status, x.responseText);
         };
         x.open("GET", "http://127.0.0.1:" + porta + caminho);
+        x.timeout = 1500;
+        pedidoAberto = x;
         x.send();
+    }
+    function cancelarPedido() {
+        const x = pedidoAberto;
+        pedidoAberto = null;
+        pedindo = false;
+        if (x) x.abort();
     }
     // o C++ guarda o processo do Edge: fechar mata a árvore toda e apaga o perfil (nada da tentativa fica no disco)
     function fecharJanela() { Chiaki.psnLoginClose(); }
+    property double abertaEm: 0
     function abrirSony() {
         vigia.stop();
+        tentativa++;
+        cancelarPedido();
         fecharJanela();
         erro = ""; erroSemJanela = false;
         pegou = false; viuJanela = false; pedindo = false; esperas = 0; paginaId = "";
@@ -72,6 +90,7 @@ Rectangle {
             "--app=" + urlLogin()
         ]);
         if (!ok) { abrirNoNavegador(); return; }
+        abertaEm = Date.now();
         vigia.start();
     }
     property double pedidoEm: 0
@@ -84,7 +103,16 @@ Rectangle {
             falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
             return;
         }
-        if (pedindo && Date.now() - pedidoEm < 4000) return;
+        // 20 s de relógio sem a página responder
+        if (!viuJanela && Date.now() - abertaEm > 20000) {
+            vigia.stop();
+            cancelarPedido();
+            fecharJanela();
+            falhar(root.tk("A página de login da Sony não abriu."), true);
+            return;
+        }
+        if (pedindo && Date.now() - pedidoEm < 2000) return;
+        if (pedindo) cancelarPedido();
         pedindo = true;
         pedidoEm = Date.now();
         pedir("/json", function (status, corpo) {
@@ -97,10 +125,6 @@ Rectangle {
                     vigia.stop();
                     pn.fecharJanela();
                     pn.falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
-                } else if (++pn.esperas > 40) { // 20 s sem a janela responder
-                    vigia.stop();
-                    pn.fecharJanela();
-                    pn.falhar(root.tk("A página de login da Sony não abriu."), true);
                 }
                 return;
             }
@@ -175,13 +199,15 @@ Rectangle {
         else root.irParaConfig("contas");
     }
     function voltar() {
+        saindo = true;
         vigia.stop();
+        cancelarPedido();
         contagem.stop();
         fecharJanela();
         root.closeDialog();
     }
     Timer { id: contagem; interval: 3500; onTriggered: pn.concluir() }
-    Component.onDestruction: { vigia.stop(); fecharJanela(); }
+    Component.onDestruction: { saindo = true; vigia.stop(); cancelarPedido(); fecharJanela(); }
 
     // durante "conectando" o motor já está falando com a Sony: sair agora gravaria a conta sem ninguém ver
     Keys.onEscapePressed: estado === "ok" ? concluir() : estado === "conectando" ? undefined : voltar()
@@ -211,10 +237,11 @@ Rectangle {
             readonly property bool usado: pn.estado === "ja" || pn.estado === "erro" || pn.estado === "colar"
             opacity: usado ? 1 : 0
             enabled: usado
-            tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true
+            tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"
             onClicked: pn.voltar()
         }
         InTexto {
+            opacity: pn.estado === "ok" ? 0 : 1
             tipo: "secao"; font.pixelSize: 34
             text: pn.estado === "ok" || pn.estado === "ja" ? root.t("Conta PSN")
                 : pn.expirada ? root.t("Entrar de novo na PSN") : root.t("Conectar conta PSN")
@@ -242,7 +269,7 @@ Rectangle {
                 Layout.fillWidth: true
                 tipo: "apoio"
                 text: pn.estado === "conectando" ? root.t("A Sony confirmou o login. Falta só guardar a chave de acesso.")
-                    : root.t("A página de login da PlayStation abre numa janela à parte. Quando você terminar, o Incipit Play conecta sozinho.")
+                    : root.t("A página de login da PlayStation abre numa janela à parte.") + "\n" + root.t("Quando você terminar, o Incipit Play conecta sozinho.")
             }
             BarraAndando { visible: !root.semMovimento; Layout.fillWidth: true; Layout.topMargin: 4 }
             InTexto {
@@ -416,7 +443,6 @@ Rectangle {
                 spacing: 12
                 InBotao { tipo: "forte"; text: root.t("Conectar"); enabled: colado.text.trim() !== ""; onClicked: pn.conectar(colado.text.trim()) }
                 InBotao { text: root.t("Abrir a página de novo"); icone: "externo"; onClicked: Qt.openUrlExternally(pn.urlLogin()) }
-                InBotao { tipo: "quieto"; text: root.t("Cancelar"); onClicked: pn.voltar() }
             }
         }
     }
