@@ -7814,8 +7814,8 @@ bool QmlMainWindow::event(QEvent *event)
                 QMetaObject::invokeMethod(quick_render, std::bind(&QmlMainWindow::destroySwapchain, this), Qt::BlockingQueuedConnection);
         break;
     case QEvent::WindowStateChange:
-        if(!session && isWindowAdjustable() && !windowState().testFlag(Qt::WindowFullScreen) && !windowState().testFlag(Qt::WindowMinimized))
-            settings->SetMaximized(windowState().testFlag(Qt::WindowMaximized));
+        if(!session && isWindowAdjustable() && !windowStates().testFlag(Qt::WindowFullScreen) && !windowStates().testFlag(Qt::WindowMinimized))
+            settings->SetMaximized(windowStates().testFlag(Qt::WindowMaximized));
         break;
     case QEvent::Move:
         if(!session && isWindowAdjustable() && windowState() == Qt::WindowNoState)
