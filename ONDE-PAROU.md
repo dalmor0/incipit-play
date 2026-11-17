@@ -1,3 +1,5 @@
+FEITO 16/11 noite: rodada 5 fechada, banca 9,5 e 9. Devolução em EMPRESA/fichas/devolucoes/2026-11-16-incipit-play.md
+
 # Incipit Play · onde parou (16/11/2026 ~21h30, antes do reinício do PC)
 
 Rodada 5 pedida pela Central: (1) tela de abertura nativa + cópia única, (2) ID da PSN só com o fim, (3) DPAPI nos tokens

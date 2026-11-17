@@ -9,7 +9,7 @@ import org.streetpea.chiaking
 InPagina {
     id: xb
     titulo: "Xbox"
-    apoio: "Jogue no Xbox da sua casa pelo Remote Play oficial da Microsoft, numa janela própria."
+    apoio: root.t("Jogue no Xbox da sua casa pelo Remote Play oficial da Microsoft, numa janela própria.")
 
     readonly property string endereco: "https://www.xbox.com/pt-BR/play/consoles"
     readonly property string perfil: Chiaki.localDataPath() + "/xbox-web"
@@ -24,22 +24,22 @@ InPagina {
     function abrir(url) {
         if (edge !== "" && Chiaki.launchDetached(edge, ["--app=" + url, "--user-data-dir=" + perfil, "--no-first-run",
                 "--no-default-browser-check", "--window-size=1280,800"])) {
-            aviso = "Abriu numa janela nova. Se pedir, entre com a conta Microsoft do Xbox.";
+            aviso = root.t("Abriu numa janela nova. Se pedir, entre com a conta Microsoft do Xbox.");
             return;
         }
         Qt.openUrlExternally(url);
-        aviso = "Abriu no navegador padrão (o Edge não foi achado neste PC).";
+        aviso = root.t("Abriu no navegador padrão (o Edge não foi achado neste PC).");
     }
 
     acoes: [
         InBotao {
-            text: "Abrir no navegador"
+            text: root.t("Abrir no navegador")
             icone: "externo"
-            onClicked: { Qt.openUrlExternally(xb.endereco); xb.aviso = "Abriu no navegador padrão."; }
+            onClicked: { Qt.openUrlExternally(xb.endereco); xb.aviso = root.t("Abriu no navegador padrão."); }
         },
         InBotao {
             tipo: "forte"
-            text: "Abrir Remote Play do Xbox"
+            text: root.t("Abrir Remote Play do Xbox")
             icone: "jogar"
             onClicked: xb.abrir(xb.endereco)
         }
@@ -52,14 +52,14 @@ InPagina {
         text: xb.aviso
     }
 
-    InTexto { Layout.topMargin: 4; tipo: "rotulo"; text: "Antes da primeira vez, no console" }
+    InTexto { Layout.topMargin: 4; tipo: "rotulo"; text: root.t("Antes da primeira vez, no console") }
 
     InCartao {
         Repeater {
             model: [
-                ["1", "Ative os recursos remotos", "No Xbox: Configurações > Dispositivos e conexões > Recursos remotos > Habilitar recursos remotos."],
-                ["2", "Deixe em modo de suspensão", "Em Configurações > Geral > Modo de energia. Assim o Xbox acorda sozinho quando você abre."],
-                ["3", "Entre com a mesma conta", "A conta Microsoft do console. Senha só na página da Microsoft; o login fica neste PC."]
+                ["1", root.t("Ative os recursos remotos"), root.t("No Xbox: Configurações > Dispositivos e conexões > Recursos remotos > Habilitar recursos remotos.")],
+                ["2", root.t("Deixe em modo de suspensão"), root.t("Em Configurações > Geral > Modo de energia. Assim o Xbox acorda sozinho quando você abre.")],
+                ["3", root.t("Entre com a mesma conta"), root.t("A conta Microsoft do console. Senha só na página da Microsoft; o login fica neste PC.")]
             ]
             delegate: RowLayout {
                 required property var modelData
@@ -87,6 +87,6 @@ InPagina {
         Layout.fillWidth: true
         Layout.topMargin: 4
         tipo: "pequeno"
-        text: "Sem Xbox na conta, a página da Microsoft mostra a lista vazia. Controle no USB ou Bluetooth funciona."
+        text: root.t("Sem Xbox na conta, a página da Microsoft mostra a lista vazia. Controle no USB ou Bluetooth funciona.")
     }
 }

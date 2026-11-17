@@ -15,7 +15,7 @@ Rectangle {
     property string erro: ""
     readonly property bool enderecoOk: /^(\d{1,3}\.){3}\d{1,3}$/.test(endereco.text.trim()) || /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(endereco.text.trim())
     function adicionar() {
-        if (!enderecoOk) { erro = "Digite os 4 números separados por ponto, como 192.168.0.20 (ou o nome do console na rede)."; return; }
+        if (!enderecoOk) { erro = root.t("Digite os 4 números separados por ponto, como 192.168.0.20 (ou o nome do console na rede)."); return; }
         Chiaki.addManualHost(escolha, endereco.text.trim());
         voltar();
     }
@@ -28,15 +28,15 @@ Rectangle {
         y: 32
         spacing: 16
 
-        InBotao { tipo: "quieto"; text: "Voltar"; icone: "voltar"; compacto: true; onClicked: mn.voltar(); Layout.leftMargin: -12 }
-        InTexto { tipo: "secao"; font.pixelSize: 34; text: "Adicionar por IP" }
-        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Pra quando a procura na rede não acha o console. No PS5 o IP fica em Configurações > Rede > Status da conexão." }
+        InBotao { tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true; onClicked: mn.voltar(); Layout.leftMargin: -12 }
+        InTexto { tipo: "secao"; font.pixelSize: 34; text: root.t("Adicionar por IP") }
+        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Pra quando a procura na rede não acha o console. No PS5 o IP fica em Configurações > Rede > Status da conexão.") }
 
         InCampo {
             id: endereco
             Layout.fillWidth: true
-            rotulo: "Endereço do console"
-            placeholderText: "ex.: 192.168.0.20"
+            rotulo: root.t("Endereço do console")
+            placeholderText: root.t("ex.: 192.168.0.20")
             echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
             maximumLength: 253
             onMudou: mn.erro = ""
@@ -51,13 +51,13 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 6
             visible: Chiaki.settings.registeredHosts.length > 0
-            InTexto { text: "É um console que já registrei?"; font.weight: Font.DemiBold }
+            InTexto { text: root.t("É um console que já registrei?"); font.weight: Font.DemiBold }
             InEscolha {
                 Layout.fillWidth: true
                 model: {
                     let m = [];
-                    for (let i = 0; i < Chiaki.settings.registeredHosts.length; i++) m.push("Sim: " + Chiaki.settings.registeredHosts[i].name);
-                    m.push("Não, registrar na primeira conexão");
+                    for (let i = 0; i < Chiaki.settings.registeredHosts.length; i++) m.push(root.t("Sim: %1").arg(Chiaki.settings.registeredHosts[i].name));
+                    m.push(root.t("Não, registrar na primeira conexão"));
                     return m;
                 }
                 currentIndex: mn.escolha
@@ -68,8 +68,8 @@ Rectangle {
         Row {
             Layout.topMargin: 8
             spacing: 12
-            InBotao { tipo: "forte"; text: "Adicionar"; icone: "mais"; onClicked: mn.adicionar() }
-            InBotao { text: "Cancelar"; onClicked: mn.voltar() }
+            InBotao { tipo: "forte"; text: root.t("Adicionar"); icone: "mais"; onClicked: mn.adicionar() }
+            InBotao { text: root.t("Cancelar"); onClicked: mn.voltar() }
         }
     }
 }

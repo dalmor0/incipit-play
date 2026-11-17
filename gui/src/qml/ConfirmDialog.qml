@@ -8,8 +8,8 @@ import QtQuick.Templates as T
 T.Dialog {
     id: dialog
     property alias text: label.text
-    property string textoSim: "Sim"
-    property string textoNao: "Não"
+    property string textoSim: root.t("Sim")
+    property string textoNao: root.t("Não")
     property var callback
     property var rejectCallback
     property bool newDialogOpen: false

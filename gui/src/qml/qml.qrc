@@ -41,6 +41,8 @@
     <file>IncipitHub.qml</file>
     <file>IncipitRegist.qml</file>
     <file>IncipitManual.qml</file>
+    <file>IncipitPsn.qml</file>
+    <file>Lingua.qml</file>
     <file>PaginaPlayStation.qml</file>
     <file>PaginaXbox.qml</file>
     <file>PaginaSwitch.qml</file>

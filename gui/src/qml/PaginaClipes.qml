@@ -9,8 +9,8 @@ import org.streetpea.chiaking
 
 InPagina {
     id: cl
-    titulo: "Clipes"
-    apoio: "Apertou o atalho, o app guarda os últimos " + root.clipes.segundos + " s do jogo, sem perder qualidade."
+    titulo: root.t("Clipes")
+    apoio: root.t("Apertou o atalho, o app guarda os últimos %1 s do jogo, sem perder qualidade.").arg(root.clipes.segundos)
 
     readonly property var cfg: root.clipes
     property var lista: Clips.library()
@@ -23,12 +23,12 @@ InPagina {
     Connections {
         target: Clips
         function onLibraryChanged() { cl.recarregar(); }
-        function onClipFailed(r) { cl.avisar(r, false); }
-        function onObsStatus(t, ok) { cl.avisar(t, ok); }
+        function onClipFailed(r) { cl.avisar(root.t(r), false); }
+        function onObsStatus(t, ok) { cl.avisar(root.t(t), ok); }
     }
 
     acoes: [
-        InBotao { text: cl.mostrarOpcoes ? "Fechar opções" : "Opções"; icone: "engrenagem"; onClicked: cl.mostrarOpcoes = !cl.mostrarOpcoes }
+        InBotao { text: cl.mostrarOpcoes ? root.t("Fechar opções") : root.t("Opções"); icone: "engrenagem"; onClicked: cl.mostrarOpcoes = !cl.mostrarOpcoes }
     ]
 
     // ------------------------------------------------------------ estado do atalho
@@ -52,28 +52,28 @@ InPagina {
                 InTexto {
                     Layout.fillWidth: true
                     tipo: "titulo"
-                    text: !cl.cfg.ligado ? "Clipes desligados"
-                        : !Clips.hotkeyActive ? cl.cfg.atalho + " já é de outro programa"
-                        : Clips.streaming ? "Gravando o jogo agora" : "Pronto pra clipar"
+                    text: !cl.cfg.ligado ? root.t("Clipes desligados")
+                        : !Clips.hotkeyActive ? root.t("%1 já é de outro programa").arg(cl.cfg.atalho)
+                        : Clips.streaming ? root.t("Gravando o jogo agora") : root.t("Pronto pra clipar")
                 }
                 InTexto {
                     Layout.fillWidth: true
                     tipo: "apoio"
-                    text: !cl.cfg.ligado ? "Ligue pra o atalho funcionar."
-                        : !Clips.hotkeyActive ? "O app do NVIDIA usa Alt+F10 pro replay dele. Escolha outro atalho em Opções."
-                        : Clips.streaming ? "No PlayStation o vídeo fica guardado na memória (agora " + Clips.bufferMegabytes + " MB). Na aba Switch, a placa grava enquanto está aberta."
-                        : "Funciona com o app minimizado, durante o jogo do PlayStation e da placa de captura" + (cl.cfg.guardado.obs ? " e no OBS." : ".")
+                    text: !cl.cfg.ligado ? root.t("Ligue pra o atalho funcionar.")
+                        : !Clips.hotkeyActive ? root.t("O app do NVIDIA usa Alt+F10 pro replay dele. Escolha outro atalho em Opções.")
+                        : Clips.streaming ? root.t("No PlayStation o vídeo fica guardado na memória (agora %1 MB). Na aba Switch, a placa grava enquanto está aberta.").arg(Clips.bufferMegabytes)
+                        : (cl.cfg.guardado.obs ? root.t("Funciona com o app minimizado, durante o jogo do PlayStation e da placa de captura e no OBS.") : root.t("Funciona com o app minimizado, durante o jogo do PlayStation e da placa de captura."))
                 }
             }
             InBotao {
                 visible: Clips.streaming
                 tipo: "forte"
-                text: "Salvar agora"
+                text: root.t("Salvar agora")
                 icone: "video"
                 onClicked: Clips.saveNow()
             }
             InBotao {
-                text: cl.cfg.ligado ? "Desligar" : "Ligar"
+                text: cl.cfg.ligado ? root.t("Desligar") : root.t("Ligar")
                 tipo: cl.cfg.ligado ? "quieto" : "forte"
                 onClicked: cl.cfg.ligar(!cl.cfg.ligado)
             }
@@ -96,55 +96,55 @@ InPagina {
             columnSpacing: 24
             rowSpacing: 14
 
-            InTexto { text: "Atalho"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Atalho"); font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.preferredWidth: 320
                 model: cl.cfg.atalhos
                 currentIndex: Math.max(0, cl.cfg.atalhos.indexOf(cl.cfg.atalho))
                 onActivated: (i) => {
                     const ok = cl.cfg.mudarAtalho(cl.cfg.atalhos[i]);
-                    cl.avisar(ok ? "Atalho trocado pra " + cl.cfg.atalhos[i] + "." : cl.cfg.atalhos[i] + " já é de outro programa. Escolha outro.", ok);
+                    cl.avisar(ok ? root.t("Atalho trocado pra %1.").arg(cl.cfg.atalhos[i]) : root.t("%1 já é de outro programa. Escolha outro.").arg(cl.cfg.atalhos[i]), ok);
                 }
             }
 
-            InTexto { text: "Quanto guardar"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Quanto guardar"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.preferredWidth: 320
-                model: cl.cfg.duracoes.map(s => s < 60 ? s + " segundos" : (s % 60 ? (s / 60).toFixed(1).replace(".", ",") + " minutos" : (s / 60) + (s === 60 ? " minuto" : " minutos")) + (s === 90 ? " (padrão)" : ""))
+                model: cl.cfg.duracoes.map(s => (s < 60 ? root.t("%1 segundos").arg(s) : s === 60 ? root.t("1 minuto") : root.t("%1 minutos").arg(s % 60 ? root.numero((s / 60).toFixed(1)) : s / 60)) + (s === 90 ? " " + root.t("(padrão)") : ""))
                 currentIndex: Math.max(0, cl.cfg.duracoes.indexOf(cl.cfg.segundos))
                 onActivated: (i) => cl.cfg.mudarSegundos(cl.cfg.duracoes[i])
             }
 
-            InTexto { text: "Pasta dos clipes"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Pasta dos clipes"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: Clips.clipsDir(); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: "Trocar"; onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
+                InBotao { text: root.t("Trocar"); onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
             }
 
-            InTexto { text: "Pasta da edição"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Pasta da edição"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
-                InTexto { Layout.maximumWidth: 420; text: cl.cfg.pastaEdicao || "ainda não escolhida"; tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: "Escolher"; onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
+                InTexto { Layout.maximumWidth: 420; text: cl.cfg.pastaEdicao || root.t("ainda não escolhida"); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InBotao { text: root.t("Escolher"); onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
             }
         }
 
         Rectangle { Layout.fillWidth: true; Layout.topMargin: 8; height: 1; color: root.tema.linha }
 
-        InTexto { tipo: "titulo"; text: "Lives no OBS" }
+        InTexto { tipo: "titulo"; text: root.t("Lives no OBS") }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
-            text: "Com o OBS aberto, o mesmo atalho também salva o Replay Buffer dele. No OBS: Ferramentas > Configurações do servidor WebSocket > Habilitar, e ligue o Replay Buffer em Controles."
+            text: root.t("Com o OBS aberto, o mesmo atalho também salva o Replay Buffer dele. No OBS: Ferramentas > Configurações do servidor WebSocket > Habilitar, e ligue o Replay Buffer em Controles.")
         }
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
-            InOpcao { texto: "Salvar no OBS também"; marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
+            InOpcao { texto: root.t("Salvar no OBS também"); marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
             InCampo { id: porta; Layout.preferredWidth: 120; placeholderText: "porta"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
-            InCampo { id: senha; Layout.preferredWidth: 240; placeholderText: "senha do WebSocket"; text: Clips.obsPassword(); echoMode: TextInput.Password }
-            InBotao { text: "Testar"; onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
+            InCampo { id: senha; Layout.preferredWidth: 240; placeholderText: root.t("senha do WebSocket"); text: Clips.obsPassword(); echoMode: TextInput.Password }
+            InBotao { text: root.t("Testar"); onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
         }
 
     }
@@ -159,11 +159,11 @@ InPagina {
     InCartao {
         Layout.topMargin: 12
         visible: cl.total === 0
-        InTexto { tipo: "titulo"; text: "Nenhum clipe ainda"; Layout.bottomMargin: -8 }
+        InTexto { tipo: "titulo"; text: root.t("Nenhum clipe ainda"); Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
-            text: "Durante o jogo, aperte " + cl.cfg.atalho + ". O clipe vai pra sua pasta e aparece aqui."
+            text: root.t("Durante o jogo, aperte %1. O clipe vai pra sua pasta e aparece aqui.").arg(cl.cfg.atalho)
         }
     }
 
@@ -185,14 +185,14 @@ InPagina {
                     Layout.alignment: Qt.AlignBaseline
                     wrapMode: Text.NoWrap
                     text: {
-                        if (sessao.modelData.atual) return "Clipes desta transmissão";
+                        if (sessao.modelData.atual) return root.t("Clipes desta transmissão");
                         const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2}) (.*)$/.exec(sessao.modelData.nome);
-                        return m ? m[3] + "/" + m[2] + " " + m[4] + ":" + m[5] + " · " + m[6] : sessao.modelData.nome;
+                        return m ? (root.lingua.en ? m[2] + "/" + m[3] : m[3] + "/" + m[2]) + " " + m[4] + ":" + m[5] + " · " + m[6] : root.t(sessao.modelData.nome);
                     }
                 }
-                InTexto { tipo: "pequeno"; Layout.alignment: Qt.AlignBaseline; lineHeight: 1.0; lineHeightMode: Text.ProportionalHeight; wrapMode: Text.NoWrap; text: sessao.modelData.clipes.length + (sessao.modelData.clipes.length === 1 ? " clipe" : " clipes") }
+                InTexto { tipo: "pequeno"; Layout.alignment: Qt.AlignBaseline; lineHeight: 1.0; lineHeightMode: Text.ProportionalHeight; wrapMode: Text.NoWrap; text: (sessao.modelData.clipes.length === 1 ? root.t("1 clipe") : root.t("%1 clipes").arg(sessao.modelData.clipes.length)) }
                 Item { Layout.fillWidth: true }
-                InBotao { tipo: "quieto"; text: "Abrir pasta"; icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + sessao.modelData.pasta) }
+                InBotao { tipo: "quieto"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + sessao.modelData.pasta) }
             }
 
             GridLayout {
@@ -245,21 +245,21 @@ InPagina {
                                 Layout.margins: 16
                                 spacing: 4
                                 InTexto { Layout.fillWidth: true; text: Qt.formatDateTime(item.modelData.criado, "HH:mm"); font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }
-                                InTexto { tipo: "pequeno"; text: String(item.modelData.tamanhoMb).replace(".", ",") + " MB" + (item.modelData.enviado ? " · já foi pra edição" : "") }
+                                InTexto { tipo: "pequeno"; text: root.numero(item.modelData.tamanhoMb) + " MB" + (item.modelData.enviado ? " · " + root.t("já foi pra edição") : "") }
                                 RowLayout {
                                     Layout.topMargin: 10
                                     spacing: 8
                                     InBotao {
                                         tipo: item.modelData.enviado ? "normal" : "forte"
-                                        text: item.modelData.enviado ? "Mandar de novo" : "Mandar pra edição"
+                                        text: item.modelData.enviado ? root.t("Mandar de novo") : root.t("Mandar pra edição")
                                         onClicked: pedido.abrir(item.modelData.caminho)
                                     }
                                     Item { Layout.fillWidth: true }
                                     InBotao {
                                         tipo: "quieto"; icone: "lixo"
-                                        Accessible.name: "Apagar clipe"
-                                        ToolTip.visible: hovered; ToolTip.text: "Apagar (vai pra Lixeira)"
-                                        onClicked: root.showConfirmDialog("Apagar clipe", "Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá.", () => Clips.trash(item.modelData.caminho))
+                                        Accessible.name: root.t("Apagar clipe")
+                                        ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
+                                        onClicked: root.showConfirmDialog(root.t("Apagar clipe"), root.t("Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá."), () => Clips.trash(item.modelData.caminho))
                                     }
                                 }
                             }
@@ -278,7 +278,7 @@ InPagina {
         function mandar() {
             if (!cl.cfg.pastaEdicao) { escolhaPasta.paraEdicao = true; escolhaPasta.pendente = caminho; escolhaPasta.pedido = texto.text; close(); escolhaPasta.open(); return; }
             const d = Clips.sendToEditing(caminho, cl.cfg.pastaEdicao, texto.text);
-            cl.avisar(d ? "Mandado pra edição, com o seu pedido." : "Não deu pra copiar pra pasta da edição.", !!d);
+            cl.avisar(d ? root.t("Mandado pra edição, com o seu pedido.") : root.t("Não deu pra copiar pra pasta da edição."), !!d);
             close();
         }
         parent: Overlay.overlay
@@ -292,14 +292,14 @@ InPagina {
         onOpened: texto.forceActiveFocus()
         contentItem: ColumnLayout {
             spacing: 12
-            InTexto { tipo: "secao"; text: "Mandar pra edição" }
-            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "O que você quer nesse clipe? Vai junto, num arquivo ao lado do vídeo." }
+            InTexto { tipo: "secao"; text: root.t("Mandar pra edição") }
+            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("O que você quer nesse clipe? Vai junto, num arquivo ao lado do vídeo.") }
             TextArea {
                 id: texto
                 Layout.fillWidth: true
                 Layout.preferredHeight: 120
                 wrapMode: TextEdit.Wrap
-                placeholderText: "ex.: corta do grito até a risada, legenda grande, vertical pro TikTok"
+                placeholderText: root.t("ex.: corta do grito até a risada, legenda grande, vertical pro TikTok")
                 placeholderTextColor: root.tema.texto2
                 color: root.tema.texto
                 font.family: root.tema.sans
@@ -309,13 +309,13 @@ InPagina {
                 background: Rectangle { color: root.tema.fundo; border.width: texto.activeFocus ? 2 : 1; border.color: texto.activeFocus ? root.tema.texto : root.tema.borda }
                 Keys.onPressed: (e) => { if (text.length >= 2000 && e.text.length && e.key !== Qt.Key_Backspace && e.key !== Qt.Key_Delete) e.accepted = true; }
             }
-            InTexto { tipo: "pequeno"; text: "Pasta da edição: " + (cl.cfg.pastaEdicao || "escolha no próximo passo"); elide: Text.ElideMiddle; wrapMode: Text.NoWrap; Layout.fillWidth: true }
+            InTexto { tipo: "pequeno"; text: root.t("Pasta da edição: %1").arg(cl.cfg.pastaEdicao || root.t("escolha no próximo passo")); elide: Text.ElideMiddle; wrapMode: Text.NoWrap; Layout.fillWidth: true }
             Row {
                 Layout.alignment: Qt.AlignRight
                 Layout.topMargin: 8
                 spacing: 12
-                InBotao { text: "Cancelar"; onClicked: pedido.close() }
-                InBotao { tipo: "forte"; text: "Mandar"; icone: "seta"; onClicked: pedido.mandar() }
+                InBotao { text: root.t("Cancelar"); onClicked: pedido.close() }
+                InBotao { tipo: "forte"; text: root.t("Mandar"); icone: "seta"; onClicked: pedido.mandar() }
             }
         }
     }
@@ -325,14 +325,14 @@ InPagina {
         property bool paraEdicao: false
         property string pendente: ""
         property string pedido: ""
-        title: paraEdicao ? "Pasta da edição" : "Pasta dos clipes"
+        title: paraEdicao ? root.t("Pasta da edição") : root.t("Pasta dos clipes")
         onAccepted: {
             let p = decodeURIComponent(selectedFolder.toString().replace(/^file:\/{3}/, ""));
             if (paraEdicao) {
                 cl.cfg.mudarPastaEdicao(p);
                 if (pendente) {
                     const d = Clips.sendToEditing(pendente, p, pedido);
-                    cl.avisar(d ? "Mandado pra edição." : "Não deu pra copiar pra pasta da edição.", !!d);
+                    cl.avisar(d ? root.t("Mandado pra edição.") : root.t("Não deu pra copiar pra pasta da edição."), !!d);
                     pendente = "";
                 }
             } else {

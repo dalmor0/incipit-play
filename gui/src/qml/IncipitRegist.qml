@@ -7,6 +7,7 @@ import org.streetpea.chiaking
 
 Rectangle {
     id: rg
+    objectName: "incipitRegist"
     property string host: ""
     property bool ps5: true
     readonly property var tema: root.tema
@@ -45,7 +46,7 @@ Rectangle {
             });
         registrando = ok;
         Qt.callLater(() => rolagem.contentY = Math.max(0, rolagem.contentHeight - rolagem.height));
-        if (!ok) { terminou = true; deuCerto = false; relato = "Não deu pra começar o registro. Confira o endereço e o código."; }
+        if (!ok) { terminou = true; deuCerto = false; relato = root.t("Não deu pra começar o registro. Confira o endereço e o código."); }
     }
 
     Flickable {
@@ -63,39 +64,39 @@ Rectangle {
             y: 32
             spacing: 16
 
-            InBotao { tipo: "quieto"; text: "Voltar"; icone: "voltar"; compacto: true; onClicked: rg.voltar(); Layout.leftMargin: -12 }
+            InBotao { tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true; onClicked: rg.voltar(); Layout.leftMargin: -12 }
 
-            InTexto { tipo: "secao"; font.pixelSize: 34; text: rg.ps5 ? "Registrar o PS5" : "Registrar o PS4" }
+            InTexto { tipo: "secao"; font.pixelSize: 34; text: rg.ps5 ? root.t("Registrar o PS5") : root.t("Registrar o PS4") }
             InTexto {
                 Layout.fillWidth: true
                 tipo: "apoio"
                 text: (rg.ps5
-                    ? "No PS5: Configurações > Sistema > Uso remoto > Vincular dispositivo."
-                    : "No PS4: Configurações > Configurações da conexão do Uso remoto > Adicionar dispositivo.")
-                    + " Digite aqui o código de 8 números que aparecer. É uma vez só."
+                    ? root.t("No PS5: Configurações > Sistema > Uso remoto > Vincular dispositivo.")
+                    : root.t("No PS4: Configurações > Configurações da conexão do Uso remoto > Adicionar dispositivo."))
+                    + " " + root.t("Digite aqui o código de 8 números que aparecer. É uma vez só.")
             }
 
             InCampo {
                 id: codigo
                 Layout.fillWidth: true
-                rotulo: "Código de 8 números"
+                rotulo: root.t("Código de 8 números")
                 placeholderText: "00000000"
                 tamanhoFonte: 26
                 maximumLength: 8
                 inputMethodHints: Qt.ImhDigitsOnly
                 validator: RegularExpressionValidator { regularExpression: /[0-9]{8}/ }
-                dica: "O código vale por uns minutos. Se vencer, gere outro no console."
+                dica: root.t("O código vale por uns minutos. Se vencer, gere outro no console.")
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 6
-                InTexto { text: "Console"; font.weight: Font.DemiBold }
+                InTexto { text: root.t("Console"); font.weight: Font.DemiBold }
                 Flow {
                     Layout.fillWidth: true
                     spacing: 12
                     Repeater {
-                        model: [[1000100, "PS5"], [1000, "PS4 (sistema 8 ou mais)"], [900, "PS4 (sistema 7)"], [800, "PS4 (antes do 7)"]]
+                        model: [[1000100, "PS5"], [1000, root.t("PS4 (sistema 8 ou mais)")], [900, root.t("PS4 (sistema 7)")], [800, root.t("PS4 (antes do 7)")]]
                         delegate: InOpcao {
                             required property var modelData
                             texto: modelData[1]
@@ -110,20 +111,20 @@ Rectangle {
                 visible: rg.alvo !== 800 && !!Chiaki.settings.psnAccountId
                 spacing: 12
                 InIcone { nome: "check"; tamanho: 18; cor: root.tema.ok; anchors.verticalCenter: parent.verticalCenter }
-                InTexto { text: "Conta PSN conectada: o ID da conta vai junto."; anchors.verticalCenter: parent.verticalCenter }
+                InTexto { text: root.t("Conta PSN conectada: o ID da conta vai junto."); anchors.verticalCenter: parent.verticalCenter }
             }
             InCampo {
                 id: contaId
                 visible: rg.alvo !== 800 && !Chiaki.settings.psnAccountId
                 Layout.fillWidth: true
-                rotulo: "ID da conta PSN"
-                placeholderText: "preenche sozinho ao conectar a PSN"
+                rotulo: root.t("ID da conta PSN")
+                placeholderText: root.t("preenche sozinho ao conectar a PSN")
                 echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
-                dica: "É o código da conta, não o nome de usuário."
+                dica: root.t("É o código da conta, não o nome de usuário.")
             }
             InBotao {
                 visible: rg.alvo !== 800 && !Chiaki.settings.psnAccountId
-                text: "Conectar PSN pra preencher"
+                text: root.t("Conectar PSN pra preencher")
                 icone: "pessoa"
                 onClicked: root.showPSNTokenDialog(false)
             }
@@ -131,8 +132,8 @@ Rectangle {
                 id: onlineId
                 visible: rg.alvo === 800
                 Layout.fillWidth: true
-                rotulo: "Nome de usuário PSN"
-                placeholderText: "igual ao do console, com maiúsculas"
+                rotulo: root.t("Nome de usuário PSN")
+                placeholderText: root.t("igual ao do console, com maiúsculas")
             }
 
             RowLayout {
@@ -141,14 +142,14 @@ Rectangle {
                 InCampo {
                     id: endereco
                     Layout.fillWidth: true
-                    rotulo: "Endereço do console"
+                    rotulo: root.t("Endereço do console")
                     text: rg.host
                     echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
                 }
                 InCampo {
                     id: pinConsole
                     Layout.preferredWidth: 160
-                    rotulo: "PIN do console"
+                    rotulo: root.t("PIN do console")
                     placeholderText: "opcional"
                     maximumLength: 4
                     validator: RegularExpressionValidator { regularExpression: /^$|[0-9]{4}/ }
@@ -161,14 +162,14 @@ Rectangle {
                 border.color: rg.terminou ? (rg.deuCerto ? root.tema.ok : root.tema.alerta) : root.tema.linha
                 InTexto {
                     tipo: "titulo"
-                    text: rg.registrando ? "Falando com o console..." : rg.deuCerto ? "Registrado. Já dá pra jogar." : "Não registrou"
+                    text: rg.registrando ? root.t("Falando com o console...") : rg.deuCerto ? root.t("Registrado. Já dá pra jogar.") : root.t("Não registrou")
                     color: rg.terminou ? (rg.deuCerto ? root.tema.ok : root.tema.alerta) : root.tema.texto
                 }
                 InTexto {
                     Layout.fillWidth: true
                     visible: rg.terminou && !rg.deuCerto
                     tipo: "apoio"
-                    text: "Confira o código (gere um novo se passou do tempo), se o console está na mesma rede e se o ID da conta é o da conta do console."
+                    text: root.t("Confira o código (gere um novo se passou do tempo), se o console está na mesma rede e se o ID da conta é o da conta do console.")
                 }
                 InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: rg.relato.trim(); visible: rg.relato.trim() !== ""; font.family: "Consolas" }
             }
@@ -193,17 +194,17 @@ Rectangle {
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
                 color: rg.terminou ? (rg.deuCerto ? root.tema.ok : root.tema.alerta) : root.tema.texto2
-                text: rg.registrando ? "Falando com o console..."
-                    : rg.terminou ? (rg.deuCerto ? "Registrado. Já dá pra jogar." : "Não registrou. Veja o motivo acima.")
-                    : !codigo.acceptableInput ? "Falta o código de 8 números."
-                    : !rg.contaPronta ? "Falta a conta PSN."
-                    : endereco.text.trim() === "" ? "Falta o endereço do console."
-                    : "Tudo certo pra registrar."
+                text: rg.registrando ? root.t("Falando com o console...")
+                    : rg.terminou ? (rg.deuCerto ? root.t(root.t("Registrado. Já dá pra jogar.")) : root.t("Não registrou. Veja o motivo acima."))
+                    : !codigo.acceptableInput ? root.t("Falta o código de 8 números.")
+                    : !rg.contaPronta ? root.t("Falta a conta PSN.")
+                    : endereco.text.trim() === "" ? root.t("Falta o endereço do console.")
+                    : root.t("Tudo certo pra registrar.")
             }
-            InBotao { text: rg.terminou && rg.deuCerto ? "Pronto, voltar" : "Cancelar"; onClicked: rg.voltar() }
+            InBotao { text: rg.terminou && rg.deuCerto ? root.t("Pronto, voltar") : root.t("Cancelar"); onClicked: rg.voltar() }
             InBotao {
                 tipo: "forte"
-                text: rg.registrando ? "Registrando..." : "Registrar"
+                text: rg.registrando ? root.t("Registrando...") : root.t("Registrar")
                 icone: "chave"
                 enabled: rg.podeRegistrar
                 onClicked: rg.registrar()

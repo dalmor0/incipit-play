@@ -22,6 +22,17 @@ static DWORD pid_app = 0;
 static HWND janela_abertura = NULL;
 static HFONT fonte_titulo = NULL, fonte_apoio = NULL;
 static int passo = 0;
+static const wchar_t *texto_abrindo = L"Abrindo...";
+
+/* idioma escolhido no app (Configurações > Personalizar > Idioma, grupo "idioma" do QSettings); sem escolha, português */
+static int em_ingles(void)
+{
+	wchar_t v[8];
+	DWORD tam = sizeof(v);
+	if(RegGetValueW(HKEY_CURRENT_USER, L"Software\\Incipit\\Incipit Play\\idioma", L"lingua", RRF_RT_REG_SZ, NULL, v, &tam) == ERROR_SUCCESS)
+		return wcscmp(v, L"en") == 0;
+	return 0;
+}
 
 typedef struct { DWORD pid; HWND achou; } Busca;
 
@@ -95,7 +106,7 @@ static void desenhar(HDC dc, RECT *r)
 	SetTextColor(dc, RGB(0xA0, 0xA7, 0xB4));
 	SelectObject(dc, fonte_apoio);
 	RECT ra = { x0 + 48, y0 + 46, r->right - 24, y0 + 68 };
-	DrawTextW(dc, L"Abrindo...", -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
+	DrawTextW(dc, texto_abrindo, -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
 
 	/* barra fina andando no pé: diz que está carregando sem enfeitar */
 	RECT trilho = { r->left + 1, r->bottom - 4, r->right - 1, r->bottom - 1 };
@@ -186,6 +197,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR linha, int mostrar)
 		GetExitCodeProcess(pi.hProcess, &codigo);
 		return (int)codigo;
 	}
+
+	if(em_ingles())
+		texto_abrindo = L"Opening...";
 
 	/* uma cópia só: se já está aberto (ou abrindo), traz pra frente e sai */
 	HANDLE aberto = OpenMutexW(SYNCHRONIZE, FALSE, MUTEX_APP);

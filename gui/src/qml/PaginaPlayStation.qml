@@ -8,7 +8,7 @@ import org.streetpea.chiaking
 InPagina {
     id: ps
     titulo: "PlayStation"
-    apoio: "PS5 e PS4 da sua rede aparecem aqui, ligados ou em repouso."
+    apoio: root.t("PS5 e PS4 da sua rede aparecem aqui, ligados ou em repouso.")
 
     readonly property bool psnConectada: !!(Chiaki.settings.psnAuthToken && Chiaki.settings.psnAccountId)
     readonly property int visiveis: {
@@ -35,7 +35,7 @@ InPagina {
                 }
             }
             InTexto {
-                text: ps.visiveis > 0 ? "Procurando outros consoles" : "Procurando consoles na rede"
+                text: ps.visiveis > 0 ? root.t("Procurando outros consoles") : root.t("Procurando consoles na rede")
                 tipo: "apoio"; wrapMode: Text.NoWrap; lineHeight: 1.0
                 height: 44; verticalAlignment: Text.AlignVCenter
                 anchors.verticalCenter: parent.verticalCenter
@@ -44,12 +44,12 @@ InPagina {
         },
         InBotao {
             visible: !Chiaki.discoveryEnabled
-            text: "Procurar de novo"
+            text: root.t("Procurar de novo")
             icone: "busca"
             onClicked: Chiaki.discoveryEnabled = true
         },
         InBotao {
-            text: "Adicionar por IP"
+            text: root.t("Adicionar por IP")
             icone: "mais"
             onClicked: root.showManualHostDialog()
         }
@@ -69,11 +69,11 @@ InPagina {
             readonly property bool repouso: modelData.state === "standby"
             readonly property bool registrado: modelData.registered
             readonly property string situacao: {
-                if (modelData.duid && !modelData.discovered) return "Pela PSN, fora da rede de casa";
-                if (!registrado) return modelData.discovered ? "Encontrado, falta registrar" : "Adicionado por IP";
-                if (ligado) return modelData.app ? "Ligado · " + modelData.app : "Ligado";
-                if (repouso) return "Em repouso";
-                return modelData.discovered ? "Na rede" : "Fora do ar agora";
+                if (modelData.duid && !modelData.discovered) return root.t("Pela PSN, fora da rede de casa");
+                if (!registrado) return modelData.discovered ? root.t("Encontrado, falta registrar") : root.t("Adicionado por IP");
+                if (ligado) return modelData.app ? root.t("Ligado") + " · " + modelData.app : root.t("Ligado");
+                if (repouso) return root.t("Em repouso");
+                return modelData.discovered ? root.t("Na rede") : root.t("Fora do ar agora");
             }
             readonly property color corSituacao: !registrado ? root.tema.quente : ligado ? root.tema.ok : repouso ? root.tema.quente : root.tema.texto2
 
@@ -115,7 +115,7 @@ InPagina {
                     InTexto {
                         tipo: "pequeno"
                         visible: !!modelData.address
-                        text: (modelData.ps5 ? "PS5" : "PS4") + " · " + (Chiaki.settings.streamerMode ? "endereço oculto" : modelData.address)
+                        text: (modelData.ps5 ? "PS5" : "PS4") + " · " + (Chiaki.settings.streamerMode ? root.t("endereço oculto") : modelData.address)
                     }
                 }
 
@@ -126,29 +126,29 @@ InPagina {
                     InBotao {
                         visible: modelData.manual || (modelData.discovered && !modelData.registered)
                         tipo: "normal"
-                        text: modelData.manual ? "Apagar" : "Ocultar"
+                        text: modelData.manual ? root.t("Apagar") : root.t("Ocultar")
                         onClicked: {
                             if (modelData.manual)
-                                root.showConfirmDialog("Apagar console", "Tirar este console da lista? Dá pra adicionar de novo pelo IP.", () => Chiaki.deleteHost(index));
+                                root.showConfirmDialog(root.t("Apagar console"), root.t("Tirar este console da lista? Dá pra adicionar de novo pelo IP."), () => Chiaki.deleteHost(index));
                             else
-                                root.showConfirmDialog("Ocultar console", "Ocultar este console? Ele volta em Configurações > Mais ajustes > Consoles.", () => Chiaki.hideHost(modelData.mac, modelData.name));
+                                root.showConfirmDialog(root.t("Ocultar console"), root.t("Ocultar este console? Ele volta em Configurações > Mais ajustes > Consoles."), () => Chiaki.hideHost(modelData.mac, modelData.name));
                         }
                     }
                     InBotao {
                         visible: cartao.registrado
                         tipo: "quieto"
-                        text: "PIN do console"
+                        text: root.t("PIN do console")
                         onClicked: root.showConsolePinDialog(index)
                     }
                     InBotao {
                         visible: cartao.registrado && !modelData.discovered && !modelData.duid
-                        text: "Ligar"
+                        text: root.t("Ligar")
                         icone: "energia"
                         onClicked: Chiaki.wakeUpHost(index)
                     }
                     InBotao {
                         tipo: "forte"
-                        text: cartao.registrado ? "Jogar" : "Registrar"
+                        text: cartao.registrado ? root.t("Jogar") : root.t("Registrar")
                         icone: cartao.registrado ? "jogar" : "chave"
                         onClicked: cartao.jogar()
                     }
@@ -160,19 +160,19 @@ InPagina {
     // ------------------------------------------------------------ vazio
     InCartao {
         visible: ps.visiveis === 0
-        InTexto { tipo: "titulo"; text: Chiaki.discoveryEnabled ? "Procurando consoles na sua rede" : "A procura na rede está desligada"; Layout.bottomMargin: -8 }
+        InTexto { tipo: "titulo"; text: Chiaki.discoveryEnabled ? root.t("Procurando consoles na sua rede") : root.t("A procura na rede está desligada"); Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
             text: Chiaki.discoveryEnabled
-                ? "Deixe o PS5 ligado ou em repouso, no mesmo Wi-Fi ou cabo deste PC. Ele aparece em alguns segundos. Se não aparecer, adicione pelo IP (no PS5: Configurações > Rede > Status da conexão)."
-                : "Ligue a procura pra achar o console sozinho, ou adicione pelo IP."
+                ? root.t("Deixe o PS5 ligado ou em repouso, no mesmo Wi-Fi ou cabo deste PC. Ele aparece em alguns segundos. Se não aparecer, adicione pelo IP (no PS5: Configurações > Rede > Status da conexão).")
+                : root.t("Ligue a procura pra achar o console sozinho, ou adicione pelo IP.")
         }
         Row {
             Layout.topMargin: 8
             spacing: 12
-            InBotao { tipo: "forte"; visible: !Chiaki.discoveryEnabled; text: "Procurar na rede"; icone: "busca"; onClicked: Chiaki.discoveryEnabled = true }
-            InBotao { text: "Adicionar por IP"; icone: "mais"; onClicked: root.showManualHostDialog() }
+            InBotao { tipo: "forte"; visible: !Chiaki.discoveryEnabled; text: root.t("Procurar na rede"); icone: "busca"; onClicked: Chiaki.discoveryEnabled = true }
+            InBotao { text: root.t("Adicionar por IP"); icone: "mais"; onClicked: root.showManualHostDialog() }
         }
     }
 
@@ -186,24 +186,24 @@ InPagina {
                 Layout.fillWidth: true
                 Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                 spacing: 4
-                InTexto { tipo: "titulo"; text: ps.psnConectada ? "Conta PSN conectada" : "Conta PSN" }
+                InTexto { tipo: "titulo"; text: ps.psnConectada ? root.t("Conta PSN conectada") : root.t("Conta PSN") }
                 InTexto {
                     Layout.fillWidth: true
                     tipo: "apoio"
                     text: ps.psnConectada
-                        ? "Registro automático e jogo fora de casa liberados."
-                        : "Conectar libera o registro automático e jogar fora de casa sem mexer no roteador."
+                        ? root.t("Registro automático e jogo fora de casa liberados.")
+                        : root.t("Conectar libera o registro automático e jogar fora de casa sem mexer no roteador.")
                 }
             }
             InBotao {
                 visible: ps.psnConectada
-                text: "Atualizar consoles"
+                text: root.t("Atualizar consoles")
                 icone: "atualizar"
                 onClicked: Chiaki.refreshPsnToken()
             }
             InBotao {
                 visible: !ps.psnConectada
-                text: "Conectar PSN"
+                text: root.t("Conectar PSN")
                 icone: "pessoa"
                 onClicked: root.showPSNTokenDialog(false)
             }

@@ -11,7 +11,7 @@ import org.streetpea.chiaking
 InPagina {
     id: sw
     titulo: "Switch"
-    apoio: "A Nintendo não tem Remote Play. Dá pra jogar pela placa de captura ligada no PC."
+    apoio: root.t("A Nintendo não tem Remote Play. Dá pra jogar pela placa de captura ligada no PC.")
 
     MediaDevices { id: aparelhos }
 
@@ -49,7 +49,7 @@ InPagina {
     readonly property int somEscolhido: somIdx === -2 ? somDaPlaca() : somIdx
     readonly property string formatoTexto: {
         const f = melhorFormato(placa);
-        return f ? f.resolution.width + "×" + f.resolution.height + " a " + Math.round(f.maxFrameRate) + " quadros" : "";
+        return f ? root.t("%1×%2 a %3 quadros").arg(f.resolution.width).arg(f.resolution.height).arg(Math.round(f.maxFrameRate)) : "";
     }
     readonly property bool ligada: testando || telaCheia
 
@@ -127,11 +127,11 @@ InPagina {
     // ------------------------------------------------------------ sem placa
     InCartao {
         visible: !sw.temPlaca
-        InTexto { tipo: "titulo"; text: "Nenhuma placa de captura ligada"; Layout.bottomMargin: -8 }
+        InTexto { tipo: "titulo"; text: root.t("Nenhuma placa de captura ligada"); Layout.bottomMargin: -8 }
         InTexto {
             Layout.fillWidth: true
             tipo: "apoio"
-            text: "Ligue o Switch na placa pelo HDMI e a placa no USB do PC. Placa UVC aparece aqui sozinha."
+            text: root.t("Ligue o Switch na placa pelo HDMI e a placa no USB do PC. Placa UVC aparece aqui sozinha.")
         }
     }
 
@@ -146,7 +146,7 @@ InPagina {
             columnSpacing: 20
             rowSpacing: 14
 
-            InTexto { text: "Placa"; font.weight: Font.DemiBold; Layout.preferredWidth: 120; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Placa"); font.weight: Font.DemiBold; Layout.preferredWidth: 120; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.fillWidth: true
                 model: sw.nomes(sw.placas, "")
@@ -154,23 +154,23 @@ InPagina {
                 onActivated: (i) => { sw.placaIdx = i; sw.somIdx = -2; }
             }
 
-            InTexto { text: "Som"; font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+            InTexto { text: root.t("Som"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             InEscolha {
                 Layout.fillWidth: true
-                model: sw.nomes(sw.sons, "Sem som")
+                model: sw.nomes(sw.sons, root.t("Sem som"))
                 currentIndex: sw.somEscolhido + 1
                 onActivated: (i) => sw.somIdx = i - 1
             }
 
-            InTexto { text: "Imagem"; font.weight: Font.DemiBold; visible: sw.formatoTexto !== "" }
+            InTexto { text: root.t("Imagem"); font.weight: Font.DemiBold; visible: sw.formatoTexto !== "" }
             InTexto { tipo: "apoio"; text: sw.formatoTexto; visible: sw.formatoTexto !== "" }
         }
 
         Row {
             Layout.topMargin: 12
             spacing: 12
-            InBotao { tipo: "forte"; text: "Jogar em tela cheia"; icone: "telacheia"; onClicked: sw.telaCheia = true }
-            InBotao { text: sw.testando ? "Parar o teste" : "Testar a imagem"; icone: "olho"; onClicked: sw.testando = !sw.testando }
+            InBotao { tipo: "forte"; text: root.t("Jogar em tela cheia"); icone: "telacheia"; onClicked: sw.telaCheia = true }
+            InBotao { text: sw.testando ? root.t("Parar o teste") : root.t("Testar a imagem"); icone: "olho"; onClicked: sw.testando = !sw.testando }
         }
     }
 
@@ -186,7 +186,7 @@ InPagina {
                 anchors.centerIn: parent
                 visible: camera.error !== Camera.NoError
                 color: "white"
-                text: "A placa não mandou imagem: " + camera.errorString
+                text: root.t("A placa não mandou imagem: %1").arg(camera.errorString)
             }
         }
     }
@@ -196,7 +196,7 @@ InPagina {
         Layout.topMargin: 8
         Layout.fillWidth: true
         tipo: "pequeno"
-        text: "Na tela cheia: Esc ou dois cliques pra sair. Pra menos atraso, use a placa no USB 3 e deixe o Switch em 1080p."
+        text: root.t("Na tela cheia: Esc ou dois cliques pra sair. Pra menos atraso, use a placa no USB 3 e deixe o Switch em 1080p.")
     }
 
     // ------------------------------------------------------------ tela cheia
@@ -204,7 +204,7 @@ InPagina {
         id: janelaCheia
         visibility: sw.telaCheia ? Window.FullScreen : Window.Hidden
         color: "black"
-        title: "Incipit Play · Switch"
+        title: root.t("Incipit Play · Switch")
         onClosing: sw.telaCheia = false
         onVisibleChanged: if (visible) { requestActivate(); dica.opacity = 1; dicaTempo.restart(); }
 
@@ -223,7 +223,7 @@ InPagina {
             width: dicaTexto.implicitWidth + 40; height: 44
             color: Qt.rgba(0, 0, 0, 0.7)
             Behavior on opacity { NumberAnimation { duration: 400 } }
-            Text { id: dicaTexto; anchors.centerIn: parent; color: "white"; font.family: root.tema.sans; font.pixelSize: 15; text: "Esc ou dois cliques pra sair" }
+            Text { id: dicaTexto; anchors.centerIn: parent; color: "white"; font.family: root.tema.sans; font.pixelSize: 15; text: root.t("Esc ou dois cliques pra sair") }
         }
         Timer { id: dicaTempo; interval: 2500; onTriggered: dica.opacity = 0 }
     }

@@ -48,7 +48,7 @@ Rectangle {
         { id: "playstation", nome: "PlayStation", icone: "controle" },
         { id: "xbox", nome: "Xbox", icone: "tela" },
         { id: "switch", nome: "Switch", icone: "placa" },
-        { id: "clipes", nome: "Clipes", icone: "video" }
+        { id: "clipes", nome: root.t("Clipes"), icone: "video" }
     ]
 
     // ------------------------------------------------------------ trilho
@@ -94,7 +94,7 @@ Rectangle {
 
             ItemTrilho {
                 Layout.fillWidth: true
-                texto: "Configurações"
+                texto: root.t("Configurações")
                 icone: "engrenagem"
                 ativo: hub.aba === "config"
                 onClicked: hub.irPara("config")

@@ -14,6 +14,36 @@ Item {
     // Incipit Play: o tema da Incipit vale pra tudo, inclusive as telas herdadas do chiaki-ng
     readonly property Tema tema: Tema {}
     readonly property ClipesConfig clipes: ClipesConfig {}
+    // Incipit Play: idioma da interface (Português ou English). root.t(<texto em português>) devolve o texto no idioma
+    // escolhido; quem usa root.t num binding troca na hora quando o idioma muda.
+    readonly property Lingua lingua: Lingua {}
+    function t(s) { return lingua.t(s); }
+    function numero(n) { return lingua.en ? String(n) : String(n).replace(".", ","); }
+    // fim do ID da conta PSN (4 últimos números do ID; o app guarda o ID em base64, 8 bytes little-endian)
+    function fimIdPsn(b64) {
+        const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const limpo = String(b64 || "").replace(/[^A-Za-z0-9+/]/g, "");
+        let bytes = [], buf = 0, bits = 0;
+        for (let i = 0; i < limpo.length; i++) {
+            buf = (buf << 6) | abc.indexOf(limpo[i]); bits += 6;
+            if (bits >= 8) { bits -= 8; bytes.push((buf >> bits) & 255); }
+        }
+        if (bytes.length < 8) return "";
+        let r = 0;
+        for (let i = 7; i >= 0; i--) r = (r * 256 + bytes[i]) % 10000;
+        return String(r).padStart(4, "0");
+    }
+    // depois de conectar a PSN: volta pra tela inicial já em Configurações > (seção)
+    property string configSecao: ""
+    property bool psnRecemConectada: false
+    function irParaConfig(secao) {
+        configSecao = secao;
+        if (stack.depth > 1)
+            stack.pop(stack.get(0));
+        const hub = stack.get(0);
+        if (hub && hub.irPara)
+            hub.irPara("config");
+    }
     Material.theme: tema.escuro ? Material.Dark : Material.Light
     Material.accent: tema.destaque
     Material.background: tema.fundo
@@ -176,7 +206,7 @@ Item {
 
     function showRendererFallbackDialog(reason) {
         showInfoDialog(qsTr("Renderer Fallback"),
-                       qsTr("O Vulkan não está disponível e o Incipit Play passou a usar OpenGL.\n\nMotivo: %1").arg(reason));
+                       root.t("O Vulkan não está disponível e o Incipit Play passou a usar OpenGL.\n\nMotivo: %1").arg(reason));
     }
 
     function showRemindDialog(title, text, remotePlay, callback) {
@@ -241,8 +271,12 @@ Item {
         stack.push(steamShortcutDialogComponent, {fromReminder: fromReminder});
     }
 
+    // Incipit Play: conectar a PSN abre a tela própria (IncipitPsn), em português ou inglês. A do chiaki-ng
+    // (PSNTokenDialog) fica no projeto, sem uso. expirada = a Sony recusou a chave guardada e é preciso entrar de novo.
     function showPSNTokenDialog(psnurl, expired) {
-        stack.push(psnTokenDialogComponent, {psnurl: psnurl, expired: expired});
+        const expirada = expired === undefined ? psnurl === true : !!expired;
+        const origem = stack.currentItem && stack.currentItem.objectName === "incipitRegist" ? "registro" : "config";
+        stack.push(incipitPsnComponent, {expirada: expirada, origem: origem});
     }
 
     function showControllerMappingDialog() {
@@ -496,9 +530,9 @@ Item {
         target: Clips
         function onClipSaved(path, title, seconds) {
             const s = Math.round(seconds);
-            avisoClipe.mostrar("Clipe salvo · " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + " · aba Clipes", true);
+            avisoClipe.mostrar(root.t("Clipe salvo · %1 · aba Clipes").arg(Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")), true);
         }
-        function onClipFailed(reason) { avisoClipe.mostrar(reason, false); }
+        function onClipFailed(reason) { avisoClipe.mostrar(root.t(reason), false); }
     }
 
     Dialog {
@@ -598,9 +632,9 @@ Item {
             else
             {
                 if(ps5)
-                    root.showConfirmDialog(qsTr("Como registrar"), qsTr("Registrar sozinho pela conta PSN? Se preferir, escolha Não e use o código de 8 números do console."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(root.t("Como registrar"), root.t("Registrar sozinho pela conta PSN? Se preferir, escolha Não e use o código de 8 números do console."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
                 else
-                    root.showConfirmDialog(qsTr("Como registrar"), qsTr("Registrar sozinho pela conta PSN? Só funciona se este for o PS4 principal da conta. Se preferir, escolha Não e use o código de 8 números."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
+                    root.showConfirmDialog(root.t("Como registrar"), root.t("Registrar sozinho pela conta PSN? Só funciona se este for o PS4 principal da conta. Se preferir, escolha Não e use o código de 8 números."), () => root.autoRegister(true, host, ps5), () => root.autoRegister(false, host, ps5))
             }
         }
 
@@ -622,6 +656,11 @@ Item {
     Component {
         id: incipitManualComponent
         IncipitManual { }
+    }
+
+    Component {
+        id: incipitPsnComponent
+        IncipitPsn { }
     }
 
     Component {

@@ -9,12 +9,18 @@ import org.streetpea.chiaking
 
 InPagina {
     id: cfg
-    titulo: "Configurações"
+    titulo: root.t("Configurações")
     apoio: ""
 
     Settings { id: lembrar; category: "hub"; property string secao: "contas" }
     property string secao: lembrar.secao
     function ir(s) { secao = s; lembrar.secao = s; }
+    // pedido de outra tela (ex.: depois de conectar a PSN, abre direto em Contas conectadas)
+    function atenderPedido() { if (root.configSecao !== "") { ir(root.configSecao); root.configSecao = ""; } }
+    Component.onCompleted: atenderPedido()
+    Connections { target: root; function onConfigSecaoChanged() { cfg.atenderPedido(); } }
+    // o cartão da PSN fica marcado em verde uns segundos depois de conectar
+    Timer { running: root.psnRecemConectada; interval: 6000; onTriggered: root.psnRecemConectada = false }
 
     readonly property bool psnConectada: !!(Chiaki.settings.psnAuthToken && Chiaki.settings.psnAccountId)
     readonly property string perfilXbox: Chiaki.localDataPath() + "/xbox-web"
@@ -38,7 +44,7 @@ InPagina {
     Row {
         spacing: 0
         Repeater {
-            model: [["contas", "Contas conectadas"], ["personalizar", "Personalizar"], ["video", "Vídeo"], ["sobre", "Sobre"]]
+            model: [["contas", root.t("Contas conectadas")], ["personalizar", root.t("Personalizar")], ["video", root.t("Vídeo")], ["sobre", root.t("Sobre")]]
             delegate: AbstractButton {
                 id: aba
                 required property var modelData
@@ -76,6 +82,8 @@ InPagina {
         spacing: 16
 
         InCartao {
+            border.width: root.psnRecemConectada ? 2 : 1
+            border.color: root.psnRecemConectada ? root.tema.ok : root.tema.linha
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
@@ -83,20 +91,31 @@ InPagina {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
-                    InTexto { tipo: "titulo"; text: "PlayStation Network" }
+                    InTexto { tipo: "titulo"; text: root.t("PlayStation Network") }
+                    RowLayout {
+                        visible: cfg.psnConectada
+                        spacing: 8
+                        InIcone { nome: "check"; tamanho: 18; cor: root.tema.ok; Layout.alignment: Qt.AlignVCenter }
+                        InTexto { text: root.t("Conectada"); font.pixelSize: 15; font.weight: Font.DemiBold; color: root.tema.ok; Layout.alignment: Qt.AlignVCenter }
+                        InTexto {
+                            visible: !Chiaki.settings.streamerMode && root.fimIdPsn(Chiaki.settings.psnAccountId) !== ""
+                            tipo: "apoio"
+                            text: "· " + root.t("ID terminado em %1").arg(root.fimIdPsn(Chiaki.settings.psnAccountId))
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                    }
                     InTexto {
+                        visible: !cfg.psnConectada
                         Layout.fillWidth: true
                         tipo: "apoio"
-                        text: cfg.psnConectada
-                            ? (Chiaki.settings.streamerMode ? "Conectada." : "Conectada · conta terminada em " + String(Chiaki.settings.psnAccountId).slice(-4))
-                            : "Não conectada. Conectar libera o registro automático e jogar fora de casa."
+                        text: root.t("Não conectada. Conectar libera o registro automático e jogar fora de casa.")
                     }
                 }
                 InBotao {
                     visible: cfg.psnConectada
                     tipo: "quieto"
-                    text: "Desconectar"
-                    onClicked: root.showConfirmDialog("Desconectar PSN", "Tirar a conta PSN do Incipit Play? Os consoles registrados continuam funcionando em casa.", () => {
+                    text: root.t("Desconectar")
+                    onClicked: root.showConfirmDialog(root.t("Desconectar PSN"), root.t("Tirar a conta PSN do Incipit Play? Os consoles registrados continuam funcionando em casa."), () => {
                         Chiaki.settings.psnRefreshToken = "";
                         Chiaki.settings.psnAuthToken = "";
                         Chiaki.settings.psnAuthTokenExpiry = "";
@@ -105,7 +124,7 @@ InPagina {
                 }
                 InBotao {
                     implicitWidth: Math.max(120, implicitContentWidth + 36)
-                    text: cfg.psnConectada ? "Conectar de novo" : "Conectar"
+                    text: cfg.psnConectada ? root.t("Conectar de novo") : root.t("Conectar")
                     onClicked: root.showPSNTokenDialog(false)
                 }
             }
@@ -119,24 +138,24 @@ InPagina {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
-                    InTexto { tipo: "titulo"; text: "Conta Microsoft (Xbox)" }
+                    InTexto { tipo: "titulo"; text: root.t("Conta Microsoft (Xbox)") }
                     InTexto {
                         Layout.fillWidth: true
                         tipo: "apoio"
                         text: cfg.xboxEntrou
-                            ? "O login fica guardado só neste PC, na janela do Xbox do Incipit Play."
-                            : "Ainda não entrou. A senha você digita na página da Microsoft, nunca aqui."
+                            ? root.t("O login fica guardado só neste PC, na janela do Xbox do Incipit Play.")
+                            : root.t("Ainda não entrou. A senha você digita na página da Microsoft, nunca aqui.")
                     }
                 }
                 InBotao {
                     visible: cfg.xboxEntrou
                     tipo: "quieto"
-                    text: "Sair da conta"
+                    text: root.t("Sair da conta")
                     onClicked: cfg.abrirMicrosoft("https://login.live.com/logout.srf")
                 }
                 InBotao {
                     implicitWidth: Math.max(120, implicitContentWidth + 36)
-                    text: cfg.xboxEntrou ? "Abrir conta" : "Conectar"
+                    text: cfg.xboxEntrou ? root.t("Abrir conta") : root.t("Conectar")
                     onClicked: cfg.abrirMicrosoft("https://www.xbox.com/pt-BR/play/consoles")
                 }
             }
@@ -145,7 +164,7 @@ InPagina {
         InTexto {
             Layout.fillWidth: true
             tipo: "pequeno"
-            text: "Switch não tem conta aqui: a imagem vem da placa de captura."
+            text: root.t("Switch não tem conta aqui: a imagem vem da placa de captura.")
         }
     }
 
@@ -156,11 +175,29 @@ InPagina {
         spacing: 16
 
         InCartao {
-            InTexto { tipo: "titulo"; text: "Tema" }
+            InTexto { tipo: "titulo"; text: root.t("Idioma"); Layout.bottomMargin: -8 }
+            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Troca o texto do app inteiro na hora e abre o login da Sony no mesmo idioma.") }
+            Row {
+                Layout.topMargin: 4
+                spacing: 12
+                Repeater {
+                    model: [["pt", "Português"], ["en", "English"]]
+                    delegate: InOpcao {
+                        required property var modelData
+                        texto: modelData[1]
+                        marcada: root.lingua.idioma === modelData[0]
+                        onClicked: root.lingua.escolher(modelData[0])
+                    }
+                }
+            }
+        }
+
+        InCartao {
+            InTexto { tipo: "titulo"; text: root.t("Tema") }
             Row {
                 spacing: 12
                 Repeater {
-                    model: [["dark", "Escuro"], ["light", "Claro"], ["system", "Do Windows"]]
+                    model: [["dark", root.t("Escuro")], ["light", root.t("Claro")], ["system", root.t("Do Windows")]]
                     delegate: InOpcao {
                         required property var modelData
                         texto: modelData[1]
@@ -172,8 +209,8 @@ InPagina {
         }
 
         InCartao {
-            InTexto { tipo: "titulo"; text: "Cor de destaque"; Layout.bottomMargin: -8 }
-            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Vale pros botões, a aba ativa e a porta da marca. O padrão é Hora azul." }
+            InTexto { tipo: "titulo"; text: root.t("Cor de destaque"); Layout.bottomMargin: -8 }
+            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Vale pros botões, a aba ativa e a porta da marca. O padrão é Hora azul.") }
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
@@ -187,7 +224,7 @@ InPagina {
                     delegate: InOpcao {
                         required property var modelData
                         Layout.fillWidth: true
-                        texto: modelData.nome
+                        texto: root.t(modelData.nome)
                         amostra: root.tema.escuro ? modelData.escuro : modelData.claro
                         marcada: root.tema.destaqueId === modelData.id
                         onClicked: root.tema.escolherDestaque(modelData.id)
@@ -204,42 +241,42 @@ InPagina {
         spacing: 16
 
         InCartao {
-            InTexto { tipo: "titulo"; text: "PlayStation em casa"; Layout.bottomMargin: 8 }
+            InTexto { tipo: "titulo"; text: root.t("PlayStation em casa"); Layout.bottomMargin: 8 }
             GridLayout {
                 Layout.fillWidth: true
                 columns: 2
                 columnSpacing: 24
                 rowSpacing: 12
 
-                InTexto { text: "Resolução"; font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
+                InTexto { text: root.t("Resolução"); font.weight: Font.DemiBold; Layout.preferredWidth: 180; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
-                    model: ["360p", "540p", "720p", "1080p (padrão)"]
+                    model: ["360p", "540p", "720p", root.t("1080p (padrão)")]
                     currentIndex: Chiaki.settings.resolutionLocalPS5 - 1
                     onActivated: (i) => Chiaki.settings.resolutionLocalPS5 = i + 1
                 }
 
-                InTexto { text: "Quadros por segundo"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
+                InTexto { text: root.t("Quadros por segundo"); font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
-                    model: ["30", "60 (padrão)"]
+                    model: ["30", root.t("60 (padrão)")]
                     currentIndex: Chiaki.settings.fpsLocalPS5 >= 60 ? 1 : 0
                     onActivated: (i) => Chiaki.settings.fpsLocalPS5 = (i + 1) * 30
                 }
 
-                InTexto { text: "Formato do vídeo"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
+                InTexto { text: root.t("Formato do vídeo"); font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
-                    model: ["H.264 (PC mais antigo)", "H.265 (padrão)", "H.265 HDR"]
+                    model: [root.t("H.264 (PC mais antigo)"), root.t("H.265 (padrão)"), root.t("H.265 HDR")]
                     currentIndex: Chiaki.settings.codecLocalPS5
                     onActivated: (i) => Chiaki.settings.codecLocalPS5 = i
                 }
 
-                InTexto { text: "Qualidade (bitrate)"; font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
+                InTexto { text: root.t("Qualidade (bitrate)"); font.weight: Font.DemiBold; Layout.preferredHeight: 44; verticalAlignment: Text.AlignVCenter }
                 InEscolha {
                     Layout.preferredWidth: 320
                     readonly property var valores: [0, 10000, 20000, 30000, 40000, 50000]
-                    model: ["Automática (padrão)", "10 Mbps", "20 Mbps", "30 Mbps", "40 Mbps", "50 Mbps"]
+                    model: [root.t("Automática (padrão)"), root.t("10 Mbps"), root.t("20 Mbps"), root.t("30 Mbps"), root.t("40 Mbps"), root.t("50 Mbps")]
                     currentIndex: Math.max(0, valores.indexOf(Chiaki.settings.bitrateLocalPS5))
                     onActivated: (i) => Chiaki.settings.bitrateLocalPS5 = valores[i]
                 }
@@ -248,7 +285,7 @@ InPagina {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
                 tipo: "pequeno"
-                text: "Muda na próxima vez que você jogar. HDR precisa de tela com HDR ligado no Windows."
+                text: root.t("Muda na próxima vez que você jogar. HDR precisa de tela com HDR ligado no Windows.")
             }
         }
 
@@ -260,10 +297,10 @@ InPagina {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                     spacing: 4
-                    InTexto { tipo: "titulo"; text: "Mais ajustes" }
-                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: "Fora de casa, controle, áudio, renderização e consoles ocultos, na tela do motor." }
+                    InTexto { tipo: "titulo"; text: root.t("Mais ajustes") }
+                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Fora de casa, controle, áudio, renderização e consoles ocultos, na tela do motor.") }
                 }
-                InBotao { text: "Abrir mais ajustes"; icone: "engrenagem"; onClicked: root.showSettingsDialog() }
+                InBotao { text: root.t("Abrir mais ajustes"); icone: "engrenagem"; onClicked: root.showSettingsDialog() }
             }
         }
     }
@@ -282,26 +319,26 @@ InPagina {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
                     InTexto { tipo: "secao"; text: "Incipit Play" }
-                    InTexto { tipo: "pequeno"; text: "Versão " + Chiaki.appVersion() }
+                    InTexto { tipo: "pequeno"; text: root.t("Versão %1").arg(Chiaki.appVersion()) }
                 }
             }
             InTexto {
                 Layout.fillWidth: true
                 Layout.topMargin: 6
                 tipo: "apoio"
-                text: "Feito sobre o chiaki-ng (Street Pea e colaboradores), que nasceu do Chiaki de Florian Markl. O motor de PlayStation é deles; o desenho e o hub são da Incipit. PlayStation, Xbox e Switch são marcas dos seus donos e aparecem aqui só pra dizer o console."
+                text: root.t("Feito sobre o chiaki-ng (Street Pea e colaboradores), que nasceu do Chiaki de Florian Markl. O motor de PlayStation é deles; o desenho e o hub são da Incipit. PlayStation, Xbox e Switch são marcas dos seus donos e aparecem aqui só pra dizer o console.")
             }
             InTexto {
                 Layout.fillWidth: true
                 tipo: "apoio"
-                text: "Licença AGPL-3.0: quem recebe o Incipit Play tem direito ao código-fonte, inclusive das mudanças."
+                text: root.t("Licença AGPL-3.0: quem recebe o Incipit Play tem direito ao código-fonte, inclusive das mudanças.")
             }
             Row {
                 Layout.topMargin: 8
                 spacing: 12
-                InBotao { text: "Código do Incipit Play"; icone: "externo"; onClicked: Qt.openUrlExternally("https://github.com/dalmor0/incipit-play") }
+                InBotao { text: root.t("Código do Incipit Play"); icone: "externo"; onClicked: Qt.openUrlExternally("https://github.com/dalmor0/incipit-play") }
                 InBotao { text: "chiaki-ng"; icone: "externo"; onClicked: Qt.openUrlExternally("https://github.com/streetpea/chiaki-ng") }
-                InBotao { text: "Licença"; icone: "externo"; onClicked: Qt.openUrlExternally("https://www.gnu.org/licenses/agpl-3.0.html") }
+                InBotao { text: root.t("Licença"); icone: "externo"; onClicked: Qt.openUrlExternally("https://www.gnu.org/licenses/agpl-3.0.html") }
             }
         }
     }
