@@ -1,3 +1,4 @@
+FEITO 17/11 madrugada: rodada 6 fechada (conectar PSN com tela própria + idioma pt/en), build d366f70 instalado no Incipit; banca 9 e 9. Devolução, seção Rodada 6, em EMPRESA/fichas/devolucoes/2026-11-16-incipit-play.md. Próximo: --remote-debugging-pipe no lugar da porta.
 FEITO 16/11 noite: rodada 5 fechada, banca 9,5 e 9. Devolução em EMPRESA/fichas/devolucoes/2026-11-16-incipit-play.md
 
 # Incipit Play · onde parou (16/11/2026 ~21h30, antes do reinício do PC)
