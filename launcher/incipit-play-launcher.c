@@ -90,12 +90,12 @@ static void desenhar(HDC dc, RECT *r)
 	SetBkMode(dc, TRANSPARENT);
 	SetTextColor(dc, RGB(0xE7, 0xEA, 0xF0));
 	SelectObject(dc, fonte_titulo);
-	RECT rt = { x0 + 46, y0 + 2, r->right - 24, y0 + 40 };
-	DrawTextW(dc, TITULO, -1, &rt, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+	RECT rt = { x0 + 46, y0 - 6, r->right - 24, y0 + 40 };
+	DrawTextW(dc, TITULO, -1, &rt, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
 	SetTextColor(dc, RGB(0xA0, 0xA7, 0xB4));
 	SelectObject(dc, fonte_apoio);
-	RECT ra = { x0 + 48, y0 + 44, r->right - 24, y0 + 66 };
-	DrawTextW(dc, L"Abrindo...", -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+	RECT ra = { x0 + 48, y0 + 46, r->right - 24, y0 + 68 };
+	DrawTextW(dc, L"Abrindo...", -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
 
 	/* barra fina andando no pé: diz que está carregando sem enfeitar */
 	RECT trilho = { r->left + 1, r->bottom - 4, r->right - 1, r->bottom - 1 };
