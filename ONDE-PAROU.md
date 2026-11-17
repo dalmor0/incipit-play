@@ -1,3 +1,4 @@
+FEITO 17/11 tarde: rodada 7 (bug "janela da Sony fechou" + barra de título com minimizar/maximizar/fechar), build afce597 instalado pelo Atualizar do Incipit. Devolução em EMPRESA/fichas/devolucoes/2026-11-17-play-bug-psn.md
 FEITO 17/11 madrugada: rodada 6 fechada (conectar PSN com tela própria + idioma pt/en), build d366f70 instalado no Incipit; banca 9 e 9. Devolução, seção Rodada 6, em EMPRESA/fichas/devolucoes/2026-11-16-incipit-play.md. Próximo: --remote-debugging-pipe no lugar da porta.
 FEITO 16/11 noite: rodada 5 fechada, banca 9,5 e 9. Devolução em EMPRESA/fichas/devolucoes/2026-11-16-incipit-play.md
 
