@@ -158,7 +158,7 @@ Rectangle {
     function conectar(url) {
         estado = "conectando";
         Chiaki.initPsnAuth(url, function (msg, ok, fim) {
-            if (!fim) return;
+            if (!fim || pn.saindo) return;
             if (ok) pn.conectou();
             else pn.falhar(pn.motivo(msg), false);
         });
