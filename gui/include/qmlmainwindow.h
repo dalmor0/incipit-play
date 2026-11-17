@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QAtomicInteger>
 #include <QWindow>
+#include <QColor>
 #include <QQuickWindow>
 #include <QLoggingCategory>
 #include <deque>
@@ -137,6 +138,8 @@ public:
 
     void fullscreenTime();
     void normalTime();
+    void restaurarJanelaHub();
+    Q_INVOKABLE void barraDeTitulo(const QColor &fundo, const QColor &texto, const QColor &borda, bool escuro);
 
     bool isStreamWindowAdjustable() { return is_stream_window_adjustable; }
     void setStreamWindowAdjustable(bool adjustable) { is_stream_window_adjustable = adjustable; }

@@ -287,7 +287,13 @@ Item {
         stack.push(controllerMappingDialogComponent)
     }
 
+    // barra de título do Windows (minimizar, maximizar, fechar) com a cor do tema; troca junto com o tema
+    readonly property var corDaBarra: [tema.fundo, tema.texto, tema.linha, tema.escuro]
+    function pintarBarra() { if (Chiaki.window.barraDeTitulo) Chiaki.window.barraDeTitulo(tema.fundo, tema.texto, tema.linha, tema.escuro); }
+    onCorDaBarraChanged: pintarBarra()
+
     Component.onCompleted: {
+        pintarBarra();
         if (Chiaki.session)
             stack.replace(stack.get(0), streamViewComponent, {}, StackView.Immediate);
         else if (Chiaki.autoConnect)

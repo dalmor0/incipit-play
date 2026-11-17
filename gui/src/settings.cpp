@@ -416,6 +416,17 @@ void Settings::SetGeometry(QRect geometry)
 	settings.setValue("settings/geometry", geometry);
 }
 
+// Incipit Play: a janela do hub lembra se estava maximizada (a geometria guardada é sempre a da janela normal)
+bool Settings::GetMaximized() const
+{
+	return settings.value("settings/maximizada", false).toBool();
+}
+
+void Settings::SetMaximized(bool maximized)
+{
+	settings.setValue("settings/maximizada", maximized);
+}
+
 QRect Settings::GetStreamGeometry() const
 {
 	return settings.value("settings/stream_geometry", QRect()).toRect();

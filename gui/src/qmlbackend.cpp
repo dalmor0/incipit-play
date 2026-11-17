@@ -767,13 +767,8 @@ void QmlBackend::setConnectState(PsnConnectState connect_state)
     psn_connect_state = connect_state;
     if(connect_state == PsnConnectState::ConnectFailed)
     {
-        if(!this->settings->GetGeometry().isEmpty())
-        {
-            window->setGeometry(this->settings->GetGeometry());
-            window->normalTime();
-        }
-        else
-            window->showMaximized();
+        window->restaurarJanelaHub();
+        window->normalTime();
     }
     emit connectStateChanged();
 }
@@ -2815,13 +2810,49 @@ void QmlBackend::psnLoginEncerrar(bool saindo)
     }
 }
 
-// a janela da Sony ainda está aberta? (o processo principal do Edge que o app abriu)
+// a janela da Sony ainda está aberta? O processo principal do Edge que o app abriu ou, se ele passou a vez pra outro
+// (o Edge se reabre sozinho depois de atualizar), qualquer processo dele que continua dentro do Job Object
 bool QmlBackend::psnLoginAlive() const
 {
 #ifdef Q_OS_WIN
-    return psn_login_proc && WaitForSingleObject((HANDLE)psn_login_proc, 0) == WAIT_TIMEOUT;
+    if(!psn_login_proc)
+        return false;
+    if(WaitForSingleObject((HANDLE)psn_login_proc, 0) == WAIT_TIMEOUT)
+        return true;
+    JOBOBJECT_BASIC_ACCOUNTING_INFORMATION conta = {};
+    if(psn_login_job && QueryInformationJobObject((HANDLE)psn_login_job, JobObjectBasicAccountingInformation, &conta, sizeof(conta), nullptr))
+        return conta.ActiveProcesses > 0;
+    return false;
 #else
     return true;
+#endif
+}
+
+// Incipit Play: barra de título do Windows com a cor do tema (Windows 11; no 10 fica só o modo escuro ou claro)
+void QmlMainWindow::barraDeTitulo(const QColor &fundo, const QColor &texto, const QColor &borda, bool escuro)
+{
+#ifdef Q_OS_WIN
+    typedef long (__stdcall *DwmSet)(void *, unsigned long, const void *, unsigned long);
+    static DwmSet dwmSet = nullptr;
+    static bool procurou = false;
+    if(!procurou)
+    {
+        procurou = true;
+        if(HMODULE dwm = LoadLibraryW(L"dwmapi.dll"))
+            dwmSet = reinterpret_cast<DwmSet>(GetProcAddress(dwm, "DwmSetWindowAttribute"));
+    }
+    if(!dwmSet)
+        return;
+    HWND h = reinterpret_cast<HWND>(winId());
+    const BOOL modoEscuro = escuro ? TRUE : FALSE;
+    dwmSet(h, 20, &modoEscuro, sizeof(modoEscuro));   // DWMWA_USE_IMMERSIVE_DARK_MODE
+    auto cor = [](const QColor &c) { return (unsigned long)(c.red() | (c.green() << 8) | (c.blue() << 16)); };
+    const unsigned long legenda = cor(fundo), letra = cor(texto), contorno = cor(borda);
+    dwmSet(h, 35, &legenda, sizeof(legenda));          // DWMWA_CAPTION_COLOR
+    dwmSet(h, 36, &letra, sizeof(letra));              // DWMWA_TEXT_COLOR
+    dwmSet(h, 34, &contorno, sizeof(contorno));        // DWMWA_BORDER_COLOR
+#else
+    Q_UNUSED(fundo); Q_UNUSED(texto); Q_UNUSED(borda); Q_UNUSED(escuro);
 #endif
 }
 

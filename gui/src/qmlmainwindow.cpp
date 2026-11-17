@@ -51,6 +51,7 @@ extern "C" {
 #include <QQuickRenderControl>
 #include <QQuickGraphicsDevice>
 #include <QTimer>
+#include <QScreen>
 #include <QWaitCondition>
 #include <QProcess>
 #include <QProcessEnvironment>
@@ -2925,15 +2926,43 @@ void QmlMainWindow::show()
         fullscreenTime();
     else
     {
-        if(!settings->GetGeometry().isEmpty())
-        {
-            setGeometry(settings->GetGeometry());
-            showNormal();
-        }
-        else
-            showMaximized();
+        restaurarJanelaHub();
         setWindowAdjustable(true);
     }
+}
+
+// Incipit Play: a janela do hub volta como estava, sempre com a barra de título (minimizar, maximizar, fechar) à vista.
+// A geometria guardada é a da janela normal; maximizada fica num valor à parte. Geometria velha que deixaria a barra
+// fora da tela (a de antes, gravada com a janela maximizada ou do tamanho da tela) vira janela maximizada.
+void QmlMainWindow::restaurarJanelaHub()
+{
+    if(windowState() == Qt::WindowFullScreen)
+        setMinimumSize(QSize(0, 0));
+    was_maximized = false;
+    QRect g = settings->GetGeometry();
+    bool maximizar = settings->GetMaximized() || g.isEmpty();
+    if(!g.isEmpty())
+    {
+        QScreen *tela = QGuiApplication::screenAt(g.center());
+        if(!tela)
+            tela = QGuiApplication::primaryScreen();
+        const QRect area = tela->availableGeometry();
+        const int barra = 32;   // altura da barra de título do Windows (a geometria é a da área de dentro)
+        const bool barraFora = g.top() - barra < area.top() - 2 || !area.intersects(g);
+        const bool ocupaTudo = g.width() >= area.width() - 16 && g.height() >= area.height() - barra - 16;
+        if(barraFora || ocupaTudo)
+        {
+            maximizar = true;
+            const QSize normal(qMin(1280, area.width() * 4 / 5), qMin(800, area.height() * 4 / 5));
+            g = QRect(QPoint(area.center().x() - normal.width() / 2, area.center().y() - normal.height() / 2), normal);
+            settings->SetGeometry(g);
+        }
+        setGeometry(g);
+    }
+    if(maximizar)
+        showMaximized();
+    else
+        showNormal();
 }
 
 namespace {
@@ -5274,13 +5303,8 @@ renderer_backend_ready:
             setStreamWindowAdjustable(false);
             if(qEnvironmentVariable("XDG_CURRENT_DESKTOP") != "gamescope")
             {
-                if(!this->settings->GetGeometry().isEmpty())
-                {
-                    setGeometry(this->settings->GetGeometry());
-                    normalTime();
-                }
-                else
-                    showMaximized();
+                restaurarJanelaHub();
+                QTimer::singleShot(1000, this, [this]{ if(!session) setWindowAdjustable(true); });
             }
             scheduleUpdate(true, UpdateRequestReason::SceneChanged);
         }
@@ -7789,15 +7813,19 @@ bool QmlMainWindow::event(QEvent *event)
             else
                 QMetaObject::invokeMethod(quick_render, std::bind(&QmlMainWindow::destroySwapchain, this), Qt::BlockingQueuedConnection);
         break;
+    case QEvent::WindowStateChange:
+        if(!session && isWindowAdjustable() && !windowState().testFlag(Qt::WindowFullScreen) && !windowState().testFlag(Qt::WindowMinimized))
+            settings->SetMaximized(windowState().testFlag(Qt::WindowMaximized));
+        break;
     case QEvent::Move:
-        if(!session && isWindowAdjustable())
+        if(!session && isWindowAdjustable() && windowState() == Qt::WindowNoState)
             settings->SetGeometry(geometry());
         else if(session && settings->GetWindowType() == WindowType::AdjustableResolution && isStreamWindowAdjustable())
             settings->SetStreamGeometry(geometry());
         updateStatsOverlayGeometry();
         break;
     case QEvent::Resize:
-        if(!session && isWindowAdjustable())
+        if(!session && isWindowAdjustable() && windowState() == Qt::WindowNoState)
             settings->SetGeometry(geometry());
         else if(session && settings->GetWindowType() == WindowType::AdjustableResolution && isStreamWindowAdjustable())
             settings->SetStreamGeometry(geometry());

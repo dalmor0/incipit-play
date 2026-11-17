@@ -246,6 +246,8 @@ class Settings : public QObject
 
 		QRect GetGeometry() const;
 		void SetGeometry(QRect geometry);
+		bool GetMaximized() const;
+		void SetMaximized(bool maximized);
 
 		QRect GetStreamGeometry() const;
 		void SetStreamGeometry(QRect geometry);

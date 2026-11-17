@@ -38,6 +38,11 @@ Rectangle {
     property bool pegou: false
     property bool pedindo: false
     property int esperas: 0
+    // quem decide se a janela fechou é o processo do Edge (Chiaki.psnLoginAlive). A porta de depuração às vezes demora
+    // mais de 1,5 s ou derruba uma conexão com a máquina ocupada (visto em 17/11, depois do reinício): uma resposta
+    // ruim não fecha nada, só um processo morto, a janela sem página por 3 s ou a porta calada por 15 s seguidos
+    property double semRespostaDesde: 0
+    property double semPaginaDesde: 0
 
     function urlLogin() {
         const local = root.lingua.en ? "en_US" : "pt_BR";
@@ -47,17 +52,20 @@ Rectangle {
     property int tentativa: 0
     property bool saindo: false
     property var pedidoAberto: null
+    property int pedidoNum: 0
     function pedir(caminho, aoTerminar) {
         const x = new XMLHttpRequest();
         const minha = tentativa;
+        const minhaVez = ++pedidoNum;
         x.onreadystatechange = function () {
             if (x.readyState !== XMLHttpRequest.DONE) return;
+            if (minhaVez !== pn.pedidoNum) return;   // pedido que a própria tela cancelou não é resposta
             if (pn.pedidoAberto === x) pn.pedidoAberto = null;
             if (pn.saindo || minha !== pn.tentativa) return;
             if (aoTerminar) aoTerminar(x.status, x.responseText);
         };
         x.open("GET", "http://127.0.0.1:" + porta + caminho);
-        x.timeout = 1500;
+        x.timeout = 4000;
         pedidoAberto = x;
         x.send();
     }
@@ -65,6 +73,7 @@ Rectangle {
         const x = pedidoAberto;
         pedidoAberto = null;
         pedindo = false;
+        pedidoNum++;
         if (x) x.abort();
     }
     // o C++ guarda o processo do Edge: fechar mata a árvore toda e apaga o perfil (nada da tentativa fica no disco)
@@ -77,6 +86,7 @@ Rectangle {
         fecharJanela();
         erro = ""; erroSemJanela = false;
         pegou = false; viuJanela = false; pedindo = false; esperas = 0; paginaId = "";
+        semRespostaDesde = 0; semPaginaDesde = 0;
         if (edge === "") { abrirNoNavegador(); return; }
         estado = "abrindo";
         porta = 41000 + Math.floor(Math.random() * 8000);
@@ -111,7 +121,15 @@ Rectangle {
             falhar(root.tk("A página de login da Sony não abriu."), true);
             return;
         }
-        if (pedindo && Date.now() - pedidoEm < 2000) return;
+        // a porta calada há 15 s com a janela já vista: o Edge travou ou ficou um resto dele sem janela
+        if (viuJanela && semRespostaDesde > 0 && Date.now() - semRespostaDesde > 15000) {
+            vigia.stop();
+            cancelarPedido();
+            fecharJanela();
+            falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
+            return;
+        }
+        if (pedindo && Date.now() - pedidoEm < 4500) return;
         if (pedindo) cancelarPedido();
         pedindo = true;
         pedidoEm = Date.now();
@@ -120,16 +138,25 @@ Rectangle {
             if (pn.pegou) return;
             let lista = null;
             if (status === 200) { try { lista = JSON.parse(corpo); } catch (e) { lista = null; } }
-            if (!lista) {
-                if (pn.viuJanela) {             // a janela fechou antes de o login voltar
-                    vigia.stop();
-                    pn.fecharJanela();
-                    pn.falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
+            if (!lista) {                       // resposta lenta ou derrubada: o processo vivo manda, então espera
+                if (pn.semRespostaDesde === 0) pn.semRespostaDesde = Date.now();
+                return;
+            }
+            pn.semRespostaDesde = 0;
+            const paginas = lista.filter(p => p.type === "page" && String(p.url).startsWith("http"));
+            if (paginas.length === 0) {
+                // o Edge ainda de pé, mas sem a página da Sony: a pessoa fechou a janela
+                if (pn.viuJanela) {
+                    if (pn.semPaginaDesde === 0) pn.semPaginaDesde = Date.now();
+                    else if (Date.now() - pn.semPaginaDesde > 3000) {
+                        vigia.stop();
+                        pn.fecharJanela();
+                        pn.falhar(root.tk("A janela da Sony fechou antes de o login terminar."), false);
+                    }
                 }
                 return;
             }
-            const paginas = lista.filter(p => p.type === "page" && String(p.url).startsWith("http"));
-            if (paginas.length === 0) return;
+            pn.semPaginaDesde = 0;
             pn.viuJanela = true;
             pn.paginaId = paginas[0].id;
             const achou = paginas.find(p => String(p.url).startsWith(pn.volta));
