@@ -9,6 +9,10 @@ em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalh
   pras telas de jogo e pros "Mais ajustes".
 - Gravador de clipes, atalho global e OBS: `gui/src/cliprecorder.cpp` (ligado em `streamsession.cpp`).
 - Nome, config própria e importação da config do chiaki-ng: `gui/src/main.cpp`.
+- Lançador nativo `launcher/incipit-play-launcher.c` (vira `IncipitPlay.exe`, 104 KB, só DLL do Windows): mostra a tela de
+  abertura na hora, deixa uma cópia só e abre o app de verdade, `IncipitPlay-app.exe`. Com argumentos (`stream`, `list`) só
+  repassa.
+- Cofre DPAPI pros segredos: `gui/src/incipitcofre.cpp`.
 - Instalador: `scripts/incipit-play.iss`. Build: `.github/workflows/incipit-windows.yml` (só roda na mão).
 - Binários prontos: `D:\ferramentas\incipit-play\versao-<versão>\`.
 - Conferência: `ferramentas/conferir_app.py` (abertura, RAM, prints), `ferramentas/testar_atalho.py`
