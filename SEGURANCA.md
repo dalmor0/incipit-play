@@ -35,4 +35,12 @@ falso. As iscas continuaram no lugar.
   como o chiaki-ng guarda.
 - **Repositório privado e licença AGPL:** quem receber o binário tem direito ao código. Enquanto o app for só do Gustavo, ok. Antes de dar pra outra pessoa, abrir o repositório (pede o sim) ou mandar o código junto.
 - **Instalador sem assinatura de código:** o Windows mostra "editor desconhecido". Assinar custa dinheiro (pede o sim).
+- **Login da PSN (rodada 6):** a página da Sony abre num Edge InPrivate com perfil novo e vazio a cada tentativa
+  (`%LOCALAPPDATA%\Incipit\Incipit Play\psn-login\<aleatório>`) e porta de depuração local aleatória (41000 a 48999), que
+  o app usa pra ler a volta do login e pegar o código. Enquanto essa janela está aberta, outro programa do mesmo usuário
+  do Windows poderia ler a página pela porta; um site aberto em outro navegador não consegue (sem cabeçalho CORS, e o Edge
+  recusa conexão de página web na porta). Quem já roda como o mesmo usuário também conseguiria ler o teclado, então o
+  risco novo é pequeno, mas existe. Pra encurtar a janela de exposição: o app guarda o PID do Edge e mata a árvore toda
+  (`taskkill /T /F`) no sucesso, no Voltar, nos 20 s sem resposta e quando o app fecha, e apaga a pasta do perfil. Melhor
+  caminho no futuro: `--remote-debugging-pipe` (sem porta), que pede ler os canais 3 e 4 do processo pelo C++.
 - **Login da Microsoft** acontece na página oficial, no Edge, num perfil só do Incipit Play (`%LOCALAPPDATA%\Incipit\Incipit Play\xbox-web`). O app nunca vê a senha.

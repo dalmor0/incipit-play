@@ -49,9 +49,8 @@ Rectangle {
         x.open("GET", "http://127.0.0.1:" + porta + caminho);
         x.send();
     }
-    function fecharJanela() {
-        if (porta && viuJanela && !pegou && paginaId !== "") pedir("/json/close/" + paginaId, null);
-    }
+    // o C++ guarda o processo do Edge: fechar mata a árvore toda e apaga o perfil (nada da tentativa fica no disco)
+    function fecharJanela() { Chiaki.psnLoginClose(); }
     function abrirSony() {
         vigia.stop();
         fecharJanela();
@@ -63,9 +62,8 @@ Rectangle {
         const w = 520, h = 760;
         const x = Math.max(0, Math.round(Chiaki.window.x + (Chiaki.window.width - w) / 2));
         const y = Math.max(0, Math.round(Chiaki.window.y + (Chiaki.window.height - h) / 2));
-        const ok = Chiaki.launchDetached(edge, [
+        const ok = Chiaki.psnLoginOpen(edge, [
             "--remote-debugging-port=" + porta,
-            "--user-data-dir=" + Chiaki.localDataPath() + "/psn-login",
             "--inprivate", "--no-first-run", "--no-default-browser-check",
             "--window-size=" + w + "," + h, "--window-position=" + x + "," + y,
             "--app=" + urlLogin()
@@ -84,9 +82,11 @@ Rectangle {
             if (!lista) {
                 if (pn.viuJanela) {             // a janela fechou antes de o login voltar
                     vigia.stop();
+                    pn.fecharJanela();
                     pn.falhar(root.t("A janela da Sony fechou antes de o login terminar."), false);
                 } else if (++pn.esperas > 40) { // 20 s sem a janela responder
                     vigia.stop();
+                    pn.fecharJanela();
                     pn.falhar(root.t("A página de login da Sony não abriu."), true);
                 }
                 return;
@@ -99,7 +99,7 @@ Rectangle {
             if (achou) {
                 pn.pegou = true;
                 vigia.stop();
-                pn.pedir("/json/close/" + achou.id, null);
+                pn.fecharJanela();
                 pn.conectar(achou.url);
             } else if (pn.estado === "abrindo") {
                 pn.estado = "esperando";
@@ -131,10 +131,10 @@ Rectangle {
         if (m.indexOf("Invalid URL") >= 0 || m.indexOf("Invalid code") >= 0)
             return root.t("Esse endereço não é o da volta do login. Copie o endereço inteiro da barra do navegador.");
         if (/server replied/i.test(m))          // a Sony respondeu e recusou (código vencido ou usado)
-            return root.t("A Sony não confirmou o login. Tente de novo.");
+            return root.t("A Sony não confirmou o login.");
         if (/timed out|not found|refused|unreachable|resolve|ssl|closed|temporar|offline/i.test(m))
-            return root.t("Não deu pra falar com a PSN. Confira a internet e tente de novo.");
-        return root.t("A Sony não confirmou o login. Tente de novo.");
+            return root.t("Não deu pra falar com a PSN. Confira a internet.");
+        return root.t("A Sony não confirmou o login.");
     }
     function falhar(texto, semJanela) {
         console.warn("Incipit Play: PSN não conectou:", texto);
@@ -150,13 +150,14 @@ Rectangle {
         Chiaki.settings.psnAuthToken = Chiaki.settings.psnAuthToken;
         fimId = root.fimIdPsn(id);
         estado = "ok";
-        root.psnRecemConectada = true;
         Chiaki.window.raise();
         Chiaki.window.requestActivate();
-        contagem.restart();
+        // com "mostrar animações" desligado no Windows, a tela espera o clique (sem barra andando nem volta sozinha)
+        if (!root.semMovimento) contagem.restart();
     }
     function concluir() {
         contagem.stop();
+        root.psnRecemConectada = true;
         if (origem === "registro") root.closeDialog();
         else root.irParaConfig("contas");
     }
@@ -169,7 +170,15 @@ Rectangle {
     Timer { id: contagem; interval: 3500; onTriggered: pn.concluir() }
     Component.onDestruction: { vigia.stop(); fecharJanela(); }
 
-    Keys.onEscapePressed: estado === "ok" ? concluir() : voltar()
+    // durante "conectando" o motor já está falando com a Sony: sair agora gravaria a conta sem ninguém ver
+    Keys.onEscapePressed: estado === "ok" ? concluir() : estado === "conectando" ? undefined : voltar()
+    // o foco vai pro botão principal de cada resultado (teclado e leitor de tela chegam direto nele)
+    onEstadoChanged: Qt.callLater(() => {
+        if (estado === "ok") botaoOk.forceActiveFocus(Qt.TabFocusReason);
+        else if (estado === "erro") botaoDeNovo.forceActiveFocus(Qt.TabFocusReason);
+        else if (estado === "ja") botaoJa.forceActiveFocus(Qt.TabFocusReason);
+        else if (estado === "esperando" || estado === "abrindo" || estado === "conectando") pn.forceActiveFocus();
+    })
     StackView.onActivated: {
         if (estado !== "abrindo") return;
         if (conectada && !expirada) { fimId = root.fimIdPsn(Chiaki.settings.psnAccountId); estado = "ja"; }
@@ -184,12 +193,21 @@ Rectangle {
         y: 32
         spacing: 16
 
+        // uma saída por estado: o Voltar do topo some quando o cartão já tem a saída (esperando, conectando, ok)
         InBotao {
-            tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true; Layout.leftMargin: -12
-            onClicked: pn.estado === "ok" ? pn.concluir() : pn.voltar()
+            readonly property bool usado: pn.estado === "ja" || pn.estado === "erro" || pn.estado === "colar"
+            opacity: usado ? 1 : 0
+            enabled: usado
+            tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true
+            onClicked: pn.voltar()
         }
-        InTexto { tipo: "secao"; font.pixelSize: 34; text: pn.expirada ? root.t("Entrar de novo na PSN") : root.t("Conectar conta PSN") }
         InTexto {
+            tipo: "secao"; font.pixelSize: 34
+            text: pn.estado === "ok" || pn.estado === "ja" ? root.t("Conta PSN")
+                : pn.expirada ? root.t("Entrar de novo na PSN") : root.t("Conectar conta PSN")
+        }
+        InTexto {
+            visible: pn.estado !== "ok" && pn.estado !== "ja"
             Layout.fillWidth: true
             tipo: "apoio"
             text: pn.expirada
@@ -204,8 +222,8 @@ Rectangle {
             respiro: 28
             InTexto {
                 tipo: "titulo"
-                text: pn.estado === "conectando" ? root.t("Conectando sua conta...")
-                    : pn.estado === "esperando" ? root.t("Entre na janela da Sony") : root.t("Abrindo a página da Sony...")
+                text: pn.estado === "conectando" ? root.t("Conectando sua conta…")
+                    : pn.estado === "esperando" ? root.t("Entre na janela da Sony") : root.t("Abrindo a página da Sony…")
             }
             InTexto {
                 Layout.fillWidth: true
@@ -213,7 +231,7 @@ Rectangle {
                 text: pn.estado === "conectando" ? root.t("A Sony confirmou o login. Falta só guardar a chave de acesso.")
                     : root.t("A página de login da PlayStation abre numa janela à parte. Quando você terminar, o Incipit Play conecta sozinho.")
             }
-            BarraAndando { Layout.fillWidth: true; Layout.topMargin: 4 }
+            BarraAndando { visible: !root.semMovimento; Layout.fillWidth: true; Layout.topMargin: 4 }
             InTexto {
                 Layout.fillWidth: true
                 tipo: "pequeno"
@@ -249,6 +267,8 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 20
                     text: root.t("Conta PSN conectada")
+                    Accessible.role: Accessible.AlertMessage
+                    Accessible.name: text
                     font.family: root.tema.serif
                     font.pixelSize: 30
                     color: root.tema.texto
@@ -257,9 +277,8 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 8
                     visible: pn.fimId !== "" && !Chiaki.settings.streamerMode
+                    tipo: "apoio"
                     text: root.t("ID terminado em %1").arg(pn.fimId)
-                    font.weight: Font.DemiBold
-                    color: root.tema.ok
                 }
                 InTexto {
                     Layout.alignment: Qt.AlignHCenter
@@ -270,6 +289,7 @@ Rectangle {
                 }
                 Rectangle {
                     id: trilhoContagem
+                    visible: !root.semMovimento
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 20
                     Layout.preferredWidth: 280
@@ -289,9 +309,11 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 8
                     tipo: "pequeno"
-                    text: pn.origem === "registro" ? root.t("Voltando pro registro...") : root.t("Voltando pra Configurações...")
+                    visible: !root.semMovimento
+                    text: pn.origem === "registro" ? root.t("Voltando pro registro…") : root.t("Voltando pra Configurações…")
                 }
                 InBotao {
+                    id: botaoOk
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 20
                     tipo: "forte"
@@ -326,8 +348,7 @@ Rectangle {
                     Row {
                         Layout.topMargin: 10
                         spacing: 12
-                        InBotao { id: botaoJa; tipo: "forte"; text: root.t("Voltar"); onClicked: pn.voltar() }
-                        InBotao { text: root.t("Conectar outra conta"); onClicked: pn.abrirSony() }
+                        InBotao { id: botaoJa; text: root.t("Trocar de conta"); icone: "pessoa"; onClicked: pn.abrirSony() }
                     }
                 }
             }
@@ -342,19 +363,18 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 16
-                InIcone { nome: "info"; tamanho: 28; cor: root.tema.alerta; Layout.alignment: Qt.AlignTop; Layout.topMargin: 1 }
+                InIcone { nome: "alerta"; tamanho: 28; cor: root.tema.alerta; Layout.alignment: Qt.AlignTop; Layout.topMargin: 1 }
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.maximumWidth: Number.POSITIVE_INFINITY
                     spacing: 6
-                    InTexto { tipo: "titulo"; text: root.t("A conta não conectou") }
-                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: pn.erro }
+                    InTexto { tipo: "titulo"; text: root.t("Não deu pra conectar a conta") }
+                    InTexto { Layout.fillWidth: true; tipo: "apoio"; text: pn.erro; Accessible.role: Accessible.AlertMessage; Accessible.name: text }
                     Row {
                         Layout.topMargin: 10
                         spacing: 12
-                        InBotao { tipo: "forte"; text: root.t("Tentar de novo"); icone: "atualizar"; onClicked: pn.abrirSony() }
+                        InBotao { id: botaoDeNovo; tipo: "forte"; text: root.t("Tentar de novo"); icone: "atualizar"; onClicked: pn.abrirSony() }
                         InBotao { visible: pn.erroSemJanela; text: root.t("Abrir no navegador"); icone: "externo"; onClicked: pn.abrirNoNavegador() }
-                        InBotao { tipo: "quieto"; text: root.t("Voltar"); onClicked: pn.voltar() }
                     }
                 }
             }

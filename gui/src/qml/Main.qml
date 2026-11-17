@@ -18,6 +18,8 @@ Item {
     // escolhido; quem usa root.t num binding troca na hora quando o idioma muda.
     readonly property Lingua lingua: Lingua {}
     function t(s) { return lingua.t(s); }
+    // "Mostrar animações no Windows" desligado: nada anda na tela e nada muda de tela sozinho
+    readonly property bool semMovimento: Chiaki.reduceMotion()
     function numero(n) { return lingua.en ? String(n) : String(n).replace(".", ","); }
     // fim do ID da conta PSN (4 últimos números do ID; o app guarda o ID em base64, 8 bytes little-endian)
     function fimIdPsn(b64) {

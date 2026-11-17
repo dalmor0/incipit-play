@@ -20,7 +20,7 @@ InPagina {
     Component.onCompleted: atenderPedido()
     Connections { target: root; function onConfigSecaoChanged() { cfg.atenderPedido(); } }
     // o cartão da PSN fica marcado em verde uns segundos depois de conectar
-    Timer { running: root.psnRecemConectada; interval: 6000; onTriggered: root.psnRecemConectada = false }
+    Timer { running: root.psnRecemConectada; interval: 8000; onTriggered: root.psnRecemConectada = false }
 
     readonly property bool psnConectada: !!(Chiaki.settings.psnAuthToken && Chiaki.settings.psnAccountId)
     readonly property string perfilXbox: Chiaki.localDataPath() + "/xbox-web"
@@ -124,7 +124,7 @@ InPagina {
                 }
                 InBotao {
                     implicitWidth: Math.max(120, implicitContentWidth + 36)
-                    text: cfg.psnConectada ? root.t("Conectar de novo") : root.t("Conectar")
+                    text: cfg.psnConectada ? root.t("Trocar de conta") : root.t("Conectar")
                     onClicked: root.showPSNTokenDialog(false)
                 }
             }

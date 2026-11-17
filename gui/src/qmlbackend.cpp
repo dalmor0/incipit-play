@@ -510,6 +510,7 @@ bool QmlBackend::prepareFrameForPresentation(ChiakiFfmpegFrame &frame, bool use_
 
 QmlBackend::~QmlBackend()
 {
+    psnLoginClose();
     teardownSession();
 #ifdef CHIAKI_HAVE_WEBENGINE
     if(request_interceptor)
@@ -2708,4 +2709,70 @@ QString QmlBackend::localDataPath() const
 QString QmlBackend::appVersion() const
 {
     return QCoreApplication::applicationVersion();
+}
+
+// ---------------------------------------------------------------- Incipit Play: janela do login da PSN
+// O login da Sony abre num Edge com porta de depuração local (o QML lê a volta do login por ela). Pra não sobrar
+// janela nem dado: perfil novo e vazio a cada tentativa (psn-login/<aleatório>), InPrivate, e ao fechar (voltar,
+// tempo esgotado, sucesso ou o app saindo) o processo do Edge e os filhos dele morrem e a pasta do perfil é apagada.
+#include <QDir>
+#include <QRandomGenerator>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
+bool QmlBackend::psnLoginOpen(const QString &program, const QStringList &arguments)
+{
+    psnLoginClose();
+    const QFileInfo info(program);
+    if(program.isEmpty() || !info.isAbsolute() || !info.exists() || info.fileName().compare(QStringLiteral("msedge.exe"), Qt::CaseInsensitive) != 0)
+        return false;
+    for(const QString &arg : arguments)
+        if(!arg.startsWith(QStringLiteral("--")) || arg.startsWith(QStringLiteral("--user-data-dir")))
+            return false;
+    const QString base = localDataPath() + QStringLiteral("/psn-login");
+    QDir(base).removeRecursively();   // sobra de uma vez anterior (o app fechado à força)
+    psn_login_dir = base + QStringLiteral("/") + QString::number(QRandomGenerator::global()->generate64(), 36);
+    QDir().mkpath(psn_login_dir);
+    QStringList args = arguments;
+    args.prepend(QStringLiteral("--user-data-dir=") + psn_login_dir);
+    qint64 pid = 0;
+    if(!QProcess::startDetached(program, args, QString(), &pid) || pid <= 0)
+    {
+        QDir(psn_login_dir).removeRecursively();
+        psn_login_dir.clear();
+        return false;
+    }
+    psn_login_pid = pid;
+    return true;
+}
+
+void QmlBackend::psnLoginClose()
+{
+    if(psn_login_pid > 0)
+    {
+#ifdef Q_OS_WIN
+        // o Edge abre vários processos filhos: taskkill /T leva a árvore toda
+        QProcess::execute(QStringLiteral("taskkill"), {QStringLiteral("/PID"), QString::number(psn_login_pid), QStringLiteral("/T"), QStringLiteral("/F")});
+#endif
+        psn_login_pid = 0;
+    }
+    if(!psn_login_dir.isEmpty())
+    {
+        const QString dir = psn_login_dir;
+        psn_login_dir.clear();
+        // os processos levam um instante pra soltar os arquivos
+        QTimer::singleShot(2000, [dir]() { QDir(dir).removeRecursively(); });
+        QDir(dir).removeRecursively();
+    }
+}
+
+bool QmlBackend::reduceMotion() const
+{
+#ifdef Q_OS_WIN
+    BOOL animar = TRUE;
+    if(SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION, 0, &animar, 0))
+        return !animar;
+#endif
+    return false;
 }

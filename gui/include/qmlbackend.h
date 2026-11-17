@@ -214,6 +214,10 @@ public:
     Q_INVOKABLE bool launchDetached(const QString &program, const QStringList &arguments);
     Q_INVOKABLE bool pathExists(const QString &path) const;
     Q_INVOKABLE QString localDataPath() const;
+    // Incipit Play: janela do login da PSN (Edge com porta de depuração local, perfil novo a cada vez)
+    Q_INVOKABLE bool psnLoginOpen(const QString &program, const QStringList &arguments);
+    Q_INVOKABLE void psnLoginClose();
+    Q_INVOKABLE bool reduceMotion() const;
     Q_INVOKABLE QString appVersion() const;
 #if CHIAKI_GUI_ENABLE_STEAM_SHORTCUT
     Q_INVOKABLE void createSteamShortcut(QString shortcutName, QString launchOptions, const QJSValue &callback, QString steamDir);
@@ -341,6 +345,8 @@ private:
     QString wakeup_nickname = "";
     bool wakeup_start = false;
     QMap<QString, PsnHost> psn_hosts = {};
+    qint64 psn_login_pid = 0;
+    QString psn_login_dir;
     QMap<QString, PsnHost> psn_nickname_hosts = {};
 #ifdef CHIAKI_HAVE_WEBENGINE
     SecUaRequestInterceptor * request_interceptor = {};
