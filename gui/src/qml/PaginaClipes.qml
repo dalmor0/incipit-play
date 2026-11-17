@@ -1,4 +1,5 @@
-// Aba Clipes: o atalho que guarda os últimos segundos, a biblioteca e o caminho pra edição.
+// Aba Clipes: o atalho que guarda os últimos segundos e a biblioteca. A edição automática dos clipes vem em breve
+// (cartão "Em breve" acima da biblioteca, sem botão que não faz nada).
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -119,14 +120,7 @@ InPagina {
             RowLayout {
                 spacing: 12
                 InTexto { Layout.maximumWidth: 420; text: Clips.clipsDir(); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: root.t("Trocar"); onClicked: { escolhaPasta.paraEdicao = false; escolhaPasta.open(); } }
-            }
-
-            InTexto { text: root.t("Pasta da edição"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
-            RowLayout {
-                spacing: 12
-                InTexto { Layout.maximumWidth: 420; text: cl.cfg.pastaEdicao || root.t("ainda não escolhida"); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
-                InBotao { text: root.t("Escolher"); onClicked: { escolhaPasta.paraEdicao = true; escolhaPasta.open(); } }
+                InBotao { text: root.t("Trocar"); onClicked: escolhaPasta.open() }
             }
         }
 
@@ -147,6 +141,32 @@ InPagina {
             InBotao { text: root.t("Testar"); onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
         }
 
+    }
+
+    // ------------------------------------------------------------ edição automática: em breve
+    InCartao {
+        Layout.topMargin: 12
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 16
+            Rectangle {
+                Layout.alignment: Qt.AlignTop
+                Layout.preferredWidth: selo.implicitWidth + 20
+                Layout.preferredHeight: 26
+                Layout.topMargin: 1
+                color: root.tema.destaqueFraco
+                border.width: 1
+                border.color: root.tema.destaque
+                Text { id: selo; anchors.centerIn: parent; text: root.t("Em breve"); color: root.tema.texto; font.family: root.tema.sans; font.pixelSize: 13; font.weight: Font.Bold }
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.maximumWidth: Number.POSITIVE_INFINITY
+                spacing: 4
+                InTexto { Layout.fillWidth: true; tipo: "titulo"; text: root.t("Edição automática dos seus clipes") }
+                InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("O clipe vai sair cortado, na vertical e com legenda, pronto pra postar.") }
+            }
+        }
     }
 
     // ------------------------------------------------------------ biblioteca, por transmissão
@@ -245,14 +265,14 @@ InPagina {
                                 Layout.margins: 16
                                 spacing: 4
                                 InTexto { Layout.fillWidth: true; text: Qt.formatDateTime(item.modelData.criado, "HH:mm"); font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }
-                                InTexto { tipo: "pequeno"; text: root.numero(item.modelData.tamanhoMb) + " MB" + (item.modelData.enviado ? " · " + root.t("já foi pra edição") : "") }
+                                InTexto { tipo: "pequeno"; text: root.numero(item.modelData.tamanhoMb) + " MB" }
                                 RowLayout {
                                     Layout.topMargin: 10
                                     spacing: 8
                                     InBotao {
-                                        tipo: item.modelData.enviado ? "normal" : "forte"
-                                        text: item.modelData.enviado ? root.t("Mandar de novo") : root.t("Mandar pra edição")
-                                        onClicked: pedido.abrir(item.modelData.caminho)
+                                        text: root.t("Assistir")
+                                        icone: "jogar"
+                                        onClicked: Qt.openUrlExternally("file:///" + item.modelData.caminho)
                                     }
                                     Item { Layout.fillWidth: true }
                                     InBotao {
@@ -270,75 +290,12 @@ InPagina {
         }
     }
 
-    // ------------------------------------------------------------ pedido pra edição
-    T.Dialog {
-        id: pedido
-        property string caminho: ""
-        function abrir(c) { caminho = c; texto.text = ""; open(); }
-        function mandar() {
-            if (!cl.cfg.pastaEdicao) { escolhaPasta.paraEdicao = true; escolhaPasta.pendente = caminho; escolhaPasta.pedido = texto.text; close(); escolhaPasta.open(); return; }
-            const d = Clips.sendToEditing(caminho, cl.cfg.pastaEdicao, texto.text);
-            cl.avisar(d ? root.t("Mandado pra edição, com o seu pedido.") : root.t("Não deu pra copiar pra pasta da edição."), !!d);
-            close();
-        }
-        parent: Overlay.overlay
-        modal: true
-        width: Math.min(560, root.width - 64)
-        x: Math.round((root.width - width) / 2)
-        y: Math.round((root.height - height) / 2)
-        padding: 28
-        background: Rectangle { color: root.tema.sup; border.width: 1; border.color: root.tema.borda }
-        Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.55) }
-        onOpened: texto.forceActiveFocus()
-        contentItem: ColumnLayout {
-            spacing: 12
-            InTexto { tipo: "secao"; text: root.t("Mandar pra edição") }
-            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("O que você quer nesse clipe? Vai junto, num arquivo ao lado do vídeo.") }
-            TextArea {
-                id: texto
-                Layout.fillWidth: true
-                Layout.preferredHeight: 120
-                wrapMode: TextEdit.Wrap
-                placeholderText: root.t("ex.: corta do grito até a risada, legenda grande, vertical pro TikTok")
-                placeholderTextColor: root.tema.texto2
-                color: root.tema.texto
-                font.family: root.tema.sans
-                font.pixelSize: 16
-                selectionColor: root.tema.destaque
-                selectedTextColor: root.tema.sobreDestaque
-                background: Rectangle { color: root.tema.fundo; border.width: texto.activeFocus ? 2 : 1; border.color: texto.activeFocus ? root.tema.texto : root.tema.borda }
-                Keys.onPressed: (e) => { if (text.length >= 2000 && e.text.length && e.key !== Qt.Key_Backspace && e.key !== Qt.Key_Delete) e.accepted = true; }
-            }
-            InTexto { tipo: "pequeno"; text: root.t("Pasta da edição: %1").arg(cl.cfg.pastaEdicao || root.t("escolha no próximo passo")); elide: Text.ElideMiddle; wrapMode: Text.NoWrap; Layout.fillWidth: true }
-            Row {
-                Layout.alignment: Qt.AlignRight
-                Layout.topMargin: 8
-                spacing: 12
-                InBotao { text: root.t("Cancelar"); onClicked: pedido.close() }
-                InBotao { tipo: "forte"; text: root.t("Mandar"); icone: "seta"; onClicked: pedido.mandar() }
-            }
-        }
-    }
-
     FolderDialog {
         id: escolhaPasta
-        property bool paraEdicao: false
-        property string pendente: ""
-        property string pedido: ""
-        title: paraEdicao ? root.t("Pasta da edição") : root.t("Pasta dos clipes")
+        title: root.t("Pasta dos clipes")
         onAccepted: {
-            let p = decodeURIComponent(selectedFolder.toString().replace(/^file:\/{3}/, ""));
-            if (paraEdicao) {
-                cl.cfg.mudarPastaEdicao(p);
-                if (pendente) {
-                    const d = Clips.sendToEditing(pendente, p, pedido);
-                    cl.avisar(d ? root.t("Mandado pra edição.") : root.t("Não deu pra copiar pra pasta da edição."), !!d);
-                    pendente = "";
-                }
-            } else {
-                cl.cfg.mudarPasta(p);
-                cl.recarregar();
-            }
+            cl.cfg.mudarPasta(decodeURIComponent(selectedFolder.toString().replace(/^file:\/{3}/, "")));
+            cl.recarregar();
         }
     }
 }
