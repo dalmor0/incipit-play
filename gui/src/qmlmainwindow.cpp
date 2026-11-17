@@ -2965,6 +2965,23 @@ void QmlMainWindow::restaurarJanelaHub()
         showNormal();
 }
 
+// Incipit Play: guarda a janela do hub um instante depois de ela parar de mudar. O Windows manda o novo tamanho antes
+// do novo estado (maximizar e restaurar), então só o estado final decide: maximizada guarda só isso; normal guarda
+// também a geometria. Tela cheia e minimizada não mexem em nada.
+void QmlMainWindow::guardarJanelaHub()
+{
+    if(session || !isWindowAdjustable())
+        return;
+    const Qt::WindowStates estado = windowStates();
+    if(estado.testFlag(Qt::WindowFullScreen) || estado.testFlag(Qt::WindowMinimized))
+        return;
+    const bool maximizada = estado.testFlag(Qt::WindowMaximized);
+    if(settings->GetMaximized() != maximizada)
+        settings->SetMaximized(maximizada);
+    if(!maximizada && settings->GetGeometry() != geometry())
+        settings->SetGeometry(geometry());
+}
+
 namespace {
 constexpr int kDefaultQueueDepthLimit = 2;
 
@@ -7814,19 +7831,19 @@ bool QmlMainWindow::event(QEvent *event)
                 QMetaObject::invokeMethod(quick_render, std::bind(&QmlMainWindow::destroySwapchain, this), Qt::BlockingQueuedConnection);
         break;
     case QEvent::WindowStateChange:
-        if(!session && isWindowAdjustable() && !windowStates().testFlag(Qt::WindowFullScreen) && !windowStates().testFlag(Qt::WindowMinimized))
-            settings->SetMaximized(windowStates().testFlag(Qt::WindowMaximized));
+        if(!session && isWindowAdjustable())
+            QTimer::singleShot(400, this, [this]{ guardarJanelaHub(); });
         break;
     case QEvent::Move:
-        if(!session && isWindowAdjustable() && windowState() == Qt::WindowNoState)
-            settings->SetGeometry(geometry());
+        if(!session && isWindowAdjustable())
+            QTimer::singleShot(400, this, [this]{ guardarJanelaHub(); });
         else if(session && settings->GetWindowType() == WindowType::AdjustableResolution && isStreamWindowAdjustable())
             settings->SetStreamGeometry(geometry());
         updateStatsOverlayGeometry();
         break;
     case QEvent::Resize:
-        if(!session && isWindowAdjustable() && windowState() == Qt::WindowNoState)
-            settings->SetGeometry(geometry());
+        if(!session && isWindowAdjustable())
+            QTimer::singleShot(400, this, [this]{ guardarJanelaHub(); });
         else if(session && settings->GetWindowType() == WindowType::AdjustableResolution && isStreamWindowAdjustable())
             settings->SetStreamGeometry(geometry());
         if (isExposed())

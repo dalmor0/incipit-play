@@ -139,6 +139,7 @@ public:
     void fullscreenTime();
     void normalTime();
     void restaurarJanelaHub();
+    void guardarJanelaHub();
     Q_INVOKABLE void barraDeTitulo(const QColor &fundo, const QColor &texto, const QColor &borda, bool escuro);
 
     bool isStreamWindowAdjustable() { return is_stream_window_adjustable; }
