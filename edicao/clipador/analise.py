@@ -214,10 +214,29 @@ def ponta_no_vao(e, t, voz, antes, depois, dur, palavras=()):
                 if d < dist:
                     melhor, dist = cand, d
         k = j
+    if melhor is None and palavras:
+        # plano B (jogo e anime com música não têm vão de silêncio): o maior intervalo entre duas palavras perto,
+        # com bônus pra fim de frase (pontuação); nunca no meio da palavra
+        ws = sorted((w for w in palavras if t - antes - 1 <= w["i"] <= t + depois + 1), key=lambda w: w["i"])
+        notas = []
+        for w0, w1 in zip(ws, ws[1:]):
+            meio = (w0["f"] + w1["i"]) / 2
+            if not (t - antes <= meio <= t + depois):
+                continue
+            vao = max(0.0, w1["i"] - w0["f"])
+            fim_frase = 0.4 if w0["p"].rstrip()[-1:] in ".!?…" else (0.15 if w0["p"].rstrip()[-1:] == "," else 0.0)
+            ponto = w1["i"] - 0.06 if antes > depois else w0["f"] + 0.06
+            notas.append((vao + fim_frase - 0.08 * abs(ponto - t), ponto))
+        if notas:
+            melhor = max(notas)[1]
+        else:
+            for w in palavras:
+                if w["i"] < t < w["f"]:
+                    melhor = w["i"] - 0.05 if antes > depois else w["f"] + 0.05
     return t if melhor is None else float(min(dur, max(0.0, melhor)))
 
 
-def _subida(e, ini, de, ate):
+def _subida(e, ini, de, ate, teto=0.15):
     """A subida da voz: primeiro instante entre de e ate com a energia 8 dB acima do chão de ruído de antes. Medir
     contra o pico atrasava a fala que começa baixa e vira grito. Nunca mais de 0,15 s depois de de."""
     a, b = max(0, int((de - ini) * 100)), min(len(e), int((ate - ini) * 100) + 1)
@@ -227,7 +246,7 @@ def _subida(e, ini, de, ate):
     chao = float(np.percentile(antes, 20)) if len(antes) else float(e[a:b].min())
     acima = np.where(e[a:b] >= chao + 8)[0]
     t = ini + (a + int(acima[0])) / 100.0 - 0.02 if len(acima) else de
-    return min(t, de + 0.15)
+    return min(t, de + teto)
 
 
 def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
@@ -275,6 +294,8 @@ def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
                 comeco = c0 + 0.1
             else:
                 comeco = _subida(e, ini, prox[0][0], prox[0][0] + 0.8) + 0.03
+        # o Whisper pôs a frase antes da voz ("Clipei" 0,8 s antes, no barulho do jogo): espera a subida, até 1 s
+        comeco = _subida(e, ini, comeco, comeco + 1.0, teto=1.0) + 0.02
         comeco = max(comeco, c0 - 0.05, fim_ant + 0.02)
         delta = comeco - c0
         for w in fr:

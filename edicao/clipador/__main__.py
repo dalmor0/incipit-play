@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.9"
+VERSAO = "1.0.10"
 _cancelar = {"v": False}
 
 
