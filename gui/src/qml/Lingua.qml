@@ -455,7 +455,7 @@ QtObject {
         "Sua câmera está marcada.": "Your camera is marked.",
         "às %1": "at %1",
         "Arraste um retângulo em volta da sua câmera ou escolha o canto: ela vai pra cima e o jogo embaixo. No teclado, Tab até a imagem; setas movem e Shift com setas muda o tamanho.": "Drag a box around your camera or pick the corner: it goes on top and the game below. With the keyboard, Tab to the image; arrows move it and Shift with arrows resizes it.",
-        "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with this protection off, in Windows Security > App & browser control. Read the Windows warning first: on some versions it only turns back on by reinstalling Windows.",
-        "Abrir Segurança do Windows": "Open Windows Security"
+        "O Windows bloqueou uma parte do editor porque ela ainda não tem assinatura digital. Estamos resolvendo. Enquanto isso, os seus clipes continuam salvos e você pode assistir normalmente.": "Windows blocked part of the editor because it isn't digitally signed yet. We're working on it. In the meantime, your clips are still saved and you can watch them normally.",
+        "Falar com a gente": "Contact us"
     })
 }

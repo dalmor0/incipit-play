@@ -20,7 +20,7 @@ from .base import Andamento, Falha, avisar, conferir_clipe, medir, pasta_trabalh
 try:
     from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
 except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pacote estragado
-    avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(_e))
+    avisar("erro", motivo="O Windows bloqueou uma parte do editor porque ela ainda não tem assinatura digital. Estamos resolvendo. Enquanto isso, os seus clipes continuam salvos e você pode assistir normalmente.", detalhe=repr(_e))
     sys.exit(3)
 
 VERSAO = "1.0.11"
@@ -322,7 +322,7 @@ def main(argv=None):
         avisar("erro", motivo=f.motivo, detalhe=str(f.detalhe)[-800:], cancelado=f.motivo == "Cancelado.")
         return 2 if f.motivo == "Cancelado." else 1
     except ImportError as ex:   # DLL barrada no meio do caminho (o OpenCV e o leitor de fala carregam só na hora)
-        avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(ex))
+        avisar("erro", motivo="O Windows bloqueou uma parte do editor porque ela ainda não tem assinatura digital. Estamos resolvendo. Enquanto isso, os seus clipes continuam salvos e você pode assistir normalmente.", detalhe=repr(ex))
         return 3
     except OSError as ex:
         import errno

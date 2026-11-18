@@ -17,7 +17,7 @@ ColumnLayout {
     property bool ajustando: false
     readonly property bool estragado: /corrompido|estragado|não é um vídeo/i.test(Edicao.motivo)
     readonly property bool soMenu: /menu ou tela parada/i.test(Edicao.motivo)
-    readonly property bool bloqueioWindows: /Controle Inteligente de Aplicativos/i.test(Edicao.motivo)
+    readonly property bool bloqueioWindows: /ainda não tem assinatura digital/i.test(Edicao.motivo)
     property var editados: Edicao.editados(8)
     property real largura: 900
     signal pedirEdicao(var clipe)
@@ -142,8 +142,8 @@ ColumnLayout {
             InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && !ed.soMenu && !ed.estragado && !ed.bloqueioWindows; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
             InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; tipo: ed.estragado ? "forte" : "normal"; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
             InBotao { Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && ed.estragado; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
-            // bloqueio do Controle Inteligente: tentar de novo falha igual; a ação é abrir a página da proteção
-            InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; visible: ed.bloqueioWindows; text: root.t("Abrir Segurança do Windows"); icone: "externo"; onClicked: Qt.openUrlExternally("windowsdefender://appbrowser") }
+            // bloqueio do Controle Inteligente: tentar de novo falha igual; nunca ensinar a desligar a proteção, a ação é falar com a gente
+            InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; visible: ed.bloqueioWindows; text: root.t("Falar com a gente"); icone: "externo"; onClicked: Qt.openUrlExternally("mailto:contato@incipithouse.com.br") }
             InBotao { tipo: "quieto"; Layout.alignment: Qt.AlignTop; Layout.leftMargin: 12; text: root.t("Fechar"); onClicked: Edicao.fechar() }
         }
     }
