@@ -119,6 +119,7 @@ T.Dialog {
             }
         }
 
+        InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("Pelo teclado: Tab até a imagem; as setas movem a caixa e Shift com as setas muda o tamanho.") }
         Flow {
             Layout.fillWidth: true
             spacing: 8

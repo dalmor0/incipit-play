@@ -452,6 +452,7 @@ QtObject {
         "Em branco: o melhor trecho, legenda, zoom nos picos e sua câmera em cima.": "Left blank: the best part, captions, zoom on the big moments and your camera on top.",
         "Pasta dos editados": "Edited videos folder",
         "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with that protection turned off.",
-        "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30)."
+        "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30).",
+        "Pelo teclado: Tab até a imagem; as setas movem a caixa e Shift com as setas muda o tamanho.": "With the keyboard: Tab to the image; the arrows move the box and Shift with the arrows resizes it."
     })
 }

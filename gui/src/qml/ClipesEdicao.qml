@@ -15,6 +15,7 @@ ColumnLayout {
     readonly property string estado: Edicao.estado
     readonly property var res: Edicao.resultado
     property bool ajustando: false
+    readonly property bool estragado: /corrompido|estragado|não é um vídeo/i.test(Edicao.motivo)
     property var editados: Edicao.editados(8)
     property real largura: 900
     signal pedirEdicao(var clipe)
@@ -137,8 +138,8 @@ ColumnLayout {
                 }
             }
             InBotao { text: root.t("Fechar"); Layout.alignment: Qt.AlignTop; onClicked: Edicao.fechar() }
-            InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
-            InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== ""; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
+            InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; tipo: ed.estragado ? "forte" : "normal"; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
+            InBotao { tipo: ed.estragado ? "normal" : "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== ""; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
         }
     }
 
@@ -202,7 +203,7 @@ ColumnLayout {
                     spacing: 12
                     InBotao { tipo: ed.ajustando ? "normal" : "forte"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta(ed.res.arquivo) }
                     InBotao { text: root.t("Assistir"); icone: "jogar"; onClicked: Edicao.abrirVideo(ed.res.arquivo) }
-                    InBotao { text: ed.ajustando ? root.t("Fechar ajuste") : root.t("Ajustar"); icone: "engrenagem"; onClicked: ed.ajustando = !ed.ajustando }
+                    InBotao { text: ed.ajustando ? root.t("Fechar ajuste") : root.t("Ajustar"); icone: "pincel"; onClicked: ed.ajustando = !ed.ajustando }
                     InBotao { tipo: "quieto"; text: root.t("Concluir"); onClicked: Edicao.fechar() }
                 }
             }
@@ -266,9 +267,9 @@ ColumnLayout {
                     delegate: Rectangle {
                         required property int index
                         readonly property bool comeco: index === 0
-                        x: (comeco ? aj.ini : aj.fim) / aj.total * linha.width - width / 2
+                        x: Math.max(0, Math.min(linha.width - width, (comeco ? aj.ini : aj.fim) / aj.total * linha.width - width / 2))
                         y: -6
-                        width: 16
+                        width: 20
                         height: linha.height + 12
                         color: ed.tema.texto
                         Accessible.role: Accessible.Slider
@@ -412,7 +413,7 @@ ColumnLayout {
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.margins: 8
-                            spacing: 4
+                            spacing: 8
                             InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: Math.round(ce.modelData.duracao || 0) + " s · " + Qt.formatDateTime(ce.modelData.criado, "HH:mm"); wrapMode: Text.NoWrap; elide: Text.ElideRight }
                             InBotao {
                                 tipo: "quieto"; icone: "externo"
