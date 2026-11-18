@@ -20,10 +20,10 @@ from .base import Andamento, Falha, avisar, conferir_clipe, medir, pasta_trabalh
 try:
     from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
 except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pacote estragado
-    avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(_e))
+    avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.7"
+VERSAO = "1.0.8"
 _cancelar = {"v": False}
 
 
@@ -228,7 +228,9 @@ def editar(a):
             if voz_clipe is None:
                 voz_clipe = [[round(r0, 2), round(r1, 2)] for r0, r1 in analise.regioes_de_voz(aud)]
                 cache["voz"] = voz_clipe
-            ini, fim = momento.ajustar_pontas_na_voz(ini, fim, voz_clipe, meta["duracao"])
+            e_clipe = analise.energia_db(aud)
+            ini = analise.ponta_no_vao(e_clipe, ini, voz_clipe, 3.0, 1.5, meta["duracao"]) if ini > 0.05 else ini
+            fim = analise.ponta_no_vao(e_clipe, fim, voz_clipe, 1.5, 3.0, meta["duracao"]) if fim < meta["duracao"] - 0.05 else fim
         imp = momento.impactos(ini, fim, s, plano, com_cam)
         # o trecho escolhido é lido de novo em pedaços (fala dele por cima de outra voz) e alinhado na subida da voz
         if plano["legenda"] and palavras:
@@ -245,7 +247,7 @@ def editar(a):
                 except Exception:
                     pass
             and_.etapa("momento", 0.5, "Conferindo a fala do trecho")
-            palavras = _f.refinar(palavras, ini, fim, cancelado)
+            palavras = _f.sem_dobra(_f.refinar(palavras, ini, fim, cancelado))
         cens = legenda.trechos_censurados(palavras, ini, fim) if plano["censura"] else []
         medida = render.medir_volume(clipe, ini, fim - ini, trabalho, meta.get("faixas", 1)) if meta["audio"] else None
         pronto_aud = render.audio_final(clipe, meta, ini, fim - ini, medida, cens, trabalho) if palavras else None
@@ -320,7 +322,7 @@ def main(argv=None):
         avisar("erro", motivo=f.motivo, detalhe=str(f.detalhe)[-800:], cancelado=f.motivo == "Cancelado.")
         return 2 if f.motivo == "Cancelado." else 1
     except ImportError as ex:   # DLL barrada no meio do caminho (o OpenCV e o leitor de fala carregam só na hora)
-        avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(ex))
+        avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(ex))
         return 3
     except OSError as ex:
         import errno

@@ -62,7 +62,7 @@ T.Dialog {
             font.pixelSize: 26
             color: d.tema.texto
         }
-        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo. No teclado: Tab até a imagem, setas movem a caixa e Shift com as setas muda o tamanho.") }
+        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Arraste um retângulo em volta da sua câmera ou escolha o canto: ela vai pra cima e o jogo embaixo. No teclado, Tab até a imagem; setas movem e Shift com setas muda o tamanho.") }
 
         Rectangle {
             id: quadro

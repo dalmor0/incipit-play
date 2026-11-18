@@ -279,7 +279,33 @@ def limpar(palavras):
         if limpo and _norm(w["p"]) == _norm(limpo[-1]["p"]) and (w["i"] - limpo[-1]["i"] < 0.3 or w["i"] < limpo[-1]["f"] + 0.12):
             continue
         limpo.append(w)
-    return limpo
+    return sem_dobra(limpo)
+
+
+def _silabas(p):
+    return max(1, len(re.findall(r"[aeiouyáéíóúâêôãõàü]+", p.lower())))
+
+
+def sem_dobra(ws):
+    """O Whisper às vezes escreve a mesma frase duas vezes seguidas onde a pessoa falou uma ("No máximo, o meu, no
+    máximo, o meu" em 1,4 s). Repetição de verdade ("Viu eu ali, viu eu ali") cabe no tempo de fala normal; a dobra
+    não cabe: mais de 7,5 sílabas por segundo nas duas cópias juntas (a de verdade medida: 5,7 a 6,9)."""
+    nm = [_norm(w["p"]) for w in ws]
+    tirar = set()
+    for n in range(6, 1, -1):
+        for i in range(len(ws) - 2 * n + 1):
+            for g in (0,):
+                j = i + n + g
+                if j + n > len(ws) or any(k in tirar for k in range(i, j + n)):
+                    continue
+                if not all(nm[i:i + n]) or nm[i:i + n] != nm[j:j + n]:
+                    continue
+                ini = ws[i]["i"]
+                fim = max(ws[j + n - 1]["f"], ws[j + n - 1]["i"] + 0.15)
+                sil = sum(_silabas(w["p"]) for w in ws[i:j + n])
+                if fim > ini and sil / (fim - ini) > 7.5:
+                    tirar.update(range(i + n, j + n))
+    return [w for k, w in enumerate(ws) if k not in tirar]
 
 
 _ESTADO = {"modelo": None, "audio": None, "prompt": None, "idioma": "pt"}

@@ -141,7 +141,7 @@ def medir(caminho):
     d = _RE_DUR.search(err)
     v = _RE_VID.search(err)
     if not d or not v:
-        raise Falha("Não consegui ler esse vídeo. O arquivo pode estar corrompido.", err[-400:])
+        raise Falha("Não consegui ler esse vídeo. Pode estar corrompido.", err[-400:])
     dur = int(d.group(1)) * 3600 + int(d.group(2)) * 60 + float(d.group(3))
     if dur <= 0.5:
         raise Falha("O clipe é curto demais pra editar.")

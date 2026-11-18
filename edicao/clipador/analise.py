@@ -171,6 +171,41 @@ def regioes_de_voz(x):
     return [(r["start"] / SR, r["end"] / SR) for r in get_speech_timestamps(x, VadOptions(min_silence_duration_ms=250, speech_pad_ms=60))]
 
 
+def energia_db(x, passo=0.01, jan=0.03):
+    """Energia em dB de 10 em 10 ms (janela de 30 ms, média de 50 ms)."""
+    h, w = int(SR * passo), int(SR * jan)
+    if len(x) <= w:
+        return np.full(1, -100.0)
+    n = (len(x) - w) // h + 1
+    c = np.concatenate([[0.0], np.cumsum(np.asarray(x, dtype=np.float64) ** 2)])
+    idx = np.arange(n) * h
+    db = 10 * np.log10((c[idx + w] - c[idx]) / w + 1e-10)
+    return np.convolve(db, np.ones(5) / 5, mode="same")
+
+
+def ponta_no_vao(e, t, voz, antes, depois, dur):
+    """Ponta do trecho dentro de uma fala vai pro ponto de menor energia por perto (o vão entre duas palavras),
+    pesando 3 dB por segundo de distância. e = energia_db do clipe inteiro."""
+    if not any(r0 + 0.05 < t < r1 - 0.05 for r0, r1 in voz):
+        return t
+    i0, i1 = max(0, int((t - antes) * 100)), min(len(e) - 1, int((t + depois) * 100))
+    if i1 <= i0:
+        return t
+    tt = np.arange(i0, i1 + 1) / 100.0
+    custo = e[i0:i1 + 1] + 3.0 * np.abs(tt - t)
+    return float(min(dur, max(0.0, tt[int(np.argmin(custo))])))
+
+
+def _subida(e, ini, de, ate):
+    """Primeiro instante entre de e ate em que a energia chega a 10 dB do pico da fala logo depois (a subida da voz)."""
+    a, b = max(0, int((de - ini) * 100)), min(len(e), int((ate - ini) * 100) + 1)
+    if b - a < 2:
+        return de
+    ref = e[a:min(len(e), b + 40)].max()
+    acima = np.where(e[a:b] >= ref - 10)[0]
+    return ini + (a + int(acima[0])) / 100.0 - 0.02 if len(acima) else de
+
+
 def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
     """O Whisper marca o começo de uma frase depois de silêncio cedo demais (até 1 s antes, medido nas
     conferências): a legenda aparecia com a tela em silêncio. Cada FRASE (palavras separadas por pausa de 0,3 s) anda
@@ -184,6 +219,7 @@ def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
     voz = [(r0 + ini, r1 + ini) for r0, r1 in regioes_de_voz(trecho)]
     if not voz:
         return palavras
+    e = energia_db(trecho)
     ordem = sorted((dict(w) for w in palavras), key=lambda w: w["i"])
     # frases
     frases, atual = [], []
@@ -204,7 +240,8 @@ def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
             continue
         dentro = [r for r in voz if r[0] - 0.05 <= c0 < r[1]]
         if dentro:
-            comeco = dentro[0][0] if c0 - dentro[0][0] <= 0.6 else c0
+            # o começo da região do VAD tem folga (e o barulho do jogo junto): vale a subida da voz dentro dela
+            comeco = _subida(e, ini, dentro[0][0], c0 + 0.15) if c0 - dentro[0][0] <= 1.2 else c0
         else:
             prox = [r for r in voz if c0 < r[0] <= c0 + 1.5]
             if not prox:
@@ -213,7 +250,7 @@ def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
                     continue
                 comeco = c0 + 0.1
             else:
-                comeco = prox[0][0] + 0.03
+                comeco = _subida(e, ini, prox[0][0], prox[0][0] + 0.8) + 0.03
         comeco = max(comeco, c0 - 0.05, fim_ant + 0.02)
         delta = comeco - c0
         for w in fr:

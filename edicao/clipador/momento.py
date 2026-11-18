@@ -250,7 +250,7 @@ def escolher(dur, s, palavras, plano, com_camera=False):
                 break
             fim_fala = max(fim_fala, w["f"])
         if fim_fala > b:
-            b = min(dur, fim_fala + 0.5, a + alvo + 8.0)
+            b = min(dur, fim_fala + 0.5, a + alvo + (3.0 if janela_curta else 8.0))
     a, b = _sem_repeticao(a, b, palavras, score)
     # não começar nem terminar no meio da frase (até 2 s de folga)
     inis, fins = _fronteiras(palavras)
@@ -304,7 +304,8 @@ def impactos(a, b, s, plano, com_camera=False):
         rosto = s["reacao"] > 1.0
         imp = 1.8 * s["riso"] + 1.0 * np.clip(s["reacao"] - 1.0, 0, 6) + 1.2 * s["grito"] * rosto + 0.8 * s["vol"] * rosto
     else:
-        imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 1.5 * s["lance"] + 0.3 * s["vol"]
+        # sem câmera o zoom é no jogo: só com o lance (vinheta, sangue, estouro), não com a voz
+        imp = 1.8 * s["lance"] + 0.5 * s["grito"] * (s["lance"] > 0.3)
     imp = imp * (1 - s["parado"])
     ia, ib = int(a / PASSO), int(b / PASSO)
     seg = imp[ia:ib]

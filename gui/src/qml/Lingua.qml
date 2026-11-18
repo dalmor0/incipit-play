@@ -401,7 +401,7 @@ QtObject {
         "Não achei o clipe. Ele foi apagado ou movido?": "Couldn't find the clip. Was it deleted or moved?",
         "Esse arquivo não é um vídeo que o Play edita.": "This file isn't a video Play can edit.",
         "O clipe é grande demais pra editar (mais de 8 GB).": "The clip is too big to edit (over 8 GB).",
-        "Não consegui ler esse vídeo. O arquivo pode estar corrompido.": "Couldn't read this video. The file may be damaged.",
+        "Não consegui ler esse vídeo. Pode estar corrompido.": "Couldn't read this video. The file may be damaged.",
         "O clipe é curto demais pra editar.": "The clip is too short to edit.",
         "O clipe passa de 1 hora. Corte um trecho menor antes.": "The clip is over 1 hour. Cut a shorter part first.",
         "Não consegui ler o áudio do clipe.": "Couldn't read the clip's audio.",
@@ -448,13 +448,14 @@ QtObject {
         "Abrir pasta do clipe": "Open the clip's folder",
         "Em branco: o melhor trecho, legenda, zoom nos picos e sua câmera em cima.": "Left blank: the best part, captions, zoom on the big moments and your camera on top.",
         "Pasta dos editados": "Edited videos folder",
-        "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with that protection turned off.",
         "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30).",
         "Esse clipe não tem jogada pra cortar": "This clip has no play to cut",
         "Conferindo a fala do trecho": "Double-checking the speech in the part",
         "O Play acha sua câmera sozinho. Se errar, marque.": "Play finds your camera by itself. If it's wrong, mark it.",
         "Sua câmera está marcada.": "Your camera is marked.",
         "às %1": "at %1",
-        "Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo. No teclado: Tab até a imagem, setas movem a caixa e Shift com as setas muda o tamanho.": "Drag a box around your camera, or pick the corner. It goes to the top of the video and the game goes below. With the keyboard: Tab to the image, the arrows move the box and Shift with the arrows resizes it."
+        "Arraste um retângulo em volta da sua câmera ou escolha o canto: ela vai pra cima e o jogo embaixo. No teclado, Tab até a imagem; setas movem e Shift com setas muda o tamanho.": "Drag a box around your camera or pick the corner: it goes on top and the game below. With the keyboard, Tab to the image; arrows move it and Shift with arrows resizes it.",
+        "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with this protection off, in Windows Security > App & browser control. Read the Windows warning first: on some versions it only turns back on by reinstalling Windows.",
+        "Abrir Segurança do Windows": "Open Windows Security"
     })
 }

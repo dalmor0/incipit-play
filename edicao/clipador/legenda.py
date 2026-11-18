@@ -92,6 +92,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     dur = b - a
     if dentro:
         grupos = blocos(dentro, est)
+        juntos = []
+        for gi, g in enumerate(grupos):
+            prox_i = grupos[gi + 1][0]["i"] if gi + 1 < len(grupos) else dur
+            if juntos and prox_i - g[0]["i"] < 0.15:
+                juntos[-1] = juntos[-1] + g
+            else:
+                juntos.append(g)
+        grupos = juntos
         for gi, g in enumerate(grupos):
             ini = max(0.0, g[0]["i"])
             prox = grupos[gi + 1][0]["i"] if gi + 1 < len(grupos) else dur
