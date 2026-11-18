@@ -311,6 +311,9 @@ def main(argv=None):
     except Falha as f:
         avisar("erro", motivo=f.motivo, detalhe=str(f.detalhe)[-800:], cancelado=f.motivo == "Cancelado.")
         return 2 if f.motivo == "Cancelado." else 1
+    except ImportError as ex:   # DLL barrada no meio do caminho (o OpenCV e o leitor de fala carregam só na hora)
+        avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(ex))
+        return 3
     except OSError as ex:
         import errno
         if ex.errno == errno.ENOSPC:
