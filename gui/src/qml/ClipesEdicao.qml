@@ -88,7 +88,8 @@ ColumnLayout {
                 }
             }
             InTexto {
-                visible: ed.estado !== "fila"
+                // durante o download do leitor de fala o texto já diz os MB; a % geral confundia (banca r1)
+                visible: ed.estado !== "fila" && !String(Edicao.etapa).startsWith("Baixando o leitor")
                 tipo: "titulo"
                 text: Math.floor(Edicao.pct) + "%"
                 Layout.alignment: Qt.AlignVCenter
