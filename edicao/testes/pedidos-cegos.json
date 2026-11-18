@@ -1,0 +1,12 @@
+[
+ {"pedido": "mano corta so a parte do clutch 1v4 no valorant e poe titulo CLUTCH INSANO", "espera": {"foco": ["clutch"], "titulo": "CLUTCH INSANO"}},
+ {"pedido": "faz um edit brabo pro tiktok sem palavrao e sem musica pfv", "espera": {"censura": true, "musica": false}},
+ {"pedido": "quero o video intero sem cortar, so coloca legenda amarela em maiusculo", "espera": {"inteiro": true, "estilo": "amarela", "maiuscula": true}},
+ {"pedido": "make it 20 sec, zoom leve, no music", "espera": {"duracao": 20, "zoom": 0.5, "musica": false}},
+ {"pedido": "pega o final quando eu morro pro boss kkkk", "espera": {"foco": ["morro", "boss"], "foco_tipo": "fim"}},
+ {"pedido": "no gta corta do 1:10 ate 1:35 e tira a legenda", "espera": {"trecho": [70, 95], "legenda": false}},
+ {"pedido": "a parte q eu rio mto no fortnite, legenda estilo gustavo", "espera": {"foco_tipo": "risada", "estilo": "creme"}},
+ {"pedido": "sem minha cara, so o jogo no meio com fundo borrado", "espera": {"layout": "desfocado"}},
+ {"pedido": "40s focado na hora do gol de bicicleta no fifa, sem zoom nenhum", "espera": {"duracao": 40, "foco": ["gol", "bicicleta"], "zoom": 0.0}},
+ {"pedido": "qnd o jumpscare aparece e eu grito, titulo: NUNCA MAIS JOGO ISSO, legenda limpa", "espera": {"foco": ["jumpscare"], "foco_tipo": "grito", "titulo": "NUNCA MAIS JOGO ISSO", "estilo": "limpa"}}
+]

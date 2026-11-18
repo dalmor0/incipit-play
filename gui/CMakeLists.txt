@@ -46,6 +46,8 @@ set(SOURCE_FILES
 	include/cliprecorder.h
 	include/incipitcofre.h
 	src/incipitcofre.cpp
+	include/incipitedicao.h
+	src/incipitedicao.cpp
 	src/cliprecorder.cpp
 	src/qmlmainwindow.cpp
 	include/qmlbackend.h

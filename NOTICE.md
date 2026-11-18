@@ -57,6 +57,17 @@ endereço fica em `licencas/PACOTES.txt`, gerada pelo build.
 O código-fonte de cada biblioteca está no projeto dela ou nos pacotes de fonte do MSYS2
 (https://packages.msys2.org). O do FFmpeg está em https://github.com/streetpea/FFmpeg-Builds.
 
+## Edição automática dos clipes (pacote baixado à parte)
+
+O "Mandar pra edição" usa um pacote que o Play baixa na primeira vez, de
+https://github.com/dalmor0/incipit-releases/releases/tag/edicao-1.0.0, conferido pelo SHA-256 escrito em
+`gui/src/incipitedicao.cpp`. Dentro dele: o motor `edicao/clipador` (deste repositório, AGPL-3.0), Python 3.12
+embutido (PSF), faster-whisper e CTranslate2 (MIT), ONNX Runtime (MIT), tokenizers (Apache-2.0), OpenCV
+(Apache-2.0), NumPy (BSD), o detector de rosto YuNet (MIT), as fontes Work Sans, Anton e Archivo (OFL) e o
+FFmpeg 9.0.2 do gyan.dev (GPL-3.0). Lista completa com versão e link do código em `edicao/LICENCAS-DO-PACOTE.md`.
+O leitor de fala (Whisper "medium" convertido pelo SYSTRAN, MIT) é baixado na primeira edição, de commit fixo
+no Hugging Face, e cada arquivo é conferido pelo SHA-256.
+
 ## Marca
 
 "Incipit" e o logo da Incipit são marcas da Incipit e ficam fora da licença do código (AGPL-3.0, seção 7, item e).

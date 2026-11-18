@@ -1,5 +1,5 @@
-// Aba Clipes: o atalho que guarda os últimos segundos e a biblioteca. A edição automática dos clipes vem em breve
-// (cartão "Em breve" acima da biblioteca, sem botão que não faz nada).
+// Aba Clipes: o atalho que guarda os últimos segundos, a edição automática (ClipesEdicao) e a biblioteca.
+// Cada clipe tem "Mandar pra edição": abre a caixa do pedido (EdicaoPedido) e o vídeo sai pronto pra postar.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -116,6 +116,14 @@ InPagina {
                 onActivated: (i) => cl.cfg.mudarSegundos(cl.cfg.duracoes[i])
             }
 
+            InTexto { text: root.t("Música nos editados"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
+            RowLayout {
+                spacing: 12
+                InTexto { Layout.maximumWidth: 420; text: cl.cfg.guardado.edMusica === "" ? root.t("Desligada") : cl.cfg.guardado.edMusica; tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InBotao { text: cl.cfg.guardado.edMusica === "" ? root.t("Escolher pasta") : root.t("Trocar"); onClicked: escolhaMusica.open() }
+                InBotao { visible: cl.cfg.guardado.edMusica !== ""; tipo: "quieto"; text: root.t("Desligar"); onClicked: cl.cfg.guardado.edMusica = "" }
+            }
+
             InTexto { text: root.t("Pasta dos clipes"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
@@ -143,30 +151,20 @@ InPagina {
 
     }
 
-    // ------------------------------------------------------------ edição automática: em breve
-    InCartao {
+    // ------------------------------------------------------------ edição automática
+    ClipesEdicao {
         Layout.topMargin: 12
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 16
-            Rectangle {
-                Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: selo.implicitWidth + 20
-                Layout.preferredHeight: 26
-                Layout.topMargin: 1
-                color: root.tema.destaqueFraco
-                border.width: 1
-                border.color: root.tema.destaque
-                Text { id: selo; anchors.centerIn: parent; text: root.t("Em breve"); color: root.tema.texto; font.family: root.tema.sans; font.pixelSize: 13; font.weight: Font.Bold }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.maximumWidth: Number.POSITIVE_INFINITY
-                spacing: 4
-                InTexto { Layout.fillWidth: true; tipo: "titulo"; text: root.t("Edição automática dos seus clipes") }
-                InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("O clipe vai sair cortado, na vertical e com legenda, pronto pra postar.") }
-            }
+        largura: cl.largura
+        onPedirEdicao: (c) => cl.abrirPedido(c)
+    }
+
+    function abrirPedido(c) {
+        if (Edicao.estado === "editando" || Edicao.estado === "baixando" || Edicao.estado === "fila") {
+            cl.avisar(root.t("Já tem um clipe na edição. Espere ele terminar ou cancele."), false);
+            return;
         }
+        pedidoEdicao.clipe = c;
+        pedidoEdicao.open();
     }
 
     // ------------------------------------------------------------ biblioteca, por transmissão
@@ -270,11 +268,18 @@ InPagina {
                                     Layout.topMargin: 10
                                     spacing: 8
                                     InBotao {
-                                        text: root.t("Assistir")
-                                        icone: "jogar"
-                                        onClicked: Qt.openUrlExternally("file:///" + item.modelData.caminho)
+                                        tipo: "forte"
+                                        text: root.t("Mandar pra edição")
+                                        icone: "video"
+                                        onClicked: cl.abrirPedido(item.modelData)
                                     }
                                     Item { Layout.fillWidth: true }
+                                    InBotao {
+                                        tipo: "quieto"; icone: "jogar"
+                                        Accessible.name: root.t("Assistir")
+                                        ToolTip.visible: hovered; ToolTip.text: root.t("Assistir")
+                                        onClicked: Qt.openUrlExternally("file:///" + item.modelData.caminho)
+                                    }
                                     InBotao {
                                         tipo: "quieto"; icone: "lixo"
                                         Accessible.name: root.t("Apagar clipe")
@@ -288,6 +293,21 @@ InPagina {
                 }
             }
         }
+    }
+
+    EdicaoPedido {
+        id: pedidoEdicao
+        onMarcarCamera: (c) => { marcaCamera.clipe = c; marcaCamera.open(); }
+    }
+    EdicaoCamera {
+        id: marcaCamera
+        onClosed: if (pedidoEdicao.clipe.caminho && !pedidoEdicao.visible) pedidoEdicao.open()
+    }
+
+    FolderDialog {
+        id: escolhaMusica
+        title: root.t("Pasta com as suas músicas")
+        onAccepted: cl.cfg.guardado.edMusica = decodeURIComponent(selectedFolder.toString().replace(/^file:\/{3}/, ""))
     }
 
     FolderDialog {

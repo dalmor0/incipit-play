@@ -53,5 +53,8 @@
     <file>fonts/YoungSerif-Regular.ttf</file>
     <file>ClipesConfig.qml</file>
     <file>PaginaClipes.qml</file>
+    <file>ClipesEdicao.qml</file>
+    <file>EdicaoPedido.qml</file>
+    <file>EdicaoCamera.qml</file>
   </qresource>
 </RCC>

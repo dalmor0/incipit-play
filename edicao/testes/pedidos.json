@@ -1,0 +1,12 @@
+[
+ {"pedido": "só a parte da fuga", "espera": {"foco": ["fuga"]}},
+ {"pedido": "mais zoom", "espera": {"zoom": 2.0}},
+ {"pedido": "sem legenda", "espera": {"legenda": false}},
+ {"pedido": "título: FUGI DA POLÍCIA", "espera": {"titulo": "FUGI DA POLÍCIA"}},
+ {"pedido": "30 segundos", "espera": {"duracao": 30}},
+ {"pedido": "deixa so o jogo sem minha camera, legenda amarela", "espera": {"layout": "sem_camera", "estilo": "amarela"}},
+ {"pedido": "pega a hora q eu grito kkkkk e poe titulo O SUSTO", "espera": {"foco_tipo": "grito", "titulo": "O SUSTO"}},
+ {"pedido": "quero curtinho uns 15 seg com bastante zoom e sem musica", "espera": {"duracao": 15, "zoom": 2.0, "musica": false}},
+ {"pedido": "corta do 0:20 até o 0:45 e bota legenda em caixa alta", "espera": {"trecho": [20, 45], "maiuscula": true}},
+ {"pedido": "foca na parte que eu falo da arma nova, sem zoom", "espera": {"foco": ["arma", "nova"], "zoom": 0.0}}
+]

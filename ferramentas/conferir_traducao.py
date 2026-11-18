@@ -32,6 +32,24 @@ def usados():
     for m in re.finditer(r'QStringLiteral\("([^"]* [^"]*)"\)', io.open(CPP, encoding="utf-8").read()):
         if m.group(1) not in IGNORAR:
             achou.setdefault(m.group(1), "cliprecorder.cpp")
+    # edição automática: motivos e etapas do C++ (incipitedicao.cpp) e do clipador (Python), que a tela passa por
+    # root.t(Edicao.motivo), root.t(Edicao.etapa) e root.t(entendi)
+    ed_cpp = os.path.join(AQUI, "..", "gui", "src", "incipitedicao.cpp")
+    for m in re.finditer(r'QStringLiteral\("([^"%]* [^"%]*)"\)', io.open(ed_cpp, encoding="utf-8").read()):
+        t = m.group(1)
+        if t[:1].isupper() and not t.startswith(("Incipit", "PYTHON")) and "/" not in t and ":" not in t[-2:]:
+            achou.setdefault(t, "incipitedicao.cpp")
+    clip = os.path.join(AQUI, "..", "edicao", "clipador")
+    for nome in sorted(os.listdir(clip)):
+        if nome.endswith(".py"):
+            txt = io.open(os.path.join(clip, nome), encoding="utf-8").read()
+            for m in re.finditer(r'(?:Falha\(|entendi\.append\(|motivo=|aviso = )"([^"{}]+)"', txt):
+                achou.setdefault(m.group(1), "clipador/" + nome)
+            for m in re.finditer(r'\("[a-z]+", "([^"]+)", [0-9.]+', txt):
+                achou.setdefault(m.group(1), "clipador/" + nome)
+            for m in re.finditer(r'\{"amarela": "([^"]+)", "destaque": "([^"]+)",\s*"limpa": "([^"]+)", "gustavo": "([^"]+)"\}', txt):
+                for g in m.groups():
+                    achou.setdefault(g, "clipador/" + nome)
     # nomes das cores de destaque (Tema.qml), que a tela passa por root.t(modelData.nome)
     for m in re.finditer(r'nome: "([^"]+)", escuro:', io.open(os.path.join(QML, "Tema.qml"), encoding="utf-8").read()):
         achou.setdefault(m.group(1), "Tema.qml")

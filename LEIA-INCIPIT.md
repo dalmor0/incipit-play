@@ -18,6 +18,13 @@ em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalh
 - Conferência: `ferramentas/conferir_app.py` (abertura, RAM, prints), `ferramentas/testar_atalho.py`
   (transmite e salva um clipe), `ferramentas/testar_conexao.py`.
 
+- Edição automática dos clipes ("Mandar pra edição"): motor em `edicao/` (Python, ver `edicao/README.md`), ligado
+  ao app por `gui/src/incipitedicao.cpp` (baixa o pacote com SHA-256 fixo, roda num Job do Windows com prioridade
+  baixa, espera a transmissão acabar) e pelas telas `ClipesEdicao.qml`, `EdicaoPedido.qml` e `EdicaoCamera.qml`.
+  Mudou o motor: `python edicao/pacote/montar_pacote.py <pasta>`, novo release `edicao-<versão>` em
+  dalmor0/incipit-releases (nunca o Latest) e a versão, o endereço, o tamanho e o SHA-256 novos no
+  `incipitedicao.cpp`. Desenvolvimento: `INCIPIT_EDICAO_DIR=<pacote aberto>` pula o download.
+
 ## Gerar uma versão
 1. `git push` neste repositório.
 2. `gh workflow run incipit-windows.yml -R dalmor0/incipit-play` (uns 25 min no Actions).
