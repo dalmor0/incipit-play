@@ -50,7 +50,7 @@ def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
     def do_assunto(t):
         if any(t.startswith(r) for r in alvos):
             return True
-        return any(len(k) >= 4 and len(t) >= 3 and SequenceMatcher(None, t, k).ratio() >= 0.75 for k in chaves)
+        return any(len(k) >= 6 and len(t) >= 4 and SequenceMatcher(None, t, k).ratio() >= 0.85 for k in chaves)
     for w in palavras:
         a, b = int(w["i"] / PASSO), max(int(w["i"] / PASSO) + 1, int(w["f"] / PASSO))
         a, b = min(a, n - 1), min(b, n)
@@ -58,13 +58,16 @@ def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
         fala[a:b] += 1
         if RISO.match(t):
             riso[a:b] += 3
-        if "!" in w["p"] or EXCLAMA.match(t) or PALAVRAO.match(t):
+        if "!" in w["p"] or EXCLAMA.match(t) or (PALAVRAO.match(t) and vol[a:b].max() > 1.0):
             grito[a:b] += 2
         if alvos and do_assunto(t):
             lo, hi = max(0, a - 20), min(n, b + 30)
             assunto[lo:hi] += 4
     # grito de verdade: fala alta (volume bem acima do resto enquanto tem fala)
     grito += np.where(fala > 0, np.clip(vol - 1.5, 0, 4), 0)
+    if reacao is not None and len(reacao):
+        # com câmera, grito do vídeo de fundo não mexe a cara de quem está nela: só vale com reação junto
+        grito = grito * (suavizar(rea, 10) > 0.5)
     return {"vol": vol, "mov": mov, "corte": cut, "fala": np.clip(fala, 0, 1), "riso": suavizar(riso, 5),
             "grito": suavizar(grito, 5), "assunto": suavizar(assunto, 9), "reacao": rea, "parado": par, "n": n}
 
@@ -91,8 +94,8 @@ def pontuacao(s, plano, com_camera=False):
     total = np.zeros(s["n"])
     for k, p in pesos.items():
         total += p * s[k]
-    # tela parada (menu, carregamento) nunca é o melhor momento
-    return total * (1 - 0.8 * s["parado"])
+    # tela parada sem ninguém falando (menu, carregamento) nunca é o melhor momento; parada com fala é conversa
+    return total * (1 - 0.8 * s["parado"] * (1 - s["fala"]))
 
 
 def _fronteiras(palavras):
@@ -166,9 +169,12 @@ def escolher(dur, s, palavras, plano, com_camera=False):
     # pedido de assunto ou de momento: a janela é em volta dele, mesmo em clipe curto
     tem_foco = bool(plano.get("foco")) and s["assunto"].max() > 0.5
     tem_tipo = tipo in ("grito", "risada", "acao")
+    janela_curta = False
     if not alvo:
         if tem_foco or tem_tipo:
             alvo = 15.0
+        elif 20 < dur <= 40:
+            alvo, janela_curta = 18.0, True     # clipe de 20 a 40 s: o lance costuma estar em 15 a 20 s dele
         else:
             alvo = dur if dur <= 40 else 30
     alvo = float(min(alvo, dur))
@@ -194,6 +200,11 @@ def escolher(dur, s, palavras, plano, com_camera=False):
             if v > melhor:
                 melhor, ia = v, i
         a, b = ia * PASSO, (ia + L) * PASSO
+        if janela_curta:
+            # se a ação está espalhada pelo clipe todo, vai o clipe inteiro
+            inteiro = cum[-1] / max(1, n)
+            if (cum[ia + L] - cum[ia]) / L < 1.25 * inteiro:
+                a, b = 0.0, dur
     # a reação logo depois do fim entra (risada, grito, palavrão até 4 s depois)
     if b < dur - 0.2 and not plano.get("duracao"):
         reac = s["riso"] + s["grito"] + (s["reacao"] if com_camera else 0)
@@ -220,8 +231,11 @@ def escolher(dur, s, palavras, plano, com_camera=False):
             for w in palavras:
                 if w["i"] < b < w["f"]:
                     b = min(dur, w["f"] + 0.3)
-    if plano.get("duracao") and b - a > plano["duracao"] + 1.5:
-        b = round(a + plano["duracao"] + 1.0, 2)
+    if plano.get("duracao") and b - a > plano["duracao"] + 3.0:
+        # duração pedida: fecha a frase em até 3 s a mais; se não der, termina no fim de frase anterior
+        lim = a + plano["duracao"]
+        fechos = [x for x in fins if lim - 3.0 <= x <= lim + 3.0]
+        b = round(min(dur, (min(fechos, key=lambda x: abs(x - lim)) + 0.4) if fechos else lim + 1.0), 2)
     a, b = _aparar_parado(a, b, s, palavras)
     # clipe curto inteiro: tira só o silêncio parado das pontas
     if not plano.get("duracao") and dur <= 40 and a == 0 and b == dur:

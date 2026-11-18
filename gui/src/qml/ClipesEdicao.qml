@@ -47,7 +47,20 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.maximumWidth: Number.POSITIVE_INFINITY
                 spacing: 4
-                InTexto { Layout.fillWidth: true; tipo: "titulo"; text: root.t("Edição automática") }
+                RowLayout {
+                    spacing: 10
+                    InTexto { tipo: "titulo"; text: root.t("Edição automática"); wrapMode: Text.NoWrap }
+                    // primeira versão: a escolha do trecho e a legenda ainda erram em parte dos clipes
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: seloBeta.implicitWidth + 16
+                        implicitHeight: 24
+                        color: ed.tema.destaqueFraco
+                        border.width: 1
+                        border.color: ed.tema.destaque
+                        Text { id: seloBeta; anchors.centerIn: parent; text: "Beta"; color: ed.tema.texto; font.family: ed.tema.sans; font.pixelSize: 13; font.weight: Font.Bold }
+                    }
+                }
                 InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Em qualquer clipe, clique em Mandar pra edição. Sai na vertical, com legenda, zoom nos picos e o melhor trecho, pronto pro Reels, TikTok e Shorts.") }
             }
         }

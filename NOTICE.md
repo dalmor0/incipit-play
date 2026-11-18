@@ -60,7 +60,7 @@ O código-fonte de cada biblioteca está no projeto dela ou nos pacotes de fonte
 ## Edição automática dos clipes (pacote baixado à parte)
 
 O "Mandar pra edição" usa um pacote que o Play baixa na primeira vez, de
-https://github.com/dalmor0/incipit-releases/releases/tag/edicao-1.0.2, conferido pelo SHA-256 escrito em
+https://github.com/dalmor0/incipit-releases/releases/tag/edicao-1.0.3, conferido pelo SHA-256 escrito em
 `gui/src/incipitedicao.cpp`. Dentro dele: o motor `edicao/clipador` (deste repositório, AGPL-3.0), Python 3.12
 embutido (PSF), faster-whisper e CTranslate2 (MIT), ONNX Runtime (MIT), tokenizers (Apache-2.0), OpenCV
 (Apache-2.0), NumPy (BSD), o detector de rosto YuNet (MIT), as fontes Work Sans, Anton e Archivo (OFL) e o

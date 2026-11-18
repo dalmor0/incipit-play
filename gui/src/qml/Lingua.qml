@@ -450,6 +450,8 @@ QtObject {
         "Se o clipe não abre no seu player, ele veio estragado e não dá pra editar. Se abre, tente de novo.": "If the clip doesn't play in your player, it's damaged and can't be edited. If it plays, try again.",
         "Abrir pasta do clipe": "Open the clip's folder",
         "Em branco: o melhor trecho, legenda, zoom nos picos e sua câmera em cima.": "Left blank: the best part, captions, zoom on the big moments and your camera on top.",
-        "Pasta dos editados": "Edited videos folder"
+        "Pasta dos editados": "Edited videos folder",
+        "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with that protection turned off.",
+        "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30)."
     })
 }

@@ -16,10 +16,14 @@ import sys
 import time
 from pathlib import Path
 
-from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
 from .base import Andamento, Falha, avisar, conferir_clipe, medir, pasta_trabalho, prioridade_baixa
+try:
+    from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
+except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pacote estragado
+    avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(_e))
+    sys.exit(3)
 
-VERSAO = "1.0.2"
+VERSAO = "1.0.3"
 _cancelar = {"v": False}
 
 
@@ -154,13 +158,21 @@ def editar(a):
             and_.etapa("modelo")
             pm = fala.garantir_modelo(a.modelo, lambda f, t: and_.etapa("modelo", f, t), cancelado)
             and_.etapa("fala")
-            palavras, idioma, onde = fala.transcrever(aud, pm, a.idioma, lambda f, t: and_.etapa("fala", f, t), cancelado)
+            jogo = clipe.stem
+            lado = clipe.with_suffix(".json")
+            try:
+                jogo = json.loads(lado.read_text(encoding="utf-8")).get("jogo") or jogo if lado.is_file() and lado.stat().st_size < 65536 else jogo
+            except (OSError, ValueError):
+                pass
+            pr = fala.prompt_do_jogo(a.idioma, f"{jogo} {clipe.stem}", assunto_do_nome(clipe))
+            palavras, idioma, onde = fala.transcrever(aud, pm, a.idioma, lambda f, t: and_.etapa("fala", f, t), cancelado, pr)
             cache.update(palavras=palavras, idioma=idioma, onde=onde)
-        palavras = analise.alinhar_falas(palavras or [], aud)
+        # a legenda entra 0,15 s depois do que o Whisper marcou: as conferências mediram o começo adiantado
+        palavras = [dict(w, i=round(min(w["f"] - 0.05, w["i"] + 0.15), 3)) if w["f"] - w["i"] > 0.1 else w for w in (palavras or [])]
         par = analise.para_passo(analise.parado(mov["energia"]), analise.FPS_MOV, n)
         # clipe que é quase todo menu ou tela parada, sem ninguém falando, não vira vídeo
         if float((par > 0.5).mean()) > 0.75 and not palavras and plano["trecho"] is None and not plano["inteiro"]:
-            raise Falha("Esse clipe é quase todo menu ou tela parada. Não achei jogada pra cortar.")
+            raise Falha("Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).")
         # o nome que a pessoa deu ao arquivo ("fuga da policia.mp4") vira assunto quando não tem pedido
         if not plano["foco"]:
             plano["foco_nome"] = assunto_do_nome(clipe)

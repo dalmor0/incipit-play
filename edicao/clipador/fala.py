@@ -5,6 +5,7 @@ só vale se o SHA-256 bater com o que está escrito aqui. Placa NVIDIA com as bi
 presentes: roda na placa; senão, no processador.
 """
 import hashlib
+import re
 import os
 import sys
 import types
@@ -158,7 +159,31 @@ def _cuda_ok():
         return False
 
 
-def transcrever(audio, pasta_modelo, idioma, progresso, cancelado):
+VOCAB_JOGO = {
+    "dead by daylight": "Dead by Daylight: Wesker, pallet, gen, gerador, loop, gancho, sobrevivente, assassino.",
+    "gta": "GTA: polícia, viatura, fuga, assalto, carro, estrela, procurado.",
+    "fortnite": "Fortnite: build, edita, tempestade, zona, loot, vitória real.",
+    "valorant": "Valorant: clutch, spike, ult, ace, plant, defuse.",
+    "call of duty": "Call of Duty: kill, killstreak, sniper, quickscope, loadout.",
+    "minecraft": "Minecraft: creeper, bloco, diamante, nether, mob.",
+}
+
+
+def prompt_do_jogo(idioma, nome_jogo, palavras_nome):
+    """Prompt do Whisper com a gíria, o vocabulário do jogo (achado pelo nome do clipe) e as palavras do nome."""
+    p = PROMPT.get(idioma, "")
+    n = (nome_jogo or "").lower().replace("_", " ")
+    n = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", nome_jogo or "").lower().replace("_", " ") if nome_jogo else ""
+    for chave, voc in VOCAB_JOGO.items():
+        if chave in n or chave.replace(" ", "") in n.replace(" ", "") or (chave == "dead by daylight" and "dbd" in n.split()):
+            p = (p + " " + voc).strip()
+            break
+    if palavras_nome:
+        p = (p + " " + ", ".join(palavras_nome) + ".").strip()
+    return p or None
+
+
+def transcrever(audio, pasta_modelo, idioma, progresso, cancelado, prompt=None):
     """Lista de palavras {"p", "i", "f", "prob"} com tempos em segundos."""
     _sem_dependencias_extras()
     from faster_whisper import WhisperModel
@@ -177,12 +202,13 @@ def transcrever(audio, pasta_modelo, idioma, progresso, cancelado):
     dur = max(0.1, len(audio) / 16000)
 
     buracos.__defaults__[0][0] = audio
+    buracos.__defaults__[1][0] = prompt
 
     def rodar(modelo):
         segs, info = modelo.transcribe(
             audio, language=None if idioma == "auto" else idioma, word_timestamps=True, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 400}, beam_size=5, condition_on_previous_text=False,
-            initial_prompt=PROMPT.get(idioma), no_speech_threshold=0.5, compression_ratio_threshold=2.2)
+            initial_prompt=prompt or PROMPT.get(idioma), no_speech_threshold=0.5, compression_ratio_threshold=2.2)
         palavras = []
         for s in segs:
             if cancelado():
@@ -233,12 +259,20 @@ def limpar(palavras):
                 i += reps * n
             else:
                 i += 1
-    return [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+    out = [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+    # a mesma palavra duas vezes começando a menos de 0,3 s uma da outra é a mesma fala lida duas vezes
+    limpo = []
+    for w in out:
+        if limpo and re.sub(r"[^\w]", "", w["p"].lower()) == re.sub(r"[^\w]", "", limpo[-1]["p"].lower()) and w["i"] - limpo[-1]["i"] < 0.3:
+            continue
+        limpo.append(w)
+    return limpo
 
 
-def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None]):
-    """Segunda passada: onde tem voz por mais de 0,8 s e nenhuma palavra, transcreve o pedaço sozinho e encaixa.
-    (A conferência achou frases inteiras sumidas: o Whisper às vezes pula um trecho no meio do clipe.)"""
+def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None], prompt_ref=[None]):
+    """Segunda passada: onde tem voz e poucas palavras (menos de 1,2 por segundo de voz, quando a fala normal dá
+    2 a 3), transcreve o pedaço sozinho (até 8 s) e, se sair mais fala, ele SUBSTITUI as palavras daquele pedaço.
+    É o caso da voz do jogador por cima de outra voz (vídeo assistido, jogo falando): a primeira passada perde."""
     audio = audio_ref[0]
     if audio is None:
         return palavras
@@ -247,27 +281,33 @@ def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None]):
     except Exception:
         return palavras
     sr = 16000
-    regioes = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=400))
-    novas = []
-    for r in regioes:
+    regioes = []
+    for r in get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=300)):
+        i, f = r["start"] / sr, r["end"] / sr
+        while f - i > 8.0:              # pedaço grande vira pedaços de 8 s
+            regioes.append((i, i + 8.0))
+            i += 8.0
+        if f - i >= 0.8:
+            regioes.append((i, f))
+    saida = list(palavras)
+    for i, f in regioes:
         if cancelado():
             break
-        i, f = r["start"] / sr, r["end"] / sr
-        if f - i < 0.8:
-            continue
-        cobertura = sum(max(0.0, min(f, w["f"]) - max(i, w["i"])) for w in palavras if w["f"] > i and w["i"] < f)
-        if cobertura > 0.3 * (f - i):
+        dentro = [w for w in saida if w["f"] > i and w["i"] < f]
+        if len(dentro) / (f - i) >= 1.2:
             continue
         a0, a1 = max(0, int((i - 0.2) * sr)), min(len(audio), int((f + 0.2) * sr))
         segs, _ = modelo.transcribe(audio[a0:a1], language=None if idioma == "auto" else idioma, word_timestamps=True,
                                     vad_filter=False, beam_size=5, condition_on_previous_text=False,
-                                    initial_prompt=PROMPT.get(idioma))
+                                    initial_prompt=prompt_ref[0] or PROMPT.get(idioma))
         base = a0 / sr
+        novas = []
         for sg in segs:
             for w in sg.words or []:
                 t = w.word.strip()
                 if t and w.probability >= 0.3:
                     novas.append({"p": t, "i": round(base + w.start, 3), "f": round(base + w.end, 3), "prob": round(w.probability, 3)})
-    if not novas:
-        return palavras
-    return sorted(palavras + novas, key=lambda w: w["i"])
+        if len(novas) > len(dentro):
+            saida = [w for w in saida if not (w["f"] > i and w["i"] < f)] + novas
+            saida.sort(key=lambda w: w["i"])
+    return saida

@@ -24,6 +24,8 @@ ESTILOS = {
               "max_pal": 6, "max_car": 30, "revela": False, "pop": None},
 }
 PADRAO = "creme"
+VAZIAS = set("""para pra pro com sem uma uns umas isso esse essa aqui ali onde quando como mais menos muito tudo nada
+voce voces eles elas dele dela nao sim ainda entao depois antes agora sobre entre todo toda todos todas""".split())
 
 
 def _ts(t):
@@ -125,7 +127,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                         if est["revela"]:
                             partes.append(tx if j <= k else "{\\alpha&HFF&}" + tx + "{\\alpha&H00&}")
                         else:
-                            partes.append("{\\c" + est["marca"] + "}" + tx + "{\\c" + est["cor"] + "}" if j == k else tx)
+                            cheia = len(sem_acento(tx).strip(" .,!?…")) >= 4 and sem_acento(tx).lower().strip(" .,!?…") not in VAZIAS
+                            partes.append("{\\c" + est["marca"] + "}" + tx + "{\\c" + est["cor"] + "}" if j == k and cheia else tx)
                     efeito = pop if k == 0 else ""
                     linhas.append(f"Dialogue: 1,{_ts(t0)},{_ts(t1)},Leg,,0,0,0,,{{{pos}{efeito}}}" + " ".join(partes))
             else:

@@ -29,10 +29,10 @@
 // ---------------------------------------------------------------- o pacote de edição
 // Montado por edicao/pacote/montar_pacote.py e publicado como asset de um release próprio (não o Latest) em
 // dalmor0/incipit-releases. O Play só usa o arquivo se o tamanho e o SHA-256 baterem com estes.
-static const char *PACOTE_VERSAO = "1.0.2";
-static const char *PACOTE_URL = "https://github.com/dalmor0/incipit-releases/releases/download/edicao-1.0.2/IncipitPlay-Edicao-1.0.2.zip";
-static const char *PACOTE_SHA256 = "fc42859b2d94e77fac2c0fe64017cad75a98a0531ec4cfd09f0b3296a91d86bd";
-static const qint64 PACOTE_TAMANHO = 145666811;
+static const char *PACOTE_VERSAO = "1.0.3";
+static const char *PACOTE_URL = "https://github.com/dalmor0/incipit-releases/releases/download/edicao-1.0.3/IncipitPlay-Edicao-1.0.3.zip";
+static const char *PACOTE_SHA256 = "0ff0d5019e9cd0d125567b612a73c320a473924324816e30d9f6f18a37f1bb68";
+static const qint64 PACOTE_TAMANHO = 145668504;
 static const qint64 ESPACO_MINIMO = qint64(3) * 1024 * 1024 * 1024;   // pacote aberto + leitor de fala (1,5 GB) + folga
 
 IncipitEdicao *IncipitEdicao::instance()
