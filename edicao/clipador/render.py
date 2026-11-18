@@ -262,6 +262,12 @@ def render(clipe, meta, a, b, layout, camera, impactos, forca, centro_x, ass_tex
         parcial.unlink(missing_ok=True)
         raise Falha("Não consegui ler a imagem do clipe.")
     os.replace(parcial, destino)
+    # miniatura do vídeo pronto (com legenda e título), no mesmo quadro de 35%; se falhar, a do compositor
+    jpg = destino.with_suffix(".jpg")
+    code, _, _ = rodar(["-y", *entrada(destino, inicio=round(dur * 0.35, 2)), "-frames:v", "1",
+                        "-vf", "scale=360:640", "-q:v", "4", str(jpg)], cwd=trabalho)
+    if code == 0 and jpg.is_file() and jpg.stat().st_size > 0:
+        miniatura = None
     if miniatura is not None:
         ok, jpg = cv2.imencode(".jpg", cv2.resize(miniatura, (360, 640), interpolation=cv2.INTER_AREA), [cv2.IMWRITE_JPEG_QUALITY, 85])
         if ok:

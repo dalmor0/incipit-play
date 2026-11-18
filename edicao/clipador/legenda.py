@@ -10,8 +10,8 @@ from .momento import PALAVRAO
 
 ESTILOS = {
     # nome: (fonte, tamanho, cor primária BGR, contorno, sombra, cor da sombra/contorno, maiúscula, palavras por vez)
-    "creme": {"fonte": "Work Sans Black", "italico": 1, "tam": 112, "cor": "&H00CDEDFF", "contorno": 3,
-                "sombra": 6, "cor_borda": "&H70000000", "cor_sombra": "&H82000000", "maiuscula": False,
+    "creme": {"fonte": "Work Sans Black", "italico": 1, "tam": 112, "cor": "&H00CDEDFF", "contorno": 5,
+                "sombra": 6, "cor_borda": "&H40000000", "cor_sombra": "&H82000000", "maiuscula": False,
                 "max_pal": 3, "max_car": 15, "revela": True, "pop": 0.92},
     "amarela": {"fonte": "Anton", "italico": 0, "tam": 118, "cor": "&H007BF4FF", "contorno": 7, "sombra": 0,
                 "cor_borda": "&H00000000", "cor_sombra": "&H00000000", "maiuscula": True,
@@ -80,7 +80,7 @@ YCbCr Matrix: TV.709
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Leg,{est['fonte']},{est['tam']},{est['cor']},&H000000FF,{est['cor_borda']},{est['cor_sombra']},0,{est['italico']},0,0,100,100,0,0,1,{est['contorno']},{est['sombra']},5,60,60,0,1
-Style: Titulo,Archivo,66,&H00161616,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,3,18,0,8,80,80,0,1
+Style: Titulo,Archivo,96,&H00161616,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,3,22,0,8,70,70,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -97,8 +97,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if fim - ini < 0.12:
                 fim = min(prox, ini + 0.12) if prox > ini + 0.02 else ini + 0.12
             textos = []
-            for w in g:
+            for k, w in enumerate(g):
                 t = w["p"].strip()
+                # pontuação igual no vídeo inteiro: sai ponto, vírgula e dois-pontos; ficam ! e ?
+                t = t.rstrip(".,;:") or t
+                # começo de bloco depois de frase terminada vai com maiúscula
+                if k == 0 and t[:1].islower() and (gi == 0 or re.search(r"[.!?…]$", grupos[gi - 1][-1]["p"])):
+                    t = t[:1].upper() + t[1:]
                 if censura:
                     t = _censura(t) or t
                 t = _esc(t.upper() if est["maiuscula"] else t)
@@ -128,11 +133,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     if titulo:
         t = _esc(titulo.strip())
         # duas linhas no máximo, quebrando no espaço do meio
-        if len(t) > 20 and " " in t:
+        if len(t) > 16 and " " in t:
             meio = len(t) // 2
             esp = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - meio))
             t = t[:esp] + "\\N" + t[esp + 1:]
-        ty = 96 if layout == "camera" else 200
+        ty = 70 if layout == "camera" else 180
         linhas.append(f"Dialogue: 2,{_ts(0)},{_ts(dur)},Titulo,,0,0,0,,{{\\an8\\pos({larg // 2},{ty})\\fad(150,0)}}{t}")
     return cab + "\n".join(linhas) + "\n", len(dentro)
 

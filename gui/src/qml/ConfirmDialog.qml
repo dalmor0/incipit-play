@@ -19,6 +19,8 @@ T.Dialog {
     x: Math.round((root.width - width) / 2)
     y: Math.round((root.height - height) / 2)
     width: Math.min(520, root.width - 64)
+    // o Dialog cru (Templates) não calcula a altura sozinho: sem isto a caixa nascia com altura 0, sem fundo
+    height: implicitContentHeight + topPadding + bottomPadding
     padding: 28
     topPadding: 24
     modal: true
@@ -44,6 +46,14 @@ T.Dialog {
 
     background: Rectangle { color: dialog.tema.sup; border.width: 1; border.color: dialog.tema.borda }
     Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.55) }
+    // véu próprio atrás da caixa (o da camada de diálogos não aparece neste app)
+    property Item veu: Rectangle {
+        parent: root.contentItem || root
+        anchors.fill: parent
+        z: 9000
+        visible: dialog.visible
+        color: Qt.rgba(0, 0, 0, 0.55)
+    }
 
     contentItem: ColumnLayout {
         spacing: 12

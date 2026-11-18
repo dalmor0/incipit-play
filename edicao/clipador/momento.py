@@ -1,7 +1,12 @@
 """Acha o melhor trecho do clipe e os pontos de impacto (onde entra o zoom).
 
-Sinais a cada 0,1 s: volume (pico, grito), fala animada (palavra exclamada, risada, palavrão),
-movimento da imagem (ação, troca de plano) e as palavras do assunto que a pessoa pediu.
+Sinais a cada 0,1 s: volume, fala animada (palavra exclamada, risada, palavrão), movimento do jogo, troca de plano,
+reação de quem está na câmera (movimento dentro da caixa da câmera), tela parada (menu, carregamento) e as palavras
+do assunto que a pessoa pediu ou que deu de nome ao arquivo.
+
+Rodada 2 (conferência de 17/11, nota 4,0): numa live com câmera o jogo ou o vídeo assistido grita mais que o
+streamer, então com câmera o que pesa é a reação dele; o zoom só entra em pico de verdade, medido contra o clipe
+inteiro; pedido de assunto vale também em clipe curto; trecho que repete (o streamer voltou o vídeo) é cortado.
 """
 import re
 
@@ -12,14 +17,14 @@ from .pedido import radicais, sem_acento
 
 RISO = re.compile(r"^(k{2,}|(ha){2,}h?|(he){2,}|rs{1,}|kkk\w*)$")
 PALAVRAO = re.compile(r"^(porra|caralh\w*|merda|puta\w*|fod\w*|cacete|krl|vsf|pqp|desgra\w*|fdp|bosta|cu|buceta|viado|arrombad\w*)$")
-EXCLAMA = re.compile(r"^(nao+|vai+|corre+|meu deus|nossa|caraca|eita+|uau+|ai+|socorro|mano+|olha|bora+|vamo+|toma+|isso+|let'?s|go+|what|no+|yes+|oh+|wow)$")
+EXCLAMA = re.compile(r"^(nao+|vai+|corre+|meu deus|nossa|caraca|eita+|uau+|ai+|socorro|mano+|olha|bora+|vamo+|toma+|isso+|let'?s|go+|what|no+|yes+|oh+|wow|pegou|clipa|clipei|safado)$")
 
 
 def _limpa(p):
     return sem_acento(p.lower()).strip(" .,!?…\"'")
 
 
-def sinais(dur, db, energia, corte, palavras, plano):
+def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
     n = max(1, int(np.ceil(dur / PASSO)))
 
     def ajusta(s):
@@ -30,13 +35,15 @@ def sinais(dur, db, energia, corte, palavras, plano):
     vol = np.clip(z(suavizar(db, 3)), 0, 6)
     mov = np.clip(z(suavizar(ajusta(energia), 3)), 0, 4)
     cut = ajusta(corte)
+    rea = np.clip(z(suavizar(ajusta(reacao), 5)), 0, 5) if reacao is not None and len(reacao) else np.zeros(n)
+    par = ajusta(parado) if parado is not None and len(parado) else np.zeros(n)
     fala = np.zeros(n)
     riso = np.zeros(n)
     grito = np.zeros(n)
     assunto = np.zeros(n)
     alvos = []
-    chaves = [sem_acento(w.lower()) for w in plano.get("foco") or []]
-    for w in plano.get("foco") or []:
+    chaves = [sem_acento(w.lower()) for w in (plano.get("foco") or []) + (plano.get("foco_nome") or [])]
+    for w in (plano.get("foco") or []) + (plano.get("foco_nome") or []):
         alvos += radicais(w)
     from difflib import SequenceMatcher
 
@@ -59,12 +66,16 @@ def sinais(dur, db, energia, corte, palavras, plano):
     # grito de verdade: fala alta (volume bem acima do resto enquanto tem fala)
     grito += np.where(fala > 0, np.clip(vol - 1.5, 0, 4), 0)
     return {"vol": vol, "mov": mov, "corte": cut, "fala": np.clip(fala, 0, 1), "riso": suavizar(riso, 5),
-            "grito": suavizar(grito, 5), "assunto": suavizar(assunto, 9), "n": n}
+            "grito": suavizar(grito, 5), "assunto": suavizar(assunto, 9), "reacao": rea, "parado": par, "n": n}
 
 
-def pontuacao(s, plano):
+def pontuacao(s, plano, com_camera=False):
     tipo = plano.get("foco_tipo")
-    pesos = {"vol": 1.0, "mov": 0.6, "corte": 0.4, "fala": 0.5, "riso": 1.0, "grito": 1.2, "assunto": 0.0}
+    if com_camera:
+        # quem importa é o streamer: a reação dele e a fala dele; o conteúdo de fundo grita mais e engana
+        pesos = {"vol": 0.4, "mov": 0.2, "corte": 0.1, "fala": 0.4, "riso": 1.6, "grito": 1.2, "reacao": 1.8, "assunto": 0.0}
+    else:
+        pesos = {"vol": 1.0, "mov": 0.6, "corte": 0.4, "fala": 0.5, "riso": 1.0, "grito": 1.2, "reacao": 0.0, "assunto": 0.0}
     if tipo == "grito":
         pesos.update(vol=2.0, grito=2.5)
     elif tipo == "risada":
@@ -75,10 +86,13 @@ def pontuacao(s, plano):
         pesos.update(fala=1.5)
     if plano.get("foco"):
         pesos["assunto"] = 3.0
+    elif plano.get("foco_nome"):
+        pesos["assunto"] = 1.6
     total = np.zeros(s["n"])
     for k, p in pesos.items():
         total += p * s[k]
-    return total
+    # tela parada (menu, carregamento) nunca é o melhor momento
+    return total * (1 - 0.8 * s["parado"])
 
 
 def _fronteiras(palavras):
@@ -93,7 +107,51 @@ def _fronteiras(palavras):
     return inis, fins
 
 
-def escolher(dur, s, palavras, plano):
+def _sem_repeticao(a, b, palavras, score):
+    """O streamer voltou o vídeo: uma frase de 7 palavras ou mais aparece duas vezes, a mais de 5 s. Fica a parte
+    (antes da segunda vez ou depois da primeira) que tem mais pontos."""
+    ws = [w for w in palavras if a <= w["i"] < b]
+    toks = [_limpa(w["p"]) for w in ws]
+    k = 7   # gente repete frase curta de propósito ("não chegou a sair um gen"); fala inteira repetida é vídeo voltando
+    vistos = {}
+    for i in range(len(toks) - k + 1):
+        g = tuple(toks[i:i + k])
+        if not all(g):
+            continue
+        if g in vistos and ws[i]["i"] - ws[vistos[g]]["i"] > 5.0:
+            j0 = vistos[g]
+            antes = (a, ws[i]["i"] - 0.2)
+            depois = (ws[j0 + k - 1]["f"] + 0.2, b)
+
+            def pontos(x):
+                return score[int(x[0] / PASSO):int(x[1] / PASSO)].sum()
+            opcoes = [o for o in (antes, depois) if o[1] - o[0] >= 6]
+            if not opcoes:
+                return a, b
+            return max(opcoes, key=pontos)
+        vistos.setdefault(g, i)
+    return a, b
+
+
+def _aparar_parado(a, b, s, palavras, folga=1.0):
+    """Corta tela parada sem fala nas pontas (menu no fim, carregamento no começo)."""
+    par = s["parado"]
+    fala = s["fala"]
+    ia, ib = int(a / PASSO), int(b / PASSO)
+    i = ia
+    while i < ib - 1 and par[i] > 0.5 and fala[i] == 0:
+        i += 1
+    j = ib - 1
+    while j > i and par[j] > 0.5 and fala[j] == 0:
+        j -= 1
+    if (i - ia) * PASSO >= folga:
+        a = max(a, i * PASSO - 0.3)
+    if (ib - 1 - j) * PASSO >= folga:
+        b = min(b, (j + 1) * PASSO + 0.4)
+    return a, b
+
+
+def escolher(dur, s, palavras, plano, com_camera=False):
     """Devolve (inicio, fim) em segundos."""
     if plano.get("trecho"):
         a, b = plano["trecho"]
@@ -104,14 +162,20 @@ def escolher(dur, s, palavras, plano):
         return 0.0, dur
     tipo = plano.get("foco_tipo")
     alvo = plano.get("duracao")
+    score = pontuacao(s, plano, com_camera)
+    # pedido de assunto ou de momento: a janela é em volta dele, mesmo em clipe curto
+    tem_foco = bool(plano.get("foco")) and s["assunto"].max() > 0.5
+    tem_tipo = tipo in ("grito", "risada", "acao")
     if not alvo:
-        alvo = dur if dur <= 40 else 30
+        if tem_foco or tem_tipo:
+            alvo = 15.0
+        else:
+            alvo = dur if dur <= 40 else 30
     alvo = float(min(alvo, dur))
     if tipo == "inicio":
         return 0.0, alvo
     if tipo == "fim":
         return dur - alvo, dur
-    score = pontuacao(s, plano)
     n = s["n"]
     L = max(1, int(alvo / PASSO))
     if L >= n:
@@ -125,11 +189,19 @@ def escolher(dur, s, palavras, plano):
             j = i + int(np.argmax(pico[i:i + L]))
             pos = (j - i) / L
             # o pico no meio pra frente prende mais: começa com tensão e termina com a reação
-            lugar = 1.0 if 0.25 <= pos <= 0.8 else 0.6
+            lugar = 1.0 if 0.3 <= pos <= 0.8 else 0.5
             v = media + 0.35 * pico[j] * lugar
             if v > melhor:
                 melhor, ia = v, i
         a, b = ia * PASSO, (ia + L) * PASSO
+    # a reação logo depois do fim entra (risada, grito, palavrão até 4 s depois)
+    if b < dur - 0.2 and not plano.get("duracao"):
+        reac = s["riso"] + s["grito"] + (s["reacao"] if com_camera else 0)
+        ib, iff = int(b / PASSO), min(n, int((b + 4.0) / PASSO))
+        if iff > ib and reac[ib:iff].max() > 1.5:
+            fim_reac = ib + int(np.where(reac[ib:iff] > 1.0)[0].max())
+            b = min(dur, (fim_reac + 1) * PASSO + 0.6)
+    a, b = _sem_repeticao(a, b, palavras, score)
     # não começar nem terminar no meio da frase (até 2 s de folga)
     inis, fins = _fronteiras(palavras)
     if a > 0.05:
@@ -137,7 +209,6 @@ def escolher(dur, s, palavras, plano):
         if antes:
             a = max(0.0, min(antes, key=lambda x: abs(x - a)) - 0.15)
         else:
-            # cortando no meio de uma palavra: volta pro começo dela
             for w in palavras:
                 if w["i"] < a < w["f"]:
                     a = max(0.0, w["i"] - 0.1)
@@ -151,6 +222,7 @@ def escolher(dur, s, palavras, plano):
                     b = min(dur, w["f"] + 0.3)
     if plano.get("duracao") and b - a > plano["duracao"] + 1.5:
         b = round(a + plano["duracao"] + 1.0, 2)
+    a, b = _aparar_parado(a, b, s, palavras)
     # clipe curto inteiro: tira só o silêncio parado das pontas
     if not plano.get("duracao") and dur <= 40 and a == 0 and b == dur:
         vivo = np.where((s["vol"] > 0.3) | (s["mov"] > 0.3) | (s["fala"] > 0))[0]
@@ -162,26 +234,29 @@ def escolher(dur, s, palavras, plano):
     return round(a, 2), round(b, 2)
 
 
-def impactos(a, b, s, plano):
-    """Momentos de zoom dentro do trecho: [(t_relativo, forca)]."""
+def impactos(a, b, s, plano, com_camera=False):
+    """Momentos de zoom dentro do trecho: [(t_relativo, forca)]. Só pico de verdade: grito, risada, palavrão
+    exclamado, reação forte na câmera ou troca de plano com ação, medido contra o clipe INTEIRO."""
     zoom = plano.get("zoom", 1.0)
     if zoom <= 0:
         return []
-    imp = 1.2 * s["vol"] + 1.4 * s["grito"] + 1.2 * s["riso"] + 0.8 * s["corte"] * s["mov"] + 0.5 * s["mov"]
-    if plano.get("foco"):
-        imp = imp + 0.3 * s["assunto"]
+    imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 0.8 * s["corte"] * s["mov"] + 0.4 * s["vol"]
+    if com_camera:
+        imp = imp + 0.9 * s["reacao"]
+    else:
+        imp = imp + 0.4 * s["mov"]
+    imp = imp * (1 - s["parado"])
     ia, ib = int(a / PASSO), int(b / PASSO)
     seg = imp[ia:ib]
     if len(seg) < 5:
         return []
-    limiar = np.percentile(seg, 90 if zoom < 2 else 80)
-    piso = 2.0 if zoom < 2 else 1.4
-    vao = int((3.0 if zoom < 2 else 1.6) / PASSO)
-    maximo = max(1, int((b - a) / (5.0 if zoom < 2 else 2.8)))
+    limiar = max(np.percentile(imp, 93 if zoom < 2 else 88), 2.4 if zoom < 2 else 2.0)
+    vao = int((3.0 if zoom < 2 else 2.0) / PASSO)
+    maximo = max(1, int((b - a) / (6.0 if zoom < 2 else 4.0)))
     ordem = np.argsort(-seg)
     pegos = []
     for i in ordem:
-        if seg[i] < max(limiar, piso) or len(pegos) >= maximo:
+        if seg[i] < limiar or len(pegos) >= maximo:
             break
         if i * PASSO < 0.6 or i * PASSO > (b - a) - 0.8:
             continue

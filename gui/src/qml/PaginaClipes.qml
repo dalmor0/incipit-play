@@ -127,7 +127,7 @@ InPagina {
             InTexto { text: root.t("Pasta dos clipes"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
-                InTexto { Layout.maximumWidth: 420; text: Clips.clipsDir(); tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InTexto { Layout.maximumWidth: 420; text: { cl.lista; return Clips.clipsDir(); } tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 InBotao { text: root.t("Trocar"); onClicked: escolhaPasta.open() }
             }
         }

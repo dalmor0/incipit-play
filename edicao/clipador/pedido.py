@@ -55,7 +55,7 @@ me pra para por com sem so somente apenas parte hora momento vez quando onde tip
 coloca poe bota deixa faz fazer faca pega pegar foca focar mostra mostrar video clipe corte isso esse essa
 aquele aquela aqui ali la ta to tava estava fico fica ai entao ja ate sobre falo falei fala falando gente
 cara mano vei mesmo the and of only part pro pros muito aparece aparecer acontece rola rolou edit brabo pfv favor
-tiktok reels shorts insta instagram youtube""".split())
+tiktok reels shorts insta instagram youtube zoom legenda titulo musica segundos ele ela eles elas voce nos gente""".split())
 
 # nome de jogo e placar de rodada dizem onde a pessoa estava, não o assunto do trecho
 JOGOS = set("""valorant fortnite gta fifa fc cod warzone minecraft lol cs csgo cs2 freefire free fire roblox apex
@@ -121,7 +121,7 @@ def _foco(n):
     achados = []
     for m in re.finditer(marcas, n):
         resto = n[m.end():]
-        resto = re.split(r"[,.;!?\n]|\s+(?:e|com|sem|mas|titulo|legenda|zoom|bota|coloca|poe|deixa)\b", resto)[0]
+        resto = re.split(r"[,.;!?\n]|\s+(?:com|sem|mas|titulo|legenda|zoom|bota|coloca|poe|deixa|e (?:mais|menos|sem|com|bota|poe|coloca|deixa|legenda|titulo))\b", resto)[0]
         for w in re.findall(r"[a-z0-9]+", resto):
             if w not in PARADAS and w not in JOGOS and len(w) >= 3 and not re.fullmatch(r"\d+v\d+", w):
                 achados.append(w)

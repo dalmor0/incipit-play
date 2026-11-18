@@ -76,6 +76,9 @@ def _bordas(quadros, cx, cy, fh):
         return None
     if not (x0 <= cx <= x1 and y0 <= cy <= y1):
         return None
+    # moldura longe demais do rosto é borda de outra coisa (overlay, jogo): melhor a estimativa pelo rosto
+    if y1 - y0 > 2.4 * fh or x1 - x0 > 2.4 * fh * 16 / 9:
+        return None
     return x0, y0, x1, y1
 
 
@@ -86,7 +89,7 @@ def _caixa(cx, cy, fh, quadros=None):
             x0, y0, x1, y1 = b
             m = 2   # tira a própria linha da moldura
             return [round((x0 + m) / W, 4), round((y0 + m) / H, 4), round((x1 - x0 - 2 * m) / W, 4), round((y1 - y0 - 2 * m) / H, 4)]
-    bh = min(H, fh * 3.2)
+    bh = min(H, fh * 2.2)
     bw = min(W, bh * 16 / 9)
     x0 = float(np.clip(cx - bw / 2, 0, W - bw))
     y0 = float(np.clip(cy - bh * 0.45, 0, H - bh))

@@ -45,7 +45,7 @@ def usados():
             txt = io.open(os.path.join(clip, nome), encoding="utf-8").read()
             for m in re.finditer(r'(?:Falha\(|entendi\.append\(|motivo=|aviso = )"([^"{}]+)"', txt):
                 achou.setdefault(m.group(1), "clipador/" + nome)
-            for m in re.finditer(r'\("[a-z]+", "([^"]+)", [0-9.]+', txt):
+            for m in re.finditer(r'\("[a-z]+", "([^"]+)", [0-9.a-z_]+', txt):
                 achou.setdefault(m.group(1), "clipador/" + nome)
             for m in re.finditer(r'\{"amarela": "([^"]+)", "destaque": "([^"]+)",\s*"limpa": "([^"]+)", "creme": "([^"]+)"\}', txt):
                 for g in m.groups():

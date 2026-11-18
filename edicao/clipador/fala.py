@@ -48,7 +48,7 @@ MODELOS = {
 PADRAO = "medium"   # 17/11: nos clipes de teste escreveu bem melhor que o small no mesmo tempo de CPU
 
 # o Whisper erra menos fala de jogador com o vocabulário na mão
-PROMPT = {"pt": "Gameplay comentada em português do Brasil, com gíria de jogo: mano, caralho, porra, clipa, kill, mata, corre, pegou.",
+PROMPT = {"pt": "Gameplay comentada em português do Brasil, com gíria de jogo: mano, clipa, kill, mata, corre, pegou, loop.",
           "en": "Gameplay commentary with gamer slang: bro, clip it, kill, run, let's go."}
 
 
@@ -70,6 +70,16 @@ def _sha(p):
 
 def _confere(p, tam, sha):
     return p.is_file() and p.stat().st_size == tam and _sha(p) == sha
+
+
+def modelo_presente(nome):
+    """O leitor de fala já está baixado e conferido neste PC?"""
+    info = MODELOS[nome]
+    pasta = pasta_modelos() / f"whisper-{nome}"
+    esperado = "\n".join(f"{a} {s}" for a, (_, s) in sorted(info["arquivos"].items()))
+    marca = pasta / "conferido.txt"
+    return marca.is_file() and marca.read_text(encoding="utf-8") == esperado and all(
+        (pasta / a).is_file() and (pasta / a).stat().st_size == t for a, (t, _) in info["arquivos"].items())
 
 
 def garantir_modelo(nome, progresso, cancelado):
@@ -166,6 +176,8 @@ def transcrever(audio, pasta_modelo, idioma, progresso, cancelado):
         modelo = WhisperModel(str(pasta_modelo), device="cpu", compute_type="int8", cpu_threads=threads)
     dur = max(0.1, len(audio) / 16000)
 
+    buracos.__defaults__[0][0] = audio
+
     def rodar(modelo):
         segs, info = modelo.transcribe(
             audio, language=None if idioma == "auto" else idioma, word_timestamps=True, vad_filter=True,
@@ -180,6 +192,7 @@ def transcrever(audio, pasta_modelo, idioma, progresso, cancelado):
                 if t:
                     palavras.append({"p": t, "i": round(w.start, 3), "f": round(w.end, 3), "prob": round(w.probability, 3)})
             progresso(min(1.0, s.end / dur), "Lendo a fala")
+        palavras = buracos(modelo, palavras, idioma, cancelado)
         return limpar(palavras), info.language
 
     try:
@@ -221,3 +234,40 @@ def limpar(palavras):
             else:
                 i += 1
     return [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+
+
+def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None]):
+    """Segunda passada: onde tem voz por mais de 0,8 s e nenhuma palavra, transcreve o pedaço sozinho e encaixa.
+    (A conferência achou frases inteiras sumidas: o Whisper às vezes pula um trecho no meio do clipe.)"""
+    audio = audio_ref[0]
+    if audio is None:
+        return palavras
+    try:
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+    except Exception:
+        return palavras
+    sr = 16000
+    regioes = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=400))
+    novas = []
+    for r in regioes:
+        if cancelado():
+            break
+        i, f = r["start"] / sr, r["end"] / sr
+        if f - i < 0.8:
+            continue
+        cobertura = sum(max(0.0, min(f, w["f"]) - max(i, w["i"])) for w in palavras if w["f"] > i and w["i"] < f)
+        if cobertura > 0.3 * (f - i):
+            continue
+        a0, a1 = max(0, int((i - 0.2) * sr)), min(len(audio), int((f + 0.2) * sr))
+        segs, _ = modelo.transcribe(audio[a0:a1], language=None if idioma == "auto" else idioma, word_timestamps=True,
+                                    vad_filter=False, beam_size=5, condition_on_previous_text=False,
+                                    initial_prompt=PROMPT.get(idioma))
+        base = a0 / sr
+        for sg in segs:
+            for w in sg.words or []:
+                t = w.word.strip()
+                if t and w.probability >= 0.3:
+                    novas.append({"p": t, "i": round(base + w.start, 3), "f": round(base + w.end, 3), "prob": round(w.probability, 3)})
+    if not novas:
+        return palavras
+    return sorted(palavras + novas, key=lambda w: w["i"])

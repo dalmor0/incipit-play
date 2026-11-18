@@ -9,6 +9,7 @@ A saída é uma linha JSON por evento (ver base.py). Tudo roda neste PC.
 """
 import argparse
 import hashlib
+import re
 import json
 import os
 import sys
@@ -18,7 +19,7 @@ from pathlib import Path
 from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
 from .base import Andamento, Falha, avisar, conferir_clipe, medir, pasta_trabalho, prioridade_baixa
 
-VERSAO = "1.0.1"
+VERSAO = "1.0.2"
 _cancelar = {"v": False}
 
 
@@ -63,6 +64,19 @@ def chave(clipe):
     return hashlib.sha1(f"{clipe.resolve()}|{st.st_size}|{int(st.st_mtime)}|{VERSAO}".encode("utf-8")).hexdigest()[:20]
 
 
+NOME_GERADO = re.compile(r"(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{2}|[0-9a-f]{8}-[0-9a-f]{4}|^screen|^clip|^replay|^video|^gravacao|^recording)", re.I)
+
+
+def assunto_do_nome(clipe):
+    """Palavras do nome do arquivo quando a pessoa deu um nome de verdade (não o automático do gravador)."""
+    nome = clipe.stem
+    if NOME_GERADO.search(nome):
+        return []
+    from .pedido import PARADAS, JOGOS, sem_acento
+    ws = re.findall(r"[a-zA-ZÀ-ÿ]{4,}", sem_acento(nome.lower()))
+    return [w for w in ws if w not in PARADAS and w not in JOGOS and w not in ("editado", "final", "corte")][:4]
+
+
 def nome_saida(pasta, clipe):
     pasta.mkdir(parents=True, exist_ok=True)
     base = clipe.stem + " editado"
@@ -97,7 +111,10 @@ def editar(a):
         plano["musica"] = False   # música desligada por padrão
 
     precisa_fala = bool(plano["legenda"] or plano["foco"] or plano["foco_tipo"] in ("risada", "fala", "grito") or plano["censura"])
-    etapas = [("preparar", "Preparando", 3), ("modelo", "Baixando o leitor de fala (só na primeira vez)", 2),
+    # na primeira vez o download do leitor de fala (1,5 GB) é a parte mais longa: a barra anda com ele
+    from . import fala as _fala
+    peso_modelo = 60 if precisa_fala and not _fala.modelo_presente(a.modelo) else 0.5
+    etapas = [("preparar", "Preparando", 3), ("modelo", "Baixando o leitor de fala (só na primeira vez)", peso_modelo),
               ("ouvir", "Ouvindo o clipe", 4), ("olhar", "Olhando a imagem", 6),
               ("fala", "Lendo a fala", 30 if precisa_fala else 0.5), ("momento", "Escolhendo o melhor momento", 2),
               ("montar", "Montando o vertical", 50), ("fim", "Salvando", 1)]
@@ -139,7 +156,14 @@ def editar(a):
             and_.etapa("fala")
             palavras, idioma, onde = fala.transcrever(aud, pm, a.idioma, lambda f, t: and_.etapa("fala", f, t), cancelado)
             cache.update(palavras=palavras, idioma=idioma, onde=onde)
-        palavras = palavras or []
+        palavras = analise.alinhar_falas(palavras or [], aud)
+        par = analise.para_passo(analise.parado(mov["energia"]), analise.FPS_MOV, n)
+        # clipe que é quase todo menu ou tela parada, sem ninguém falando, não vira vídeo
+        if float((par > 0.5).mean()) > 0.75 and not palavras and plano["trecho"] is None and not plano["inteiro"]:
+            raise Falha("Esse clipe é quase todo menu ou tela parada. Não achei jogada pra cortar.")
+        # o nome que a pessoa deu ao arquivo ("fuga da policia.mp4") vira assunto quando não tem pedido
+        if not plano["foco"]:
+            plano["foco_nome"] = assunto_do_nome(clipe)
 
         # câmera: a marcada pela pessoa vale; senão procura uma vez e guarda
         caixa = None
@@ -166,12 +190,7 @@ def editar(a):
         except OSError:
             pass
 
-        and_.etapa("momento")
-        s = momento.sinais(meta["duracao"], db, energia, corte, palavras, plano)
-        ini, fim = momento.escolher(meta["duracao"], s, palavras, plano)
-        imp = momento.impactos(ini, fim, s, plano)
-
-        # enquadramento
+        # enquadramento (antes do momento: com câmera, o que pesa é a reação de quem está nela)
         aviso = None
         lay = plano["layout"]
         if lay == "camera" and not caixa:
@@ -185,12 +204,26 @@ def editar(a):
                 w = len(col)
                 meio = col[int(w * 0.342):int(w * 0.658)].sum() / max(1e-6, col.sum())
                 lay = "centro" if meio >= 0.24 else "desfocado"
+
+        and_.etapa("momento")
+        com_cam = lay == "camera" and bool(caixa)
+        rea = analise.reacao_na_camera(mov, caixa) if com_cam else None
+        rea = analise.para_passo(rea, analise.FPS_MOV, n) if rea is not None else None
+        s = momento.sinais(meta["duracao"], db, energia, corte, palavras, plano, reacao=rea, parado=par)
+        ini, fim = momento.escolher(meta["duracao"], s, palavras, plano, com_cam)
+        imp = momento.impactos(ini, fim, s, plano, com_cam)
         cx = render.seguir_acao(mov.get("col_t"), analise.FPS_MOV, ini, fim,
                                 render.SH * render.LARG / (render.ALT - (render.CAM_ALT if lay == "camera" else 0)))
 
         ass, n_pal = legenda.montar(palavras if plano["legenda"] else [], ini, fim, plano["estilo"], plano["maiuscula"],
                                     plano["censura"], plano["titulo"], lay)
         cens = legenda.trechos_censurados(palavras, ini, fim) if plano["censura"] else []
+        # o começo de cada bloco de legenda que foi pro vídeo (conferência: legenda no tempo da voz)
+        blocos_leg = []
+        if plano["legenda"]:
+            est = legenda.ESTILOS.get(plano["estilo"] or legenda.PADRAO, legenda.ESTILOS[legenda.PADRAO])
+            dentro = [dict(w, i=w["i"] - ini, f=w["f"] - ini) for w in palavras if w["f"] > ini + 0.05 and w["i"] < fim - 0.05]
+            blocos_leg = [[round(max(0.0, g[0]["i"]), 3), " ".join(w["p"] for w in g)] for g in legenda.blocos(dentro, est)]
         destino = nome_saida(Path(a.saida), clipe)
         and_.etapa("montar")
         info = render.render(clipe, meta, ini, fim, lay, caixa if lay == "camera" else None, imp, plano["zoom"], cx, ass,
@@ -203,7 +236,7 @@ def editar(a):
             "layout": lay, "camera": caixa, "estilo": plano["estilo"] or legenda.PADRAO, "legenda": plano["legenda"],
             "palavras_na_legenda": n_pal, "titulo": plano["titulo"], "zoom": plano["zoom"], "impactos": imp,
             "musica": info["musica"], "entendi": entendi, "aviso": aviso, "pedido": a.pedido or "",
-            "onda": analise.onda(db), "fala_em": onde, "idioma": idioma, "segundos": round(time.time() - t_ini, 1),
+            "onda": analise.onda(db), "legendas": blocos_leg[:400], "fala_em": onde, "idioma": idioma, "segundos": round(time.time() - t_ini, 1),
             "versao": VERSAO,
         }
         destino.with_suffix(".json").write_text(json.dumps(resumo, ensure_ascii=False, indent=1), encoding="utf-8")

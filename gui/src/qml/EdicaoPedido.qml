@@ -45,7 +45,7 @@ T.Dialog {
         { id: "limpa", nome: root.t("Simples, frase inteira") },
         { id: "nenhuma", nome: root.t("Sem legenda") }
     ]
-    readonly property var exemplos: [root.t("só a parte da fuga"), root.t("mais zoom"), root.t("título: FUGI DA POLÍCIA"), root.t("30 segundos"), root.t("sem legenda")]
+    readonly property var exemplos: [root.t("só a parte da fuga"), root.t("mais zoom"), root.t("título: FUGI DA POLÍCIA"), root.t("30 segundos")]
 
     function enviar() {
         const est = estilos[estilo.currentIndex].id;
@@ -64,6 +64,14 @@ T.Dialog {
 
     background: Rectangle { color: d.tema.sup; border.width: 1; border.color: d.tema.borda }
     Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.55) }
+    // véu próprio atrás da caixa: o da camada de diálogos não aparecia em todas as placas de vídeo
+    property Item veu: Rectangle {
+        parent: root.contentItem || root
+        anchors.fill: parent
+        z: 9000
+        visible: d.visible
+        color: Qt.rgba(0, 0, 0, 0.55)
+    }
 
     contentItem: Flickable {
         implicitHeight: corpo.implicitHeight
@@ -102,7 +110,7 @@ T.Dialog {
                     InTexto {
                         Layout.fillWidth: true
                         tipo: "pequeno"
-                        text: d.clipe.criado ? Qt.formatDateTime(d.clipe.criado, "dd/MM HH:mm") + " · " + Math.round(d.clipe.segundos || 0) + " s" : ""
+                        text: d.clipe.criado ? Qt.formatDateTime(d.clipe.criado, root.lingua.en ? "MM/dd HH:mm" : "dd/MM HH:mm") + " · " + Math.round(d.clipe.segundos || 0) + " s" : ""
                     }
                 }
             }
@@ -135,7 +143,7 @@ T.Dialog {
                         border.color: pedido.activeFocus ? d.tema.texto : d.tema.borda
                     }
                 }
-                InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("Em branco, sai o padrão: o melhor trecho, legenda, zoom nos picos e sua câmera em cima, se tiver.") }
+                InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("Em branco: o melhor trecho, legenda, zoom nos picos e sua câmera em cima.") }
                 Flow {
                     Layout.fillWidth: true
                     spacing: 8

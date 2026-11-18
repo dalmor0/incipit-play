@@ -67,6 +67,31 @@ def legenda_no_tempo(v, js):
     info = json.loads(Path(js).read_text(encoding="utf-8"))
     if not info.get("legenda") or not info.get("palavras_na_legenda"):
         return None
+    if info.get("legendas"):
+        # o que foi pro vídeo: começo de cada bloco e o fim do bloco anterior (aproximado pelo começo do próximo)
+        blocos_t = [b[0] for b in info["legendas"]]
+        db = onsets(v)
+        difs = []
+        pal = None
+        for k, ini in enumerate(blocos_t):
+            if ini < 0.3:
+                continue
+            i0 = int(ini * 100)
+            lo, hi = max(0, i0 - 30), min(len(db) - 1, i0 + 30)
+            base = db[max(0, lo - 30):lo + 1]
+            chao = np.percentile(base, 30)
+            # só bloco que começa depois de silêncio (voz abaixo do chão + 12 dB logo antes)
+            if db[max(0, i0 - 30):max(1, i0 - 5)].max() > chao + 12:
+                continue
+            sobe = np.where(db[lo:hi] > chao + 12)[0]
+            if len(sobe):
+                difs.append(round(ini - (lo + sobe[0]) / 100, 3))
+        if not difs:
+            return "nenhum bloco depois de silêncio"
+        d = np.array(difs)
+        return {"blocos_medidos": len(d), "atraso_mediano_s": round(float(np.median(d)), 3),
+                "maior_adiantado_s": round(float(d.min()), 3), "maior_atrasado_s": round(float(d.max()), 3),
+                "dentro_de_0_10s": int((np.abs(d) <= 0.10).sum())}
     cache = mm.pasta_cache() / f"{mm.chave(Path(info['origem']))}.json"
     if not cache.is_file():
         return "sem cache da fala"

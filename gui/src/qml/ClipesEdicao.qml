@@ -24,6 +24,12 @@ ColumnLayout {
         function onEditadosMudaram() { ed.editados = Edicao.editados(8); }
         function onTerminou(ok) { ed.ajustando = false; }
     }
+    // a pasta dos clipes chega das Opções depois que a tela nasce: relê os editados quando a biblioteca muda
+    Connections {
+        target: Clips
+        function onLibraryChanged() { ed.editados = Edicao.editados(8); }
+    }
+    Component.onCompleted: Qt.callLater(() => { ed.editados = Edicao.editados(8); })
 
     function nomeLayout(l) {
         return l === "camera" ? root.t("Câmera em cima, jogo embaixo") : l === "centro" ? root.t("Jogo no centro, tela cheia") : root.t("Jogo inteiro, fundo desfocado");
@@ -50,7 +56,6 @@ ColumnLayout {
     // ------------------------------------------------------------ andamento
     InCartao {
         visible: ed.estado === "baixando" || ed.estado === "editando" || ed.estado === "fila"
-        marcado: true
         RowLayout {
             Layout.fillWidth: true
             spacing: 16
@@ -75,6 +80,8 @@ ColumnLayout {
                 text: Math.floor(Edicao.pct) + "%"
                 Layout.alignment: Qt.AlignVCenter
             }
+            InBotao { visible: ed.estado === "fila"; text: root.t("Editar agora mesmo assim"); Layout.alignment: Qt.AlignVCenter; onClicked: Edicao.editarAgora() }
+            InBotao { text: root.t("Cancelar"); Layout.alignment: Qt.AlignVCenter; enabled: Edicao.etapa !== "Cancelando"; onClicked: Edicao.cancelar() }
         }
         Rectangle {
             visible: ed.estado !== "fila"
@@ -92,18 +99,12 @@ ColumnLayout {
             Accessible.role: Accessible.ProgressBar
             Accessible.name: root.t("Andamento da edição")
         }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
-            Item { Layout.fillWidth: true }
-            InBotao { visible: ed.estado === "fila"; text: root.t("Editar agora mesmo assim"); onClicked: Edicao.editarAgora() }
-            InBotao { text: root.t("Cancelar"); enabled: Edicao.etapa !== "Cancelando"; onClicked: Edicao.cancelar() }
-        }
     }
 
     // ------------------------------------------------------------ erro
     InCartao {
         visible: ed.estado === "erro"
+        corFio: ed.tema.alerta
         RowLayout {
             Layout.fillWidth: true
             spacing: 16
@@ -114,21 +115,22 @@ ColumnLayout {
                 spacing: 4
                 InTexto { Layout.fillWidth: true; tipo: "titulo"; text: root.t("Não deu pra editar") }
                 InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t(Edicao.motivo) }
+                InTexto {
+                    Layout.fillWidth: true
+                    tipo: "pequeno"
+                    visible: Edicao.clipe !== ""
+                    text: root.t("Se o clipe não abre no seu player, ele veio estragado e não dá pra editar. Se abre, tente de novo.")
+                }
             }
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
-            Item { Layout.fillWidth: true }
-            InBotao { text: root.t("Fechar"); onClicked: Edicao.fechar() }
-            InBotao { tipo: "forte"; text: root.t("Tentar de novo"); visible: Edicao.clipe !== ""; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
+            InBotao { text: root.t("Fechar"); Layout.alignment: Qt.AlignTop; onClicked: Edicao.fechar() }
+            InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
+            InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== ""; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
         }
     }
 
     // ------------------------------------------------------------ pronto
     InCartao {
         visible: ed.estado === "pronto"
-        marcado: true
         RowLayout {
             Layout.fillWidth: true
             spacing: 24
@@ -156,6 +158,7 @@ ColumnLayout {
             }
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.fillHeight: true
                 Layout.maximumWidth: Number.POSITIVE_INFINITY
                 Layout.alignment: Qt.AlignTop
                 spacing: 8
@@ -179,11 +182,11 @@ ColumnLayout {
                     text: root.t(ed.res.aviso || "")
                 }
                 InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("MP4 1080x1920, H.264, áudio no volume das redes. Salvo em %1").arg(String(ed.res.arquivo || "").replace(/[\\\/][^\\\/]*$/, "")); elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                Item { Layout.fillHeight: true }
                 Flow {
                     Layout.fillWidth: true
-                    Layout.topMargin: 8
                     spacing: 12
-                    InBotao { tipo: "forte"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta(ed.res.arquivo) }
+                    InBotao { tipo: ed.ajustando ? "normal" : "forte"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta(ed.res.arquivo) }
                     InBotao { text: root.t("Assistir"); icone: "jogar"; onClicked: Edicao.abrirVideo(ed.res.arquivo) }
                     InBotao { text: ed.ajustando ? root.t("Fechar ajuste") : root.t("Ajustar"); icone: "engrenagem"; onClicked: ed.ajustando = !ed.ajustando }
                     InBotao { tipo: "quieto"; text: root.t("Concluir"); onClicked: Edicao.fechar() }
@@ -292,6 +295,7 @@ ColumnLayout {
                     InEscolha {
                         id: ajLayout
                         Layout.fillWidth: true
+                        implicitHeight: 48
                         readonly property var ids: ["camera", "centro", "desfocado"]
                         model: ids.map(x => ed.nomeLayout(x))
                         currentIndex: Math.max(0, ids.indexOf(ed.res.layout))
@@ -306,6 +310,7 @@ ColumnLayout {
                     InEscolha {
                         id: ajEstilo
                         Layout.fillWidth: true
+                        implicitHeight: 48
                         readonly property var ids: ["creme", "amarela", "destaque", "limpa", "nenhuma"]
                         model: [root.t("Creme (padrão)"), root.t("Amarela"), root.t("Palavra em azul"), root.t("Simples"), root.t("Sem legenda")]
                         currentIndex: ed.res.legenda === false ? 4 : Math.max(0, ids.indexOf(ed.res.estilo))
@@ -360,17 +365,18 @@ ColumnLayout {
             InTexto { tipo: "rotulo"; text: root.t("Editados"); Layout.alignment: Qt.AlignBaseline; wrapMode: Text.NoWrap }
             InTexto { tipo: "pequeno"; Layout.alignment: Qt.AlignBaseline; text: ed.editados.length === 1 ? root.t("1 vídeo") : root.t("%1 vídeos").arg(ed.editados.length); wrapMode: Text.NoWrap }
             Item { Layout.fillWidth: true }
-            InBotao { tipo: "quieto"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta("") }
+            InBotao { tipo: "quieto"; text: root.t("Pasta dos editados"); icone: "externo"; onClicked: Edicao.mostrarNaPasta("") }
         }
         Flow {
             Layout.fillWidth: true
             spacing: 16
             Repeater {
-                model: ed.editados
+                // uma linha só: os mais novos que cabem na largura; o resto fica em "Abrir pasta"
+                model: ed.editados.slice(0, Math.max(1, Math.floor((ed.largura + 16) / 228)))
                 delegate: Rectangle {
                     id: ce
                     required property var modelData
-                    width: 180
+                    width: 212
                     height: colE.implicitHeight
                     color: ed.tema.sup
                     border.width: 1
@@ -393,13 +399,13 @@ ColumnLayout {
                             spacing: 4
                             InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: Math.round(ce.modelData.duracao || 0) + " s · " + Qt.formatDateTime(ce.modelData.criado, "HH:mm"); wrapMode: Text.NoWrap; elide: Text.ElideRight }
                             InBotao {
-                                compacto: true; tipo: "quieto"; icone: "externo"
+                                tipo: "quieto"; icone: "externo"
                                 Accessible.name: root.t("Mostrar na pasta")
                                 ToolTip.visible: hovered; ToolTip.text: root.t("Mostrar na pasta")
                                 onClicked: Edicao.mostrarNaPasta(ce.modelData.arquivo)
                             }
                             InBotao {
-                                compacto: true; tipo: "quieto"; icone: "lixo"
+                                tipo: "quieto"; icone: "lixo"
                                 Accessible.name: root.t("Apagar vídeo editado")
                                 ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
                                 onClicked: root.showConfirmDialog(root.t("Apagar vídeo editado"), root.t("Mandar este vídeo editado pra Lixeira do Windows? O clipe original fica."), () => Edicao.apagarEditado(ce.modelData.arquivo))
