@@ -25,8 +25,8 @@ T.Dialog {
 
     parent: Overlay.overlay
     x: Math.round((root.width - width) / 2)
-    y: Math.max(16, Math.round((root.height - height) / 2))
-    width: Math.min(880, root.width - 48, (root.height - 32 - 260) * 16 / 9 + 56)
+    y: Math.max(24, Math.round((root.height - height) / 2))
+    width: Math.min(880, root.width - 48, (root.height - 48 - 300) * 16 / 9 + 56)
     height: corpo.implicitHeight + topPadding + bottomPadding
     padding: 28
     topPadding: 24
@@ -62,7 +62,7 @@ T.Dialog {
             font.pixelSize: 26
             color: d.tema.texto
         }
-        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo.") }
+        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo. No teclado: Tab até a imagem, setas movem a caixa e Shift com as setas muda o tamanho.") }
 
         Rectangle {
             id: quadro
@@ -74,6 +74,7 @@ T.Dialog {
             Accessible.role: Accessible.Graphic
             Accessible.name: root.t("Área da câmera. Setas movem, Shift e setas mudam o tamanho.")
             function garantir() { if (d.x0 < 0) d.canto(1, 1); }
+            onActiveFocusChanged: if (activeFocus) garantir()
             function mover(dx, dy, tamanho) {
                 garantir();
                 const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1);
@@ -119,7 +120,6 @@ T.Dialog {
             }
         }
 
-        InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("Pelo teclado: Tab até a imagem; as setas movem a caixa e Shift com as setas muda o tamanho.") }
         Flow {
             Layout.fillWidth: true
             spacing: 8

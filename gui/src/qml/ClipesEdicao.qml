@@ -138,9 +138,10 @@ ColumnLayout {
                     text: root.t("Se o clipe não abre no seu player, ele veio estragado e não dá pra editar. Se abre, tente de novo.")
                 }
             }
-            InBotao { text: root.t("Fechar"); Layout.alignment: Qt.AlignTop; onClicked: Edicao.fechar() }
+            InBotao { tipo: "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && !ed.soMenu && !ed.estragado; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
             InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; tipo: ed.estragado ? "forte" : "normal"; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
-            InBotao { tipo: ed.estragado ? "normal" : "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && !ed.soMenu; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
+            InBotao { Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && ed.estragado; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
+            InBotao { tipo: "quieto"; Layout.alignment: Qt.AlignTop; Layout.leftMargin: 12; text: root.t("Fechar"); onClicked: Edicao.fechar() }
         }
     }
 
@@ -199,12 +200,15 @@ ColumnLayout {
                 }
                 InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("MP4 1080x1920, H.264, áudio no volume das redes. Salvo em %1").arg(String(ed.res.arquivo || "").replace(/[\\\/][^\\\/]*$/, "")); elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 Item { Layout.fillHeight: true }
-                Flow {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    columns: ed.largura > 900 ? 5 : 2
+                    columnSpacing: 12
+                    rowSpacing: 12
                     InBotao { tipo: ed.ajustando ? "normal" : "forte"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta(ed.res.arquivo) }
                     InBotao { text: root.t("Assistir"); icone: "jogar"; onClicked: Edicao.abrirVideo(ed.res.arquivo) }
                     InBotao { text: ed.ajustando ? root.t("Fechar ajuste") : root.t("Ajustar"); icone: "pincel"; onClicked: ed.ajustando = !ed.ajustando }
+                    Item { visible: ed.largura > 900; Layout.fillWidth: true }
                     InBotao { tipo: "quieto"; text: root.t("Concluir"); onClicked: Edicao.fechar() }
                 }
             }
@@ -233,6 +237,8 @@ ColumnLayout {
             Item {
                 id: linha
                 Layout.fillWidth: true
+                Layout.topMargin: 4
+                Layout.bottomMargin: 18
                 Layout.preferredHeight: 64
                 readonly property var onda: ed.res.onda || []
                 Rectangle { anchors.fill: parent; color: ed.tema.fundo; border.width: 1; border.color: ed.tema.linha }
@@ -409,13 +415,22 @@ ColumnLayout {
                             Layout.margins: 1
                             color: "black"
                             Image { anchors.fill: parent; source: ce.modelData.miniatura || ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 360; cache: false }
+                            // duração no selo da miniatura, igual aos cartões de clipe
+                            Rectangle {
+                                anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
+                                width: durE.implicitWidth + 12; height: 24
+                                color: Qt.rgba(0, 0, 0, 0.75)
+                                visible: !!ce.modelData.duracao
+                                Text { id: durE; anchors.centerIn: parent; color: "white"; font.family: ed.tema.sans; font.pixelSize: 13; font.weight: Font.DemiBold
+                                    text: { const s = Math.round(ce.modelData.duracao || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
+                            }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Edicao.abrirVideo(ce.modelData.arquivo) }
                         }
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.margins: 8
                             spacing: 8
-                            InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: Math.round(ce.modelData.duracao || 0) + " s · " + Qt.formatDateTime(ce.modelData.criado, "HH:mm"); wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                            InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("às %1").arg(Qt.formatDateTime(ce.modelData.criado, "HH:mm")); wrapMode: Text.NoWrap; elide: Text.ElideRight }
                             InBotao {
                                 tipo: "quieto"; icone: "externo"
                                 Accessible.name: root.t("Mostrar na pasta")

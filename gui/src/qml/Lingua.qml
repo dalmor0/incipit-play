@@ -437,7 +437,6 @@ QtObject {
         "O download do modelo foi desviado. Tente de novo mais tarde.": "The model download was redirected. Try again later.",
         "O arquivo do modelo veio maior que o esperado. Nada foi usado.": "The model file was bigger than expected. Nothing was used.",
         "A parte de: ": "The part about: ",
-        "Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo.": "Drag a rectangle around your camera, or pick the corner. It goes to the top of the video and the game goes below.",
         "Área da câmera. Setas movem, Shift e setas mudam o tamanho.": "Camera area. Arrows move it, Shift and arrows resize it.",
         "Ou escolha o canto:": "Or pick the corner:",
         "Em cima à esquerda": "Top left",
@@ -451,10 +450,11 @@ QtObject {
         "Pasta dos editados": "Edited videos folder",
         "O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.": "Windows blocked part of the editor (Smart App Control). Until the editor is signed, it only runs with that protection turned off.",
         "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30).",
-        "Pelo teclado: Tab até a imagem; as setas movem a caixa e Shift com as setas muda o tamanho.": "With the keyboard: Tab to the image; the arrows move the box and Shift with the arrows resizes it.",
         "Esse clipe não tem jogada pra cortar": "This clip has no play to cut",
         "Conferindo a fala do trecho": "Double-checking the speech in the part",
         "O Play acha sua câmera sozinho. Se errar, marque.": "Play finds your camera by itself. If it's wrong, mark it.",
-        "Sua câmera está marcada.": "Your camera is marked."
+        "Sua câmera está marcada.": "Your camera is marked.",
+        "às %1": "at %1",
+        "Arraste um retângulo em volta da sua câmera, ou escolha o canto. Ela vai pra parte de cima do vídeo e o jogo fica embaixo. No teclado: Tab até a imagem, setas movem a caixa e Shift com as setas muda o tamanho.": "Drag a box around your camera, or pick the corner. It goes to the top of the video and the game goes below. With the keyboard: Tab to the image, the arrows move the box and Shift with the arrows resizes it."
     })
 }
