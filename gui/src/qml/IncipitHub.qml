@@ -60,13 +60,31 @@ Rectangle {
 
         Rectangle { anchors { top: parent.top; bottom: parent.bottom; right: parent.right } width: 1; color: hub.tema.linha }
 
+        // a faixa da hora azul (a mesma pintura do site), fina no alto do menu, descendo pro tom do trilho
+        Image {
+            id: faixa
+            anchors { top: parent.top; left: parent.left; right: parent.right; rightMargin: 1 }
+            height: 56
+            source: "imagens/hora-azul.jpg"
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            opacity: hub.tema.escuro ? 0.9 : 0.8
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0.35; color: "transparent" }
+                    GradientStop { position: 1; color: hub.tema.sup }
+                }
+            }
+        }
+
         ColumnLayout {
-            anchors { fill: parent; topMargin: 28; bottomMargin: 20 }
+            anchors { fill: parent; topMargin: 76; bottomMargin: 20 }
             spacing: 0
 
             Row {
                 Layout.leftMargin: 24
-                Layout.bottomMargin: 36
+                Layout.bottomMargin: 28
                 spacing: 12
                 InMarca { altura: 30; anchors.verticalCenter: parent.verticalCenter }
                 Text {
@@ -105,7 +123,7 @@ Rectangle {
     // ------------------------------------------------------------ página
     Item {
         id: pagina
-        anchors { top: parent.top; bottom: parent.bottom; left: trilho.right; right: parent.right }
+        anchors { top: parent.top; bottom: parent.bottom; left: trilho.right; right: recentes.visible ? recentes.left : parent.right }
 
         Loader {
             anchors.fill: parent
@@ -116,6 +134,99 @@ Rectangle {
         Component { id: nintendo; PaginaSwitch {} }
         Component { id: config; PaginaConfig {} }
         Component { id: clipes; PaginaClipes {} }
+    }
+
+    // ------------------------------------------------------------ clipes recentes (tela larga, abas de jogar)
+    // de 1680 px pra cima a coluna da página não enche a janela: os três últimos clipes ocupam a direita
+    property var ultimos: []
+    function lerUltimos() {
+        const l = Clips.library(), r = [];
+        for (let i = 0; i < l.length && r.length < 3; i++)
+            for (let j = 0; j < l[i].clipes.length && r.length < 3; j++) r.push(l[i].clipes[j]);
+        ultimos = r;
+    }
+    Component.onCompleted: lerUltimos()
+    Connections { target: Clips; function onLibraryChanged() { hub.lerUltimos(); } }
+
+    Rectangle {
+        id: recentes
+        visible: hub.width >= 1680 && (hub.aba === "playstation" || hub.aba === "xbox" || hub.aba === "switch")
+        width: 360
+        anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+        color: hub.tema.fundo
+        Rectangle { anchors { top: parent.top; bottom: parent.bottom; left: parent.left } width: 1; color: hub.tema.linha }
+
+        ColumnLayout {
+            anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 32; rightMargin: 40; topMargin: 46 }
+            spacing: 16
+            Text {
+                text: root.t("Clipes recentes")
+                font.family: hub.tema.serif
+                font.pixelSize: 24
+                color: hub.tema.texto
+                Layout.bottomMargin: 8
+            }
+            InTexto {
+                Layout.fillWidth: true
+                visible: hub.ultimos.length === 0
+                tipo: "apoio"
+                text: root.t("Nenhum clipe ainda. Durante o jogo, aperte %1.").arg(root.clipes.atalho)
+            }
+            Repeater {
+                model: hub.ultimos
+                delegate: AbstractButton {
+                    id: rc
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: miniatura.height
+                    hoverEnabled: true
+                    focusPolicy: Qt.StrongFocus
+                    Accessible.name: root.t("Assistir")
+                    onClicked: Edicao.abrirVideo(modelData.caminho)
+                    Keys.onReturnPressed: clicked()
+                    Keys.onEnterPressed: clicked()
+                    background: Rectangle {
+                        color: "black"
+                        Image {
+                            id: miniatura
+                            width: parent.width
+                            height: width * 9 / 16
+                            source: rc.modelData.miniatura || ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            sourceSize.width: 576
+                            opacity: rc.hovered ? 0.85 : 1
+                        }
+                        Rectangle {
+                            anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
+                            width: durR.implicitWidth + 12; height: 24
+                            color: Qt.rgba(0, 0, 0, 0.75)
+                            visible: !!rc.modelData.segundos
+                            Text { id: durR; anchors.centerIn: parent; color: "white"; font.family: hub.tema.mono; font.pixelSize: 13
+                                text: { const s = Math.round(rc.modelData.segundos || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
+                        }
+                        Rectangle {
+                            anchors { left: parent.left; bottom: parent.bottom; margins: 8 }
+                            width: horaR.implicitWidth + 12; height: 24
+                            color: Qt.rgba(0, 0, 0, 0.75)
+                            Text { id: horaR; anchors.centerIn: parent; color: "white"; font.family: hub.tema.mono; font.pixelSize: 13
+                                text: Qt.formatDateTime(rc.modelData.criado, root.lingua.en ? "MM/dd HH:mm" : "dd/MM HH:mm") }
+                        }
+                        Rectangle {
+                            visible: rc.visualFocus
+                            anchors.fill: parent; anchors.margins: -4
+                            color: "transparent"; border.width: 2; border.color: hub.tema.foco
+                        }
+                    }
+                }
+            }
+            InBotao {
+                Layout.topMargin: 4
+                visible: hub.ultimos.length > 0
+                text: root.t("Ver todos os clipes")
+                onClicked: hub.irPara("clipes")
+            }
+        }
     }
 
     component ItemTrilho: AbstractButton {
@@ -129,13 +240,41 @@ Rectangle {
         Accessible.name: texto
         Keys.onReturnPressed: clicked()
         Keys.onEnterPressed: clicked()
+        // a aba de agora é o andar aceso: luz azul vindo da esquerda, fio no degradê do logo com brilho curto
         background: Rectangle {
-            color: it.ativo ? hub.tema.fundo : (it.hovered ? hub.tema.destaqueFraco : "transparent")
-            Rectangle { visible: it.ativo; width: 3; anchors { top: parent.top; bottom: parent.bottom; left: parent.left } color: hub.tema.destaque }
+            color: it.ativo ? "transparent" : (it.hovered ? hub.tema.sup3 : "transparent")
+            Rectangle {
+                visible: it.ativo
+                anchors.fill: parent
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Qt.rgba(61 / 255, 99 / 255, 212 / 255, hub.tema.escuro ? 0.34 : 0.18) }
+                    GradientStop { position: 1; color: Qt.rgba(61 / 255, 99 / 255, 212 / 255, hub.tema.escuro ? 0.05 : 0.03) }
+                }
+            }
+            Rectangle {
+                visible: it.ativo
+                width: 18
+                anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: hub.tema.brilho }
+                    GradientStop { position: 1; color: "transparent" }
+                }
+            }
+            Rectangle {
+                visible: it.ativo
+                width: 3
+                anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+                gradient: Gradient {
+                    GradientStop { position: 0; color: hub.tema.luz2 }
+                    GradientStop { position: 1; color: hub.tema.luz1 }
+                }
+            }
             Rectangle {
                 visible: it.visualFocus
                 anchors.fill: parent; anchors.margins: 2
-                color: "transparent"; border.width: 2; border.color: hub.tema.texto
+                color: "transparent"; border.width: 2; border.color: hub.tema.foco
             }
         }
         contentItem: Row {

@@ -44,7 +44,7 @@ InPagina {
                 color: root.tema.fundo
                 border.width: 1
                 border.color: Clips.hotkeyActive ? root.tema.destaque : root.tema.borda
-                InTexto { id: tecla; anchors.centerIn: parent; text: cl.cfg.atalho; font.weight: Font.Bold; wrapMode: Text.NoWrap }
+                InTexto { id: tecla; anchors.centerIn: parent; text: cl.cfg.atalho; font.family: root.tema.mono; wrapMode: Text.NoWrap }
             }
             ColumnLayout {
                 Layout.fillWidth: true
@@ -229,8 +229,6 @@ InPagina {
                         Layout.alignment: Qt.AlignTop
                         implicitHeight: col.implicitHeight
                         color: root.tema.sup
-                        border.width: 1
-                        border.color: root.tema.linha
                         ColumnLayout {
                             id: col
                             anchors { left: parent.left; right: parent.right }
@@ -238,7 +236,6 @@ InPagina {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: width * 9 / 16
-                                Layout.margins: 1
                                 color: "black"
                                 Image {
                                     anchors.fill: parent
@@ -252,7 +249,7 @@ InPagina {
                                     width: dur.implicitWidth + 12; height: 24
                                     color: Qt.rgba(0, 0, 0, 0.75)
                                     visible: !!item.modelData.segundos
-                                    Text { id: dur; anchors.centerIn: parent; color: "white"; font.family: root.tema.sans; font.pixelSize: 13; font.weight: Font.DemiBold
+                                    Text { id: dur; anchors.centerIn: parent; color: "white"; font.family: root.tema.mono; font.pixelSize: 13
                                         text: { const s = Math.round(item.modelData.segundos || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
                                 }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Edicao.abrirVideo(item.modelData.caminho) }
@@ -262,13 +259,12 @@ InPagina {
                                 Layout.maximumWidth: Number.POSITIVE_INFINITY   // a coluna estica mesmo com parágrafo de 680 px; o botão fica na borda
                                 Layout.margins: 16
                                 spacing: 4
-                                InTexto { Layout.fillWidth: true; text: Qt.formatDateTime(item.modelData.criado, "HH:mm"); font.weight: Font.DemiBold; elide: Text.ElideRight; wrapMode: Text.NoWrap }
-                                InTexto { tipo: "pequeno"; text: root.numero(item.modelData.tamanhoMb) + " MB" }
+                                InTexto { Layout.fillWidth: true; text: Qt.formatDateTime(item.modelData.criado, "HH:mm"); font.family: root.tema.mono; elide: Text.ElideRight; wrapMode: Text.NoWrap }
+                                InTexto { tipo: "pequeno"; font.family: root.tema.mono; font.pixelSize: 13; text: root.numero(item.modelData.tamanhoMb) + " MB" }
                                 RowLayout {
                                     Layout.topMargin: 10
                                     spacing: 8
                                     InBotao {
-                                        tipo: "forte"
                                         text: root.t("Mandar pra edição")
                                         icone: "video"
                                         onClicked: cl.abrirPedido(item.modelData)
@@ -284,7 +280,7 @@ InPagina {
                                         tipo: "quieto"; icone: "lixo"
                                         Accessible.name: root.t("Apagar clipe")
                                         ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
-                                        onClicked: root.showConfirmDialog(root.t("Apagar clipe"), root.t("Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá."), () => Clips.trash(item.modelData.caminho))
+                                        onClicked: root.showConfirmDialog(root.t("Apagar clipe"), root.t("Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá."), () => Clips.trash(item.modelData.caminho), null, root.t("Mandar pra Lixeira"), true)
                                     }
                                 }
                             }

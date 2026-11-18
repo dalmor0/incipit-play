@@ -1,5 +1,5 @@
-// Incipit Play · cor e tema. As mesmas contas do Incipit Hub (INCIPIT-HUB-CLIENTE/app/tema.js):
-// padrão Hora azul no escuro Grafite; claro Névoa. A escolha fica salva neste PC (QSettings do app).
+// Incipit Play · cor e tema. Tokens da família Incipit (azul-marinho #121624, degraus de superfície, azul do logo no
+// botão forte); o destaque escolhido vale pra aba ativa, o logo e os detalhes. A escolha fica salva neste PC.
 import QtQuick
 import QtCore
 
@@ -52,27 +52,37 @@ QtObject {
         for (let i = 0; i < 24 && contraste(c, fundo) < alvo; i++) c = misturar(c, escuroFundo ? "#FFFFFF" : "#000000", 0.08);
         return c;
     }
+    // Identidade da família Incipit (18/11, "Hall" com o brilho do "Andar aceso"): azul-marinho da marca, superfície
+    // por degrau de tom, o botão forte sempre no azul do logo (qualquer destaque escolhido) e o degradê do logo só
+    // onde a pessoa ganhou alguma coisa (aba acesa, cartão pronto, barra de progresso).
     function calcular(id, esc) {
         const b = esc
-            ? { papel: "#111318", tinta: "#E7EAF0", sup: "#1A1D24", tinta2: "#A0A7B4", linha: "#2C313B", forte: "#626B7A" }
-            : { papel: "#ECEEF2", tinta: "#111318", sup: "#F7F8FA", tinta2: "#4F5663", linha: "#CDD2DB", forte: "#7E8695" };
+            ? { papel: "#121624", sup: "#171C2C", sup2: "#1D2335", sup3: "#252C42", tinta: "#E8EDF7", tinta2: "#A3ADC2",
+                tinta3: "#8590A8", linha: "#262D41", forte: "#5A6685" }
+            : { papel: "#E9EDF5", sup: "#F8F9FC", sup2: "#FFFFFF", sup3: "#DDE3EF", tinta: "#121624", tinta2: "#4A5470",
+                tinta3: "#5C6680", linha: "#D0D7E5", forte: "#77819C" };
         const d = destaques.find(x => x.id === id) || destaques[0];
-        const dest = ajustarAte(esc ? d.escuro : d.claro, b.papel, 4.5);
+        const base = d.id === "hora-azul" ? (esc ? "#8FB4FF" : "#3D63D4") : (esc ? d.escuro : d.claro);
+        const dest = ajustarAte(base, b.papel, 4.5);
         const cands = esc ? [b.papel, "#0B0D12", "#FFFFFF"] : ["#FFFFFF", b.papel, "#0B0D12"];
         const sobre = cands.find(c => contraste(dest, c) >= 4.5) || cands.reduce((m, c) => (contraste(dest, c) > contraste(dest, m) ? c : m), cands[0]);
         let porta;
-        if (d.id === "hora-azul") porta = esc ? ["#CCE0FF", "#7DB0FF", "#3F6FD6"] : ["#4A7FE0", "#2F5FC8", "#1D3D8A"];
+        if (d.id === "hora-azul") porta = ["#C4E3FF", "#7FA6F0", "#3D63D4"];
         else porta = esc ? [misturar(dest, "#FFFFFF", 0.6), dest, misturar(dest, "#000000", 0.35)]
                          : [misturar(dest, "#FFFFFF", 0.15), dest, misturar(dest, "#000000", 0.32)];
         return {
-            fundo: b.papel, sup: b.sup, sup2: esc ? misturar(b.sup, b.tinta, 0.04) : "#FFFFFF",
-            texto: b.tinta, texto2: b.tinta2, linha: b.linha, borda: ajustarAte(b.forte, b.papel, 3),
+            fundo: b.papel, sup: b.sup, sup2: b.sup2, sup3: b.sup3,
+            texto: b.tinta, texto2: b.tinta2, texto3: b.tinta3, linha: b.linha, borda: ajustarAte(b.forte, b.papel, 3),
             destaque: dest, sobreDestaque: sobre,
             destaqueFraco: misturar(b.papel, dest, esc ? 0.14 : 0.10),
-            ok: ajustarAte(esc ? "#7FD1A0" : "#1B7048", b.papel, 4.5),
-            quente: esc ? "#F2B872" : "#8A5A12",
-            alerta: ajustarAte(esc ? "#FF5C5C" : "#B42318", b.papel, 4.5),
-            porta1: porta[0], porta2: porta[1], porta3: porta[2]
+            ok: ajustarAte(esc ? "#6FCF97" : "#1B7048", b.papel, 4.5),
+            quente: ajustarAte(esc ? "#F2B45C" : "#8A5A12", b.papel, 4.5),
+            alerta: ajustarAte(esc ? "#F27D70" : "#B42318", b.papel, 4.5),
+            erroFundo: esc ? "#2A1A22" : "#FBEAEA",
+            porta1: porta[0], porta2: porta[1], porta3: porta[2],
+            // a luz do sistema: no claro, o fim claro do degradê some no papel, então vai até o azul médio
+            luz1: "#3D63D4", luz2: esc ? "#C4E3FF" : "#7FA6F0",
+            foco: esc ? "#C4E3FF" : "#3D63D4"
         };
     }
 
@@ -80,6 +90,19 @@ QtObject {
     readonly property color fundo: p.fundo
     readonly property color sup: p.sup
     readonly property color sup2: p.sup2
+    readonly property color sup3: p.sup3
+    readonly property color texto3: p.texto3
+    readonly property color erroFundo: p.erroFundo
+    readonly property color luz1: p.luz1
+    readonly property color luz2: p.luz2
+    readonly property color foco: p.foco
+    // botão forte: o azul do logo em qualquer destaque e nos dois temas (branco em cima: 5,1:1 a 5,6:1)
+    readonly property color forte1: "#4467D8"
+    readonly property color forte2: "#3A5DCC"
+    readonly property color forteMouse: "#4C72E0"
+    readonly property color fortePreso: "#3354BC"
+    readonly property color sobreForte: "#FFFFFF"
+    readonly property color brilho: Qt.rgba(127 / 255, 166 / 255, 240 / 255, escuro ? 0.45 : 0.35)
     readonly property color texto: p.texto
     readonly property color texto2: p.texto2
     readonly property color linha: p.linha
@@ -97,8 +120,10 @@ QtObject {
     // ------------------------------------------------------------ tipografia
     readonly property string sans: archivo.name
     readonly property string serif: youngSerif.name
+    readonly property string mono: plexMono.name       // só número, hora, versão, endereço e atalho
     property FontLoader archivo: FontLoader { source: Qt.resolvedUrl("fonts/Archivo-Regular.ttf") }
     property FontLoader archivoSemi: FontLoader { source: Qt.resolvedUrl("fonts/Archivo-SemiBold.ttf") }
     property FontLoader archivoBold: FontLoader { source: Qt.resolvedUrl("fonts/Archivo-Bold.ttf") }
     property FontLoader youngSerif: FontLoader { source: Qt.resolvedUrl("fonts/YoungSerif-Regular.ttf") }
+    property FontLoader plexMono: FontLoader { source: Qt.resolvedUrl("fonts/IBMPlexMono-Medium.ttf") }
 }

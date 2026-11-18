@@ -51,6 +51,8 @@
     <file>fonts/Archivo-SemiBold.ttf</file>
     <file>fonts/Archivo-Bold.ttf</file>
     <file>fonts/YoungSerif-Regular.ttf</file>
+    <file>fonts/IBMPlexMono-Medium.ttf</file>
+    <file>imagens/hora-azul.jpg</file>
     <file>ClipesConfig.qml</file>
     <file>PaginaClipes.qml</file>
     <file>ClipesEdicao.qml</file>

@@ -26,6 +26,8 @@ A lista de autores do código herdado está no histórico do git deste repositó
 | setsu | `setsu/` | AGPL-3.0 com exceção do OpenSSL (do Chiaki) |
 | Fonte Archivo | `gui/src/qml/fonts/` | SIL Open Font License 1.1 (`OFL-Archivo.txt`) |
 | Fonte Young Serif | `gui/src/qml/fonts/` | SIL Open Font License 1.1 (`OFL-YoungSerif.txt`) |
+| Fonte IBM Plex Mono | `gui/src/qml/fonts/` | SIL Open Font License 1.1 (`OFL-IBMPlexMono.txt`) |
+| Pintura da hora azul (faixa do menu) | `gui/src/qml/imagens/hora-azul.jpg` | da Incipit House, a mesma do site; uso no Incipit Play |
 
 ## Bibliotecas que vão junto no Windows
 

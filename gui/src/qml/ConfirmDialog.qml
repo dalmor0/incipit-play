@@ -10,6 +10,7 @@ T.Dialog {
     property alias text: label.text
     property string textoSim: root.t("Sim")
     property string textoNao: root.t("Não")
+    property bool perigo: false
     property var callback
     property var rejectCallback
     property bool newDialogOpen: false
@@ -83,7 +84,7 @@ T.Dialog {
             Layout.topMargin: 12
             spacing: 12
             InBotao { text: dialog.textoNao; onClicked: dialog.reject(); Keys.onReturnPressed: dialog.reject() }
-            InBotao { id: sim; tipo: "forte"; text: dialog.textoSim; onClicked: dialog.accept(); Keys.onReturnPressed: dialog.accept() }
+            InBotao { id: sim; tipo: dialog.perigo ? "perigo" : "forte"; text: dialog.textoSim; onClicked: dialog.accept(); Keys.onReturnPressed: dialog.accept() }
         }
     }
 }

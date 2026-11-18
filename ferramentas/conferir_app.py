@@ -1,7 +1,7 @@
 """Conferência do Incipit Play: abre o app, mede o tempo até a janela aparecer e a RAM parada, e tira prints
 de cada aba em 1280x800 e 1920x1080 (área de dentro da janela).
 
-uso: python ferramentas/conferir_app.py <pasta do app> <pasta de saída> [--ui <pasta da interface>] [--so-medir]
+uso: python ferramentas/conferir_app.py <pasta do app> <pasta de saída> [--ui <pasta da interface>] [--so-medir] [--direto]
 
 A aba que abre vem da configuração do próprio app (HKCU\\Software\\Incipit\\Incipit Play, hub/aba e hub/secao),
 que o app também usa pra lembrar onde a pessoa parou.
@@ -104,6 +104,15 @@ def sem_moldura(h, w, ht, aba="playstation"):
 
 
 def clicar(h, x, y):
+    if "--postar" in sys.argv:
+        # mensagem direto na janela: chega mesmo com o TeamViewer segurando o mouse e o teclado
+        lp = ((y & 0xFFFF) << 16) | (x & 0xFFFF)
+        user32.PostMessageW(h, 0x0200, 0, lp)          # WM_MOUSEMOVE
+        time.sleep(0.1)
+        user32.PostMessageW(h, 0x0201, 1, lp)          # WM_LBUTTONDOWN
+        time.sleep(0.05)
+        user32.PostMessageW(h, 0x0202, 0, lp)          # WM_LBUTTONUP
+        return
     p = wt.POINT(x, y)
     user32.ClientToScreen(h, ctypes.byref(p))
     user32.SetCursorPos(p.x, p.y)
@@ -191,7 +200,9 @@ def abrir(app, ui, env_extra=None):
     global ABERTURA_S
     ABERTURA_S = None
     t0 = time.perf_counter()
-    pr = subprocess.Popen([os.path.join(app, "IncipitPlay.exe")], cwd=app, env=env,
+    # --direto: abre o IncipitPlay-app.exe sem o lançador (roda com outra cópia do Incipit Play aberta; sem tela de abertura)
+    exe = "IncipitPlay-app.exe" if "--direto" in sys.argv else "IncipitPlay.exe"
+    pr = subprocess.Popen([os.path.join(app, exe)], cwd=app, env=env,
                           stdout=subprocess.DEVNULL, stderr=open(os.path.join(SAIDA, "app-stderr.log"), "ab"))
     h = None
     while time.perf_counter() - t0 < 90 and not h:
@@ -271,7 +282,8 @@ if __name__ == "__main__":
              ("3-switch", "switch", None, "dark", []),
              ("4-config-contas", "config", "contas", "dark", []), ("5-config-personalizar", "config", "personalizar", "dark", []),
              ("6-config-video", "config", "video", "dark", []), ("7-config-sobre", "config", "sobre", "dark", []),
-             ("8-registro", "playstation", None, "dark", [(1153, 209)]),
+             # 8-registro saiu (18/11): com o console já registrado, o clique no lugar do Registrar cai no Jogar,
+             # que acorda o PS5 de verdade. Print do registro só com um console sem registro na rede.
              ("9-adicionar-ip", "playstation", None, "dark", [(1153, 68)]),
              ("10-playstation-claro", "playstation", None, "light", []),
              ("11-personalizar-claro", "config", "personalizar", "light", []),
@@ -298,7 +310,8 @@ if __name__ == "__main__":
                 gravar("hub", "secao", secao)
             vazio = os.path.join(SAIDA, "pasta-vazia")
             os.makedirs(vazio, exist_ok=True)
-            gravar("clipes", "pasta", vazio if "VAZIO" in cliques else guardado.get(("clipes", "pasta"), ("", 1))[0])
+            cheia = os.path.abspath(sys.argv[sys.argv.index("--clipes") + 1]) if "--clipes" in sys.argv else guardado.get(("clipes", "pasta"), ("", 1))[0]
+            gravar("clipes", "pasta", vazio if "VAZIO" in cliques else cheia)
             pr, h, _ = abrir(APP, UI)
             if not h:
                 print("janela não abriu", nome)
@@ -316,7 +329,13 @@ if __name__ == "__main__":
             for passo in cliques:
                 if passo == "VAZIO":
                     continue
-                if passo == "ENTER":
+                if passo == "ENTER" and "--postar" in sys.argv:
+                    user32.PostMessageW(h, 0x0100, 0x0D, 1 | (0x1C << 16)); user32.PostMessageW(h, 0x0101, 0x0D, 1 | (0x1C << 16) | (3 << 30))
+                elif isinstance(passo, str) and "--postar" in sys.argv:
+                    for ch in passo:
+                        user32.PostMessageW(h, 0x0102, ord(ch), 1)   # WM_CHAR
+                        time.sleep(0.05)
+                elif passo == "ENTER":
                     user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0)
                 elif isinstance(passo, str):
                     for ch in passo.upper():

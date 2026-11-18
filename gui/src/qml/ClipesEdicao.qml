@@ -110,7 +110,12 @@ ColumnLayout {
             Rectangle {
                 anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 1 }
                 width: Math.max(0, (parent.width - 2) * Edicao.pct / 100)
-                color: ed.tema.destaque
+                // progresso é recompensa: leva o degradê do logo
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: ed.tema.luz1 }
+                    GradientStop { position: 1; color: ed.tema.luz2 }
+                }
                 Behavior on width { enabled: !root.semMovimento; NumberAnimation { duration: 250 } }
             }
             Accessible.role: Accessible.ProgressBar
@@ -151,6 +156,7 @@ ColumnLayout {
     // ------------------------------------------------------------ pronto
     InCartao {
         visible: ed.estado === "pronto"
+        marcado: true
         RowLayout {
             Layout.fillWidth: true
             spacing: 24
@@ -444,7 +450,7 @@ ColumnLayout {
                                 tipo: "quieto"; icone: "lixo"
                                 Accessible.name: root.t("Apagar vídeo editado")
                                 ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
-                                onClicked: root.showConfirmDialog(root.t("Apagar vídeo editado"), root.t("Mandar este vídeo editado pra Lixeira do Windows? O clipe original fica."), () => Edicao.apagarEditado(ce.modelData.arquivo))
+                                onClicked: root.showConfirmDialog(root.t("Apagar vídeo editado"), root.t("Mandar este vídeo editado pra Lixeira do Windows? O clipe original fica."), () => Edicao.apagarEditado(ce.modelData.arquivo), null, root.t("Mandar pra Lixeira"), true)
                             }
                         }
                     }

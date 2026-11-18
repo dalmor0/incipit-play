@@ -192,7 +192,11 @@ Item {
         stack.push(incipitManualComponent);
     }
 
-    function showConfirmDialog(title, text, callback, rejectCallback = null) {
+    // sim: o texto do botão que confirma (diz o que acontece); perigo: o botão de confirmar sai no vermelho de apagar
+    function showConfirmDialog(title, text, callback, rejectCallback = null, sim = "", perigo = false) {
+        confirmDialog.textoSim = sim !== "" ? sim : root.t("Sim");
+        confirmDialog.textoNao = sim !== "" ? root.t("Cancelar") : root.t("Não");
+        confirmDialog.perigo = perigo;
         confirmDialog.title = title;
         confirmDialog.text = text;
         confirmDialog.callback = callback;

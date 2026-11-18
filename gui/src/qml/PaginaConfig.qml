@@ -120,7 +120,7 @@ InPagina {
                         Chiaki.settings.psnAuthToken = "";
                         Chiaki.settings.psnAuthTokenExpiry = "";
                         Chiaki.settings.psnAccountId = "";
-                    })
+                    }, null, root.t("Desconectar"), true)
                 }
                 InBotao {
                     implicitWidth: Math.max(120, implicitContentWidth + 36)
@@ -210,7 +210,7 @@ InPagina {
 
         InCartao {
             InTexto { tipo: "titulo"; text: root.t("Cor de destaque"); Layout.bottomMargin: -8 }
-            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Vale pros botões, a aba ativa e o logo. O padrão é Hora azul.") }
+            InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Vale pra aba ativa, o logo e os detalhes. O padrão é Hora azul.") }
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4

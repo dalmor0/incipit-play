@@ -17,9 +17,14 @@ InPagina {
         return n;
     }
 
+    // a procura segue ligada por trás (console novo aparece sozinho); o ícone só gira os primeiros 20 s
+    property bool girando: true
+    Timer { id: paraDeGirar; interval: 20000; running: ps.girando && Chiaki.discoveryEnabled; onTriggered: ps.girando = false }
+    function procurarDeNovo() { Chiaki.discoveryEnabled = true; ps.girando = true; paraDeGirar.restart(); }
+
     acoes: [
         Row {
-            visible: Chiaki.discoveryEnabled
+            visible: Chiaki.discoveryEnabled && ps.girando
             height: 44
             spacing: 12
             Item {
@@ -42,11 +47,18 @@ InPagina {
             }
             Item { width: 6; height: 1 }
         },
+        InTexto {
+            visible: Chiaki.discoveryEnabled && !ps.girando
+            text: root.t("Procurado agora há pouco")
+            tipo: "apoio"; wrapMode: Text.NoWrap; lineHeight: 1.0
+            height: 44; verticalAlignment: Text.AlignVCenter
+        },
         InBotao {
-            visible: !Chiaki.discoveryEnabled
+            visible: !Chiaki.discoveryEnabled || !ps.girando
+            tipo: Chiaki.discoveryEnabled ? "quieto" : "normal"
             text: root.t("Procurar de novo")
             icone: "busca"
-            onClicked: Chiaki.discoveryEnabled = true
+            onClicked: ps.procurarDeNovo()
         },
         InBotao {
             text: root.t("Adicionar por IP")
@@ -64,6 +76,7 @@ InPagina {
             required property int index
             visible: modelData.display
             Layout.preferredHeight: visible ? implicitHeight : 0
+            marcado: ligado
 
             readonly property bool ligado: modelData.discovered && modelData.state === "ready"
             readonly property bool repouso: modelData.state === "standby"
@@ -90,8 +103,6 @@ InPagina {
                     Layout.preferredWidth: 56
                     Layout.preferredHeight: 56
                     color: root.tema.fundo
-                    border.width: 1
-                    border.color: root.tema.linha
                     InIcone { anchors.centerIn: parent; nome: "controle"; tamanho: 28; cor: cartao.ligado ? root.tema.destaque : root.tema.texto2 }
                 }
 
@@ -112,10 +123,16 @@ InPagina {
                         Rectangle { width: 8; height: 8; radius: 4; color: cartao.corSituacao; anchors.verticalCenter: parent.verticalCenter }
                         InTexto { tipo: "apoio"; text: cartao.situacao; wrapMode: Text.NoWrap }
                     }
-                    InTexto {
-                        tipo: "pequeno"
+                    Row {
                         visible: !!modelData.address
-                        text: (modelData.ps5 ? "PS5" : "PS4") + " · " + (Chiaki.settings.streamerMode ? root.t("endereço oculto") : modelData.address)
+                        spacing: 0
+                        InTexto { tipo: "pequeno"; wrapMode: Text.NoWrap; text: (modelData.ps5 ? "PS5" : "PS4") + " · " }
+                        InTexto {
+                            tipo: "pequeno"; wrapMode: Text.NoWrap
+                            font.family: Chiaki.settings.streamerMode ? root.tema.sans : root.tema.mono
+                            font.pixelSize: Chiaki.settings.streamerMode ? 14 : 13
+                            text: Chiaki.settings.streamerMode ? root.t("endereço oculto") : modelData.address
+                        }
                     }
                 }
 
@@ -129,9 +146,9 @@ InPagina {
                         text: modelData.manual ? root.t("Apagar") : root.t("Ocultar")
                         onClicked: {
                             if (modelData.manual)
-                                root.showConfirmDialog(root.t("Apagar console"), root.t("Tirar este console da lista? Dá pra adicionar de novo pelo IP."), () => Chiaki.deleteHost(index));
+                                root.showConfirmDialog(root.t("Apagar console"), root.t("Tirar este console da lista? Dá pra adicionar de novo pelo IP."), () => Chiaki.deleteHost(index), null, root.t("Apagar"), true);
                             else
-                                root.showConfirmDialog(root.t("Ocultar console"), root.t("Ocultar este console? Ele volta em Configurações > Mais ajustes > Consoles."), () => Chiaki.hideHost(modelData.mac, modelData.name));
+                                root.showConfirmDialog(root.t("Ocultar console"), root.t("Ocultar este console? Ele volta em Configurações > Mais ajustes > Consoles."), () => Chiaki.hideHost(modelData.mac, modelData.name), null, root.t("Ocultar"));
                         }
                     }
                     InBotao {
