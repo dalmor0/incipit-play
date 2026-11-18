@@ -137,12 +137,12 @@ Rectangle {
     }
 
     // ------------------------------------------------------------ clipes recentes (tela larga, abas de jogar)
-    // de 1680 px pra cima a coluna da página não enche a janela: os três últimos clipes ocupam a direita
+    // de 1680 px pra cima a coluna da página não enche a janela: os dois últimos clipes ocupam a direita
     property var ultimos: []
     function lerUltimos() {
         const l = Clips.library(), r = [];
-        for (let i = 0; i < l.length && r.length < 3; i++)
-            for (let j = 0; j < l[i].clipes.length && r.length < 3; j++) r.push(l[i].clipes[j]);
+        for (let i = 0; i < l.length && r.length < 2; i++)
+            for (let j = 0; j < l[i].clipes.length && r.length < 2; j++) r.push(l[i].clipes[j]);
         ultimos = r;
     }
     Component.onCompleted: lerUltimos()
@@ -174,49 +174,52 @@ Rectangle {
             }
             Repeater {
                 model: hub.ultimos
-                delegate: AbstractButton {
+                delegate: ColumnLayout {
                     id: rc
                     required property var modelData
                     Layout.fillWidth: true
-                    implicitHeight: miniatura.height
-                    hoverEnabled: true
-                    focusPolicy: Qt.StrongFocus
-                    Accessible.name: root.t("Assistir")
-                    onClicked: Edicao.abrirVideo(modelData.caminho)
-                    Keys.onReturnPressed: clicked()
-                    Keys.onEnterPressed: clicked()
-                    background: Rectangle {
-                        color: "black"
-                        Image {
-                            id: miniatura
-                            width: parent.width
-                            height: width * 9 / 16
-                            source: rc.modelData.miniatura || ""
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            sourceSize.width: 576
-                            opacity: rc.hovered ? 0.85 : 1
+                    spacing: 8
+                    AbstractButton {
+                        id: vid
+                        Layout.fillWidth: true
+                        implicitHeight: width * 9 / 16
+                        hoverEnabled: true
+                        focusPolicy: Qt.StrongFocus
+                        Accessible.name: root.t("Assistir")
+                        onClicked: Edicao.abrirVideo(rc.modelData.caminho)
+                        Keys.onReturnPressed: clicked()
+                        Keys.onEnterPressed: clicked()
+                        background: Rectangle {
+                            color: "black"
+                            Image {
+                                anchors.fill: parent
+                                source: rc.modelData.miniatura || ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                sourceSize.width: 576
+                                opacity: vid.hovered ? 0.85 : 1
+                            }
+                            Rectangle {
+                                anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
+                                width: durR.implicitWidth + 12; height: 24
+                                color: Qt.rgba(18 / 255, 22 / 255, 36 / 255, 0.85)
+                                visible: !!rc.modelData.segundos
+                                Text { id: durR; anchors.centerIn: parent; color: "white"; font.family: hub.tema.mono; font.pixelSize: 13
+                                    text: { const s = Math.round(rc.modelData.segundos || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
+                            }
+                            Rectangle {
+                                visible: vid.visualFocus
+                                anchors.fill: parent; anchors.margins: -4
+                                color: "transparent"; border.width: 2; border.color: hub.tema.foco
+                            }
                         }
-                        Rectangle {
-                            anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
-                            width: durR.implicitWidth + 12; height: 24
-                            color: Qt.rgba(0, 0, 0, 0.75)
-                            visible: !!rc.modelData.segundos
-                            Text { id: durR; anchors.centerIn: parent; color: "white"; font.family: hub.tema.mono; font.pixelSize: 13
-                                text: { const s = Math.round(rc.modelData.segundos || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
-                        }
-                        Rectangle {
-                            anchors { left: parent.left; bottom: parent.bottom; margins: 8 }
-                            width: horaR.implicitWidth + 12; height: 24
-                            color: Qt.rgba(0, 0, 0, 0.75)
-                            Text { id: horaR; anchors.centerIn: parent; color: "white"; font.family: hub.tema.mono; font.pixelSize: 13
-                                text: Qt.formatDateTime(rc.modelData.criado, root.lingua.en ? "MM/dd HH:mm" : "dd/MM HH:mm") }
-                        }
-                        Rectangle {
-                            visible: rc.visualFocus
-                            anchors.fill: parent; anchors.margins: -4
-                            color: "transparent"; border.width: 2; border.color: hub.tema.foco
-                        }
+                    }
+                    Text {
+                        Layout.bottomMargin: 8
+                        text: Qt.formatDateTime(rc.modelData.criado, root.lingua.en ? "MM/dd HH:mm" : "dd/MM HH:mm")
+                        font.family: hub.tema.mono
+                        font.pixelSize: 13
+                        color: hub.tema.texto2
                     }
                 }
             }

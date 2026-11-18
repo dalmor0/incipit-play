@@ -25,7 +25,8 @@ T.Dialog {
     padding: 28
     topPadding: 24
     modal: true
-    onOpened: { newDialogOpen = false; sim.forceActiveFocus(Qt.TabFocusReason); }
+    // apagar começa no Cancelar (Enter não apaga); o anel de foco só aparece quando a pessoa anda com o teclado
+    onOpened: { newDialogOpen = false; (perigo ? nao : sim).forceActiveFocus(Qt.OtherFocusReason); }
     onAccepted: {
         newDialogOpen = true;
         restoreFocus();
@@ -53,7 +54,7 @@ T.Dialog {
         anchors.fill: parent
         z: 9000
         visible: dialog.visible
-        color: Qt.rgba(0, 0, 0, 0.55)
+        color: dialog.tema.escuro ? Qt.rgba(11 / 255, 14 / 255, 24 / 255, 0.78) : Qt.rgba(29 / 255, 35 / 255, 53 / 255, 0.5)
     }
 
     contentItem: ColumnLayout {
@@ -83,7 +84,7 @@ T.Dialog {
             Layout.alignment: Qt.AlignRight
             Layout.topMargin: 12
             spacing: 12
-            InBotao { text: dialog.textoNao; onClicked: dialog.reject(); Keys.onReturnPressed: dialog.reject() }
+            InBotao { id: nao; text: dialog.textoNao; onClicked: dialog.reject(); Keys.onReturnPressed: dialog.reject() }
             InBotao { id: sim; tipo: dialog.perigo ? "perigo" : "forte"; text: dialog.textoSim; onClicked: dialog.accept(); Keys.onReturnPressed: dialog.accept() }
         }
     }

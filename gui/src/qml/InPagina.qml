@@ -10,7 +10,8 @@ Item {
     property alias acoes: acoesRow.data
     default property alias conteudo: coluna.data
     readonly property var tema: root.tema
-    readonly property real margem: width >= 1400 ? 56 : 40
+    // a margem vem da janela (não da página): com ou sem a coluna da direita, o título não pula ao trocar de aba
+    readonly property real margem: (root.width || width) >= 1600 ? 56 : 40
     readonly property real largura: Math.min(width - margem * 2, 1280)
 
     Flickable {

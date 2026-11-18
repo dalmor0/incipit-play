@@ -99,7 +99,7 @@ QtObject {
     // botão forte: o azul do logo em qualquer destaque e nos dois temas (branco em cima: 5,1:1 a 5,6:1)
     readonly property color forte1: "#4467D8"
     readonly property color forte2: "#3A5DCC"
-    readonly property color forteMouse: "#4C72E0"
+    readonly property color forteMouse: "#3F62D2"   // passar o mouse: um degrau mais fundo (5,4:1)
     readonly property color fortePreso: "#3354BC"
     readonly property color sobreForte: "#FFFFFF"
     readonly property color brilho: Qt.rgba(127 / 255, 166 / 255, 240 / 255, escuro ? 0.45 : 0.35)

@@ -119,7 +119,7 @@ InPagina {
             InTexto { text: root.t("Música nos editados"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
-                InTexto { Layout.maximumWidth: 420; text: cl.cfg.guardado.edMusica === "" ? root.t("Desligada") : cl.cfg.guardado.edMusica; tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InTexto { Layout.preferredWidth: 320; Layout.maximumWidth: 320; Layout.alignment: Qt.AlignVCenter; text: cl.cfg.guardado.edMusica === "" ? root.t("Desligada") : cl.cfg.guardado.edMusica; tipo: "apoio"; lineHeight: 1.0; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 InBotao { text: cl.cfg.guardado.edMusica === "" ? root.t("Escolher pasta") : root.t("Trocar"); onClicked: escolhaMusica.open() }
                 InBotao { visible: cl.cfg.guardado.edMusica !== ""; tipo: "quieto"; text: root.t("Desligar"); onClicked: cl.cfg.guardado.edMusica = "" }
             }
@@ -127,7 +127,7 @@ InPagina {
             InTexto { text: root.t("Pasta dos clipes"); font.weight: Font.DemiBold; Layout.alignment: Qt.AlignVCenter }
             RowLayout {
                 spacing: 12
-                InTexto { Layout.maximumWidth: 420; text: { cl.lista; return Clips.clipsDir(); } tipo: "apoio"; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InTexto { Layout.preferredWidth: 320; Layout.maximumWidth: 320; Layout.alignment: Qt.AlignVCenter; text: { cl.lista; return Clips.clipsDir(); } tipo: "apoio"; lineHeight: 1.0; elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 InBotao { text: root.t("Trocar"); onClicked: escolhaPasta.open() }
             }
         }
@@ -143,10 +143,10 @@ InPagina {
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
-            InOpcao { texto: root.t("Salvar no OBS também"); marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
-            InCampo { id: porta; Layout.preferredWidth: 120; placeholderText: "porta"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
-            InCampo { id: senha; Layout.preferredWidth: 240; placeholderText: root.t("senha do WebSocket"); text: Clips.obsPassword(); echoMode: TextInput.Password }
-            InBotao { text: root.t("Testar"); onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
+            InOpcao { Layout.alignment: Qt.AlignBottom; caixa: true; texto: root.t("Salvar no OBS também"); marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
+            InCampo { id: porta; Layout.preferredWidth: 96; numerico: true; rotulo: root.t("Porta"); placeholderText: "4455"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
+            InCampo { id: senha; Layout.preferredWidth: 240; rotulo: root.t("Senha do WebSocket"); text: Clips.obsPassword(); echoMode: TextInput.Password }
+            InBotao { Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: 2; text: root.t("Testar"); onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
         }
 
     }

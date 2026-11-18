@@ -30,7 +30,7 @@ Rectangle {
 
         InBotao { tipo: "quieto"; text: root.t("Voltar"); icone: "voltar"; compacto: true; onClicked: mn.voltar(); Layout.leftMargin: -12 }
         InTexto { tipo: "secao"; font.pixelSize: 34; text: root.t("Adicionar por IP") }
-        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Pra quando a procura na rede não acha o console. No PS5 o IP fica em Configurações > Rede > Status da conexão.") }
+        InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Pra quando a procura na rede não acha o console. No PS5 o IP fica em Configurações > Rede > Status\u00A0da\u00A0conexão.") }
 
         InCampo {
             id: endereco
@@ -39,6 +39,8 @@ Rectangle {
             placeholderText: root.t("ex.: 192.168.0.20")
             echoMode: Chiaki.settings.streamerMode ? TextInput.Password : TextInput.Normal
             maximumLength: 253
+            numerico: true
+            comErro: mn.erro !== ""
             onMudou: mn.erro = ""
         }
         InTexto { Layout.fillWidth: true; visible: mn.erro !== ""; tipo: "apoio"; color: root.tema.alerta; text: mn.erro }

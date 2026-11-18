@@ -16,6 +16,8 @@ ColumnLayout {
     property alias maximumLength: caixa.maximumLength
     property alias campo: caixa
     property real tamanhoFonte: 16
+    property bool comErro: false        // a borda fica no vermelho junto com a mensagem de erro
+    property bool numerico: false       // endereço, porta: mono
     signal mudou()
     readonly property var tema: root.tema
     spacing: 6
@@ -27,7 +29,7 @@ ColumnLayout {
         implicitHeight: 48
         leftPadding: 14
         rightPadding: 14
-        font.family: cp.tema.sans
+        font.family: cp.numerico ? cp.tema.mono : cp.tema.sans
         font.pixelSize: cp.tamanhoFonte
         color: cp.tema.texto
         placeholderTextColor: cp.tema.texto2
@@ -37,8 +39,8 @@ ColumnLayout {
         onTextChanged: cp.mudou()
         background: Rectangle {
             color: cp.tema.fundo
-            border.width: caixa.activeFocus ? 2 : 1
-            border.color: caixa.activeFocus ? cp.tema.texto : (caixa.hovered ? cp.tema.texto2 : cp.tema.borda)
+            border.width: caixa.activeFocus || cp.comErro ? 2 : 1
+            border.color: cp.comErro ? cp.tema.alerta : caixa.activeFocus ? cp.tema.texto : (caixa.hovered ? cp.tema.texto2 : cp.tema.borda)
         }
     }
     InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: cp.dica; visible: cp.dica !== "" }

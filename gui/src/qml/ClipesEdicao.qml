@@ -39,33 +39,32 @@ ColumnLayout {
     }
     function tempo(s) { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 
-    // ------------------------------------------------------------ sem nada rodando: explica em uma linha
-    InCartao {
+    // ------------------------------------------------------------ sem nada rodando: uma linha, sem cartão
+    RowLayout {
         visible: ed.estado === "livre"
-        RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
+        InIcone { nome: "video"; tamanho: 18; cor: ed.tema.destaque; Layout.alignment: Qt.AlignVCenter }
+        InTexto { text: root.t("Edição automática"); font.weight: Font.DemiBold; wrapMode: Text.NoWrap; Layout.alignment: Qt.AlignVCenter }
+        // primeira versão: a escolha do trecho e a legenda ainda erram em parte dos clipes
+        Rectangle {
+            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: seloBeta.implicitWidth + 14
+            implicitHeight: 22
+            color: ed.tema.destaqueFraco
+            border.width: 1
+            border.color: ed.tema.destaque
+            Text { id: seloBeta; anchors.centerIn: parent; text: "Beta"; color: ed.tema.texto; font.family: ed.tema.sans; font.pixelSize: 13; font.weight: Font.DemiBold }
+        }
+        InTexto {
             Layout.fillWidth: true
-            spacing: 16
-            InIcone { nome: "video"; tamanho: 24; cor: ed.tema.destaque; Layout.alignment: Qt.AlignTop }
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.maximumWidth: Number.POSITIVE_INFINITY
-                spacing: 4
-                RowLayout {
-                    spacing: 10
-                    InTexto { tipo: "titulo"; text: root.t("Edição automática"); wrapMode: Text.NoWrap }
-                    // primeira versão: a escolha do trecho e a legenda ainda erram em parte dos clipes
-                    Rectangle {
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: seloBeta.implicitWidth + 16
-                        implicitHeight: 24
-                        color: ed.tema.destaqueFraco
-                        border.width: 1
-                        border.color: ed.tema.destaque
-                        Text { id: seloBeta; anchors.centerIn: parent; text: "Beta"; color: ed.tema.texto; font.family: ed.tema.sans; font.pixelSize: 13; font.weight: Font.Bold }
-                    }
-                }
-                InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t("Em qualquer clipe, clique em Mandar pra edição. Sai na vertical, com legenda, zoom nos picos e o melhor trecho, pronto pro Reels, TikTok e Shorts.") }
-            }
+            Layout.maximumWidth: Number.POSITIVE_INFINITY
+            Layout.alignment: Qt.AlignVCenter
+            tipo: "pequeno"
+            color: ed.tema.texto3
+            elide: Text.ElideRight
+            wrapMode: Text.NoWrap
+            text: root.t("Mandar pra edição devolve o clipe na vertical, com legenda, pronto pro Reels, TikTok e Shorts.")
         }
     }
 

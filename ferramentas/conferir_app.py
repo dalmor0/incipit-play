@@ -140,8 +140,20 @@ def por_cliente(h, x, y, w, ht):
     user32.SetForegroundWindow(h)
 
 
-def foto_janela(h):
-    """copia só a janela do app (PrintWindow com conteúdo completo), mesmo com outra janela por cima"""
+def foto_janela(h, tentativas=6):
+    """copia só a janela do app (PrintWindow com conteúdo completo), mesmo com outra janela por cima. Às vezes o
+    PrintWindow devolve a janela toda branca (#FFFFFF puro, a cópia da tela do Vulkan ainda não chegou no DWM):
+    nesse caso espera meio segundo e tira de novo"""
+    for _ in range(tentativas):
+        img = _foto_janela(h)
+        if img.getextrema() != ((255, 255), (255, 255), (255, 255)):
+            return img
+        print("  print branco (#FFFFFF puro), tirando de novo", flush=True)
+        time.sleep(0.5)
+    return img
+
+
+def _foto_janela(h):
     from PIL import Image
     gdi = ctypes.windll.gdi32
     r = wt.RECT()
@@ -325,7 +337,7 @@ if __name__ == "__main__":
                 frente(h)
             else:
                 sem_moldura(h, w, ht, aba)
-            time.sleep(2.0)
+            time.sleep(3.0)
             for passo in cliques:
                 if passo == "VAZIO":
                     continue

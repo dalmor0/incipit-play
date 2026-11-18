@@ -214,9 +214,9 @@ InPagina {
             GridLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
-                columns: 4
+                columns: Math.max(4, Math.min(5, Math.floor(width / 232)))
                 uniformCellWidths: true
-                Layout.maximumWidth: 920
+                Layout.maximumWidth: 1180
                 columnSpacing: 10
                 rowSpacing: 10
                 Repeater {
