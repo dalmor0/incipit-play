@@ -366,8 +366,6 @@ QtObject {
         "Mandar pra edição": "Send to editing",
         "Descreva o que você quer nesse vídeo": "Describe what you want in this video",
         "Opcional. Ex.: só a parte da fuga, mais zoom, título: FUGI DA POLÍCIA": "Optional. E.g.: only the escape part, more zoom, title: I ESCAPED THE COPS",
-        "Sua câmera está marcada. O Play também procura sozinho.": "Your camera is marked. Play also looks for it by itself.",
-        "O Play procura sua câmera sozinho. Se errar, marque onde ela fica.": "Play finds your camera by itself. If it gets it wrong, mark where it is.",
         "Mudar câmera": "Change camera",
         "Marcar câmera": "Mark camera",
         "Na primeira vez o Play baixa o editor e o leitor de fala (uns 2 GB). Tudo fica e roda neste PC.": "The first time, Play downloads the editor and the speech reader (about 2 GB). Everything stays and runs on this PC.",
@@ -455,6 +453,8 @@ QtObject {
         "Esse clipe é quase todo menu ou tela parada. Salve um clipe durante a partida, ou escreva no pedido o trecho que você quer (ex.: do 0:10 ao 0:30).": "This clip is almost all menus or a still screen. Save a clip during a match, or write the part you want in the request (e.g.: from 0:10 to 0:30).",
         "Pelo teclado: Tab até a imagem; as setas movem a caixa e Shift com as setas muda o tamanho.": "With the keyboard: Tab to the image; the arrows move the box and Shift with the arrows resizes it.",
         "Esse clipe não tem jogada pra cortar": "This clip has no play to cut",
-        "Conferindo a fala do trecho": "Double-checking the speech in the part"
+        "Conferindo a fala do trecho": "Double-checking the speech in the part",
+        "O Play acha sua câmera sozinho. Se errar, marque.": "Play finds your camera by itself. If it's wrong, mark it.",
+        "Sua câmera está marcada.": "Your camera is marked."
     })
 }
