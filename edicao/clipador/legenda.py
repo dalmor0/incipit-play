@@ -88,7 +88,7 @@ Style: Titulo,Archivo,96,&H00161616,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     linhas = []
-    dentro = [dict(w, i=w["i"] - a, f=w["f"] - a) for w in palavras if w["f"] > a + 0.05 and w["i"] < b - 0.05]
+    dentro = [dict(w, i=w["i"] - a, f=w["f"] - a) for w in palavras if w["i"] >= a - 0.1 and w["i"] < b - 0.15]
     dur = b - a
     if dentro:
         grupos = blocos(dentro, est)

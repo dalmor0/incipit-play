@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.8"
+VERSAO = "1.0.9"
 _cancelar = {"v": False}
 
 
@@ -229,8 +229,8 @@ def editar(a):
                 voz_clipe = [[round(r0, 2), round(r1, 2)] for r0, r1 in analise.regioes_de_voz(aud)]
                 cache["voz"] = voz_clipe
             e_clipe = analise.energia_db(aud)
-            ini = analise.ponta_no_vao(e_clipe, ini, voz_clipe, 3.0, 1.5, meta["duracao"]) if ini > 0.05 else ini
-            fim = analise.ponta_no_vao(e_clipe, fim, voz_clipe, 1.5, 3.0, meta["duracao"]) if fim < meta["duracao"] - 0.05 else fim
+            ini = analise.ponta_no_vao(e_clipe, ini, voz_clipe, 3.0, 1.5, meta["duracao"], palavras) if ini > 0.05 else ini
+            fim = analise.ponta_no_vao(e_clipe, fim, voz_clipe, 1.5, 3.0, meta["duracao"], palavras) if fim < meta["duracao"] - 0.05 else fim
         imp = momento.impactos(ini, fim, s, plano, com_cam)
         # o trecho escolhido é lido de novo em pedaços (fala dele por cima de outra voz) e alinhado na subida da voz
         if plano["legenda"] and palavras:

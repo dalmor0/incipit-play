@@ -233,7 +233,10 @@ def escolher(dur, s, palavras, plano, com_camera=False):
                     ia = int(min(max(0, pico_i - int(0.7 * L)), n - L))
                     a, b = ia * PASSO, (ia + L) * PASSO
                 else:
-                    a, b = 0.0, dur
+                    # picos espalhados: a janela vai em volta do mais forte (o clipe inteiro sobrava 18 s antes do lance)
+                    pico_i = int(np.argmax(suavizar(forte, 5)))
+                    ia = int(min(max(0, pico_i - int(0.7 * L)), n - L))
+                    a, b = ia * PASSO, (ia + L) * PASSO
     # a reação logo depois do fim entra (risada, grito, palavrão até 4 s depois)
     if b < dur - 0.2 and not plano.get("duracao"):
         reac = s["riso"] + s["grito"] + (s["reacao"] if com_camera else 0)

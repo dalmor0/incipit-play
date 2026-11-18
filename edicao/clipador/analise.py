@@ -183,27 +183,51 @@ def energia_db(x, passo=0.01, jan=0.03):
     return np.convolve(db, np.ones(5) / 5, mode="same")
 
 
-def ponta_no_vao(e, t, voz, antes, depois, dur):
-    """Ponta do trecho dentro de uma fala vai pro ponto de menor energia por perto (o vão entre duas palavras),
-    pesando 3 dB por segundo de distância. e = energia_db do clipe inteiro."""
-    if not any(r0 + 0.05 < t < r1 - 0.05 for r0, r1 in voz):
+def ponta_no_vao(e, t, voz, antes, depois, dur, palavras=()):
+    """Ponta do trecho dentro de uma fala vai pro vão mais perto entre duas falas: pelo menos 0,25 s com a energia
+    perto do chão de ruído (até 6 dB acima), fora de qualquer palavra transcrita. Vão de 0,05 s entre palavras da
+    mesma frase não serve (abria em "Pro canto do mapa", sem o verbo). e = energia_db do clipe inteiro."""
+    dentro_voz = any(r0 + 0.05 < t < r1 - 0.05 for r0, r1 in voz)
+    dentro_pal = any(w["i"] + 0.02 < t < w["f"] - 0.02 for w in palavras)
+    if not dentro_voz and not dentro_pal:
         return t
     i0, i1 = max(0, int((t - antes) * 100)), min(len(e) - 1, int((t + depois) * 100))
-    if i1 <= i0:
+    if i1 - i0 < 30:
         return t
-    tt = np.arange(i0, i1 + 1) / 100.0
-    custo = e[i0:i1 + 1] + 3.0 * np.abs(tt - t)
-    return float(min(dur, max(0.0, tt[int(np.argmin(custo))])))
+    trecho = e[i0:i1 + 1]
+    chao = float(np.percentile(trecho, 10))
+    baixo = trecho <= chao + 6
+    melhor, dist = None, 1e9
+    k = 0
+    while k < len(baixo):
+        if not baixo[k]:
+            k += 1
+            continue
+        j = k
+        while j < len(baixo) and baixo[j]:
+            j += 1
+        if j - k >= 25:
+            # o ponto do vão mais perto de t (começo do trecho: o fim do vão; fim do trecho: o começo do vão)
+            cand = (i0 + j - 5) / 100.0 if antes > depois else (i0 + k + 5) / 100.0
+            if not any(w["i"] < cand < w["f"] for w in palavras):
+                d = abs(cand - t)
+                if d < dist:
+                    melhor, dist = cand, d
+        k = j
+    return t if melhor is None else float(min(dur, max(0.0, melhor)))
 
 
 def _subida(e, ini, de, ate):
-    """Primeiro instante entre de e ate em que a energia chega a 10 dB do pico da fala logo depois (a subida da voz)."""
+    """A subida da voz: primeiro instante entre de e ate com a energia 8 dB acima do chão de ruído de antes. Medir
+    contra o pico atrasava a fala que começa baixa e vira grito. Nunca mais de 0,15 s depois de de."""
     a, b = max(0, int((de - ini) * 100)), min(len(e), int((ate - ini) * 100) + 1)
     if b - a < 2:
         return de
-    ref = e[a:min(len(e), b + 40)].max()
-    acima = np.where(e[a:b] >= ref - 10)[0]
-    return ini + (a + int(acima[0])) / 100.0 - 0.02 if len(acima) else de
+    antes = e[max(0, a - 50):a + 3]
+    chao = float(np.percentile(antes, 20)) if len(antes) else float(e[a:b].min())
+    acima = np.where(e[a:b] >= chao + 8)[0]
+    t = ini + (a + int(acima[0])) / 100.0 - 0.02 if len(acima) else de
+    return min(t, de + 0.15)
 
 
 def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
