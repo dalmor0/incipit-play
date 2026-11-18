@@ -24,7 +24,7 @@ def _limpa(p):
     return sem_acento(p.lower()).strip(" .,!?…\"'")
 
 
-def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
+def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None, lance=None):
     n = max(1, int(np.ceil(dur / PASSO)))
 
     def ajusta(s):
@@ -37,6 +37,7 @@ def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
     cut = ajusta(corte)
     rea = np.clip(z(suavizar(ajusta(reacao), 5)), 0, 5) if reacao is not None and len(reacao) else np.zeros(n)
     par = ajusta(parado) if parado is not None and len(parado) else np.zeros(n)
+    lan = ajusta(lance) if lance is not None and len(lance) else np.zeros(n)
     fala = np.zeros(n)
     riso = np.zeros(n)
     grito = np.zeros(n)
@@ -69,16 +70,16 @@ def sinais(dur, db, energia, corte, palavras, plano, reacao=None, parado=None):
         # com câmera, grito do vídeo de fundo não mexe a cara de quem está nela: só vale com reação junto
         grito = grito * (suavizar(rea, 10) > 0.5)
     return {"vol": vol, "mov": mov, "corte": cut, "fala": np.clip(fala, 0, 1), "riso": suavizar(riso, 5),
-            "grito": suavizar(grito, 5), "assunto": suavizar(assunto, 9), "reacao": rea, "parado": par, "n": n}
+            "grito": suavizar(grito, 5), "assunto": suavizar(assunto, 9), "reacao": rea, "parado": par, "lance": lan, "n": n}
 
 
 def pontuacao(s, plano, com_camera=False):
     tipo = plano.get("foco_tipo")
     if com_camera:
         # quem importa é o streamer: a reação dele e a fala dele; o conteúdo de fundo grita mais e engana
-        pesos = {"vol": 0.4, "mov": 0.2, "corte": 0.1, "fala": 0.4, "riso": 1.6, "grito": 1.2, "reacao": 1.8, "assunto": 0.0}
+        pesos = {"vol": 0.4, "mov": 0.2, "corte": 0.1, "fala": 0.4, "riso": 1.6, "grito": 1.2, "reacao": 1.8, "lance": 0.6, "assunto": 0.0}
     else:
-        pesos = {"vol": 1.0, "mov": 0.6, "corte": 0.4, "fala": 0.5, "riso": 1.0, "grito": 1.2, "reacao": 0.0, "assunto": 0.0}
+        pesos = {"vol": 0.8, "mov": 0.5, "corte": 0.3, "fala": 0.3, "riso": 1.0, "grito": 1.2, "reacao": 0.0, "lance": 1.8, "assunto": 0.0}
     if tipo == "grito":
         pesos.update(vol=2.0, grito=2.5)
     elif tipo == "risada":
@@ -201,10 +202,26 @@ def escolher(dur, s, palavras, plano, com_camera=False):
                 melhor, ia = v, i
         a, b = ia * PASSO, (ia + L) * PASSO
         if janela_curta:
-            # se a ação está espalhada pelo clipe todo, vai o clipe inteiro
-            inteiro = cum[-1] / max(1, n)
-            if (cum[ia + L] - cum[ia]) / L < 1.25 * inteiro:
-                a, b = 0.0, dur
+            # concentração medida só nos picos (lance, grito, riso, reação), sem a fala corrida
+            forte = s["lance"] + s["grito"] + s["riso"] + (s["reacao"] if com_camera else 0)
+            cf = np.concatenate([[0], np.cumsum(forte)])
+            if forte.max() < 1.5:
+                # sem pico em lugar nenhum: o atalho de "últimos segundos" guarda o lance no fim
+                fim_util = n
+                while fim_util > L and s["parado"][fim_util - 1] > 0.5 and s["fala"][fim_util - 1] == 0:
+                    fim_util -= 1
+                ia = fim_util - L
+                a, b = ia * PASSO, fim_util * PASSO
+            else:
+                melhor_f = max(range(0, n - L + 1, 2), key=lambda i: (cf[i + L] - cf[i]) + 0.001 * i)
+                if (cf[melhor_f + L] - cf[melhor_f]) >= 0.6 * cf[-1]:
+                    ia = melhor_f
+                    # o pico fica no último terço: tensão antes, reação depois
+                    pico_i = melhor_f + int(np.argmax(forte[melhor_f:melhor_f + L]))
+                    ia = int(min(max(0, pico_i - int(0.7 * L)), n - L))
+                    a, b = ia * PASSO, (ia + L) * PASSO
+                else:
+                    a, b = 0.0, dur
     # a reação logo depois do fim entra (risada, grito, palavrão até 4 s depois)
     if b < dur - 0.2 and not plano.get("duracao"):
         reac = s["riso"] + s["grito"] + (s["reacao"] if com_camera else 0)
@@ -212,6 +229,16 @@ def escolher(dur, s, palavras, plano, com_camera=False):
         if iff > ib and reac[ib:iff].max() > 1.5:
             fim_reac = ib + int(np.where(reac[ib:iff] > 1.0)[0].max())
             b = min(dur, (fim_reac + 1) * PASSO + 0.6)
+    # a conversa que continua depois do lance entra até a primeira pausa de 1 s (a piada vem depois do golpe)
+    if not plano.get("duracao") and b < dur - 0.2:
+        seguinte = [w for w in palavras if b - 0.5 <= w["i"] <= b + 8.0]
+        fim_fala = b
+        for w in sorted(seguinte, key=lambda w: w["i"]):
+            if w["i"] - fim_fala > 1.0:
+                break
+            fim_fala = max(fim_fala, w["f"])
+        if fim_fala > b:
+            b = min(dur, fim_fala + 0.5, a + alvo + 8.0)
     a, b = _sem_repeticao(a, b, palavras, score)
     # não começar nem terminar no meio da frase (até 2 s de folga)
     inis, fins = _fronteiras(palavras)
@@ -254,11 +281,11 @@ def impactos(a, b, s, plano, com_camera=False):
     zoom = plano.get("zoom", 1.0)
     if zoom <= 0:
         return []
-    imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 0.8 * s["corte"] * s["mov"] + 0.4 * s["vol"]
     if com_camera:
-        imp = imp + 0.9 * s["reacao"]
+        # com câmera: só a voz dele (grito já filtrado pela reação), a risada e o rosto que reage
+        imp = 1.4 * s["grito"] + 1.6 * s["riso"] + 0.9 * s["reacao"]
     else:
-        imp = imp + 0.4 * s["mov"]
+        imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 1.5 * s["lance"] + 0.3 * s["vol"]
     imp = imp * (1 - s["parado"])
     ia, ib = int(a / PASSO), int(b / PASSO)
     seg = imp[ia:ib]

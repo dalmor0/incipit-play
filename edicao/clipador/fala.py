@@ -203,6 +203,7 @@ def transcrever(audio, pasta_modelo, idioma, progresso, cancelado, prompt=None):
 
     buracos.__defaults__[0][0] = audio
     buracos.__defaults__[1][0] = prompt
+    _ESTADO.update(audio=audio, prompt=prompt or PROMPT.get(idioma), idioma=idioma)
 
     def rodar(modelo):
         segs, info = modelo.transcribe(
@@ -219,6 +220,7 @@ def transcrever(audio, pasta_modelo, idioma, progresso, cancelado, prompt=None):
                     palavras.append({"p": t, "i": round(w.start, 3), "f": round(w.end, 3), "prob": round(w.probability, 3)})
             progresso(min(1.0, s.end / dur), "Lendo a fala")
         palavras = buracos(modelo, palavras, idioma, cancelado)
+        _ESTADO["modelo"] = modelo
         return limpar(palavras), info.language
 
     try:
@@ -263,7 +265,222 @@ def limpar(palavras):
     # a mesma palavra duas vezes começando a menos de 0,3 s uma da outra é a mesma fala lida duas vezes
     limpo = []
     for w in out:
-        if limpo and re.sub(r"[^\w]", "", w["p"].lower()) == re.sub(r"[^\w]", "", limpo[-1]["p"].lower()) and w["i"] - limpo[-1]["i"] < 0.3:
+        if limpo and _norm(w["p"]) == _norm(limpo[-1]["p"]) and (w["i"] - limpo[-1]["i"] < 0.3 or w["i"] < limpo[-1]["f"] + 0.12):
+            continue
+        limpo.append(w)
+    return limpo
+
+
+_ESTADO = {"modelo": None, "audio": None, "prompt": None, "idioma": "pt"}
+GIRIA = re.compile(r"^(mano+|caralh\w*|porra|puta\w*|safad\w*|pariu|kk+|ha(ha)+|nossa|caraca|eita|vei|velho|brabo|pegou|clipa\w*|bora|vamo|toma|vsf|pqp|krl|meu deus|que isso|cara)$")
+
+
+def _transcrever_pedaco(modelo, audio, i, f, idioma, prompt):
+    sr = 16000
+    a0, a1 = max(0, int((i - 0.2) * sr)), min(len(audio), int((f + 0.2) * sr))
+    if a1 - a0 < sr * 0.3:
+        return []
+    segs, _ = modelo.transcribe(audio[a0:a1], language=None if idioma == "auto" else idioma, word_timestamps=True,
+                                vad_filter=False, beam_size=5, condition_on_previous_text=False, initial_prompt=prompt)
+    base = a0 / sr
+    out = []
+    for sg in segs:
+        for w in sg.words or []:
+            t = w.word.strip()
+            if t and w.probability >= 0.3:
+                out.append({"p": t, "i": round(base + w.start, 3), "f": round(base + w.end, 3), "prob": round(w.probability, 3)})
+    return [w for w in out if w["f"] > i - 0.05 and w["i"] < f + 0.05]
+
+
+def _norm(p):
+    return re.sub(r"[^\w]", "", p.lower())
+
+
+def _trocar(saida, i, f, novas):
+    """Troca as palavras de [i, f] pelas novas, sem deixar palavra igual piscando na emenda (até 1 s)."""
+    fora = [w for w in saida if not (w["f"] > i and w["i"] < f)]
+    juntas = []
+    for w in fora:
+        if any(_norm(w["p"]) == _norm(n["p"]) and abs(w["i"] - n["i"]) < 1.0 for n in novas):
+            continue
+        juntas.append(w)
+    return sorted(juntas + novas, key=lambda w: w["i"])
+
+
+def _regioes_de_voz(audio, max_s=8.0):
+    from faster_whisper.vad import VadOptions, get_speech_timestamps
+    sr = 16000
+    out = []
+    for r in get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=300)):
+        i, f = r["start"] / sr, r["end"] / sr
+        while f - i > max_s:
+            out.append((i, i + max_s))
+            i += max_s
+        if f - i >= 0.6:
+            out.append((i, f))
+    return out
+
+
+def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None], prompt_ref=[None]):
+    """Segunda passada: dentro de cada pedaço com voz, intervalo de mais de 0,8 s sem palavra é fala que o Whisper
+    pulou (muito comum com outra voz por cima). Transcreve só o intervalo e encaixa."""
+    audio = audio_ref[0]
+    if audio is None:
+        return palavras
+    try:
+        regioes = _regioes_de_voz(audio)
+    except Exception:
+        return palavras
+    saida = list(palavras)
+    for i, f in regioes:
+        if cancelado():
+            break
+        dentro = sorted([w for w in saida if w["f"] > i and w["i"] < f], key=lambda w: w["i"])
+        marcos = [i] + [x for w in dentro for x in (w["i"], w["f"])] + [f]
+        vaos = [(marcos[k], marcos[k + 1]) for k in range(0, len(marcos) - 1, 2) if marcos[k + 1] - marcos[k] > 0.8]
+        for vi, vf in vaos:
+            novas = _transcrever_pedaco(modelo, audio, vi, vf, idioma, prompt_ref[0] or PROMPT.get(idioma))
+            novas = [w for w in novas if w["i"] >= vi - 0.1 and w["f"] <= vf + 0.1]
+            if novas:
+                saida = _trocar(saida, vi, vf, novas)
+    return saida
+
+
+def refinar(palavras, ini, fim, cancelado=lambda: False):
+    """No trecho escolhido (barato: até uns 40 s), cada pedaço de voz é lido de novo sozinho. Onde as duas leituras
+    discordam, fica a que tem mais da fala de quem joga (gíria, palavrão, risada): a primeira passada às vezes
+    escreve a voz de fundo (vídeo assistido, personagem do jogo) por cima da dele."""
+    modelo, audio = _ESTADO["modelo"], _ESTADO["audio"]
+    if modelo is None or audio is None:
+        return palavras
+    sr = 16000
+    try:
+        regioes = [(i, f) for i, f in _regioes_de_voz(audio[int(ini * sr):int(fim * sr)])]
+    except Exception:
+        return palavras
+    saida = list(palavras)
+    for i, f in regioes:
+        if cancelado():
+            break
+        i, f = i + ini, f + ini
+        velhas = [w for w in saida if w["f"] > i and w["i"] < f]
+        novas = _transcrever_pedaco(modelo, audio, i, f, _ESTADO["idioma"], _ESTADO["prompt"])
+        if not novas:
+            continue
+        pv = sum(1 for w in velhas if GIRIA.match(_norm(w["p"])))
+        pn = sum(1 for w in novas if GIRIA.match(_norm(w["p"])))
+        if pn > pv or (pn == pv and len(novas) > len(velhas) * 1.25):
+            saida = _trocar(saida, i, f, novas)
+    return limpar(saida)
+
+
+VOCAB_JOGO = {
+    "dead by daylight": "Dead by Daylight: Wesker, pallet, gen, gerador, loop, gancho, sobrevivente, assassino.",
+    "gta": "GTA: polícia, viatura, fuga, assalto, carro, estrela, procurado.",
+    "fortnite": "Fortnite: build, edita, tempestade, zona, loot, vitória real.",
+    "valorant": "Valorant: clutch, spike, ult, ace, plant, defuse.",
+    "call of duty": "Call of Duty: kill, killstreak, sniper, quickscope, loadout.",
+    "minecraft": "Minecraft: creeper, bloco, diamante, nether, mob.",
+}
+
+
+def prompt_do_jogo(idioma, nome_jogo, palavras_nome):
+    """Prompt do Whisper com a gíria, o vocabulário do jogo (achado pelo nome do clipe) e as palavras do nome."""
+    p = PROMPT.get(idioma, "")
+    n = (nome_jogo or "").lower().replace("_", " ")
+    n = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", nome_jogo or "").lower().replace("_", " ") if nome_jogo else ""
+    for chave, voc in VOCAB_JOGO.items():
+        if chave in n or chave.replace(" ", "") in n.replace(" ", "") or (chave == "dead by daylight" and "dbd" in n.split()):
+            p = (p + " " + voc).strip()
+            break
+    if palavras_nome:
+        p = (p + " " + ", ".join(palavras_nome) + ".").strip()
+    return p or None
+
+
+def transcrever(audio, pasta_modelo, idioma, progresso, cancelado, prompt=None):
+    """Lista de palavras {"p", "i", "f", "prob"} com tempos em segundos."""
+    _sem_dependencias_extras()
+    from faster_whisper import WhisperModel
+
+    modelo = None
+    onde = "cpu"
+    if _cuda_ok():
+        try:
+            modelo = WhisperModel(str(pasta_modelo), device="cuda", compute_type="float16")
+            onde = "placa de vídeo"
+        except Exception:
+            modelo = None
+    if modelo is None:
+        threads = max(2, min(8, (os.cpu_count() or 4) - 2))
+        modelo = WhisperModel(str(pasta_modelo), device="cpu", compute_type="int8", cpu_threads=threads)
+    dur = max(0.1, len(audio) / 16000)
+
+    buracos.__defaults__[0][0] = audio
+    buracos.__defaults__[1][0] = prompt
+    _ESTADO.update(audio=audio, prompt=prompt or PROMPT.get(idioma), idioma=idioma)
+
+    def rodar(modelo):
+        segs, info = modelo.transcribe(
+            audio, language=None if idioma == "auto" else idioma, word_timestamps=True, vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 400}, beam_size=5, condition_on_previous_text=False,
+            initial_prompt=prompt or PROMPT.get(idioma), no_speech_threshold=0.5, compression_ratio_threshold=2.2)
+        palavras = []
+        for s in segs:
+            if cancelado():
+                raise Falha("Cancelado.")
+            for w in s.words or []:
+                t = w.word.strip()
+                if t:
+                    palavras.append({"p": t, "i": round(w.start, 3), "f": round(w.end, 3), "prob": round(w.probability, 3)})
+            progresso(min(1.0, s.end / dur), "Lendo a fala")
+        palavras = buracos(modelo, palavras, idioma, cancelado)
+        _ESTADO["modelo"] = modelo
+        return limpar(palavras), info.language
+
+    try:
+        return (*rodar(modelo), onde)
+    except Falha:
+        raise
+    except Exception:
+        if onde == "cpu":
+            raise
+        # placa sem a biblioteca certa no meio do caminho: volta pro processador
+        modelo = WhisperModel(str(pasta_modelo), device="cpu", compute_type="int8")
+        onde = "cpu"
+        return (*rodar(modelo), onde)
+
+
+def limpar(palavras):
+    """Tira o que o Whisper inventa: a mesma palavra mais de 3 vezes seguidas, o mesmo trecho de 2 a 6 palavras
+    repetido mais de 2 vezes, e palavra que ele mesmo dá como quase certamente errada."""
+    import re
+    norm = [re.sub(r"[^\w]", "", w["p"].lower()) for w in palavras]
+    fora = set()
+    i = 0
+    while i < len(palavras):
+        j = i
+        while j + 1 < len(palavras) and norm[j + 1] == norm[i] and norm[i]:
+            j += 1
+        if j - i >= 3:
+            fora.update(range(i + 3, j + 1))
+        i = j + 1
+    for n in range(2, 7):
+        i = 0
+        while i + n <= len(palavras):
+            reps = 1
+            while i + (reps + 1) * n <= len(palavras) and norm[i + reps * n:i + (reps + 1) * n] == norm[i:i + n]:
+                reps += 1
+            if reps > 2:
+                fora.update(range(i + 2 * n, i + reps * n))
+                i += reps * n
+            else:
+                i += 1
+    out = [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+    # a mesma palavra duas vezes começando a menos de 0,3 s uma da outra é a mesma fala lida duas vezes
+    limpo = []
+    for w in out:
+        if limpo and _norm(w["p"]) == _norm(limpo[-1]["p"]) and (w["i"] - limpo[-1]["i"] < 0.3 or w["i"] < limpo[-1]["f"] + 0.12):
             continue
         limpo.append(w)
     return limpo

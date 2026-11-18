@@ -35,10 +35,10 @@ W_MOV, H_MOV, FPS_MOV = 96, 54, 10
 
 
 def movimento(clipe, meta, cancelado=lambda: False):
-    """Quadros pequenos em cinza a 10 fps: energia de movimento por quadro e por coluna."""
-    p = abrir([*entrada(clipe, duracao=meta["duracao"] + 1), "-an", "-vf", f"fps={FPS_MOV},scale={W_MOV}:{H_MOV}:flags=area,format=gray",
+    """Quadros pequenos a 10 fps: energia de movimento por quadro e por coluna, e a cor (clarão vermelho, flash)."""
+    p = abrir([*entrada(clipe, duracao=meta["duracao"] + 1), "-an", "-vf", f"fps={FPS_MOV},scale={W_MOV}:{H_MOV}:flags=area,format=rgb24",
                "-f", "rawvideo", "-"])
-    tam = W_MOV * H_MOV
+    tam = W_MOV * H_MOV * 3
     quadros = []
     while True:
         b = p.stdout.read(tam * 50)
@@ -51,8 +51,19 @@ def movimento(clipe, meta, cancelado=lambda: False):
     p.wait()
     if not quadros:
         return {"energia": np.zeros(1), "colunas": np.ones(W_MOV), "corte": np.zeros(1)}
-    v = np.concatenate(quadros)
-    v = v[: (len(v) // tam) * tam].reshape(-1, H_MOV, W_MOV).astype(np.float32)
+    rgb = np.concatenate(quadros)
+    rgb = rgb[: (len(rgb) // tam) * tam].reshape(-1, H_MOV, W_MOV, 3).astype(np.float32)
+    v = rgb.mean(axis=3)
+    # vinheta vermelha de dano: vermelho nas bordas da tela acima do centro (sangue, golpe). Luz quente da cena
+    # pinta a tela toda por igual e não conta.
+    red = (rgb[..., 0] - (rgb[..., 1] + rgb[..., 2]) / 2).clip(0) if len(rgb) else np.zeros((1, H_MOV, W_MOV))
+    bh, bw = max(1, int(H_MOV * 0.18)), max(1, int(W_MOV * 0.15))
+    borda = np.concatenate([red[:, :bh, :].reshape(len(red), -1), red[:, -bh:, :].reshape(len(red), -1),
+                            red[:, bh:-bh, :bw].reshape(len(red), -1), red[:, bh:-bh, -bw:].reshape(len(red), -1)], axis=1).mean(axis=1)
+    centro = red[:, bh:-bh, bw:-bw].reshape(len(red), -1).mean(axis=1)
+    vermelho = (borda - centro).clip(0)
+    brilho = v.mean(axis=(1, 2)) if len(v) else np.zeros(1)
+    del rgb
     if len(v) < 2:
         return {"energia": np.zeros(1), "colunas": np.ones(W_MOV), "corte": np.zeros(1)}
     dif = np.abs(np.diff(v, axis=0))
@@ -64,7 +75,40 @@ def movimento(clipe, meta, cancelado=lambda: False):
     col_t = dif.mean(axis=1)
     # quadros pequenos (uint8) até 15 min: dão a reação dentro da caixa da câmera
     pequenos = v.astype(np.uint8) if len(v) <= FPS_MOV * 900 else None
-    return {"energia": energia, "colunas": colunas, "corte": corte, "col_t": col_t, "quadros": pequenos}
+    return {"energia": energia, "colunas": colunas, "corte": corte, "col_t": col_t, "quadros": pequenos,
+            "vermelho": vermelho, "brilho": brilho}
+
+
+def lance(mov, db, n):
+    """Sinal do lance do jogo, a cada 0,1 s: clarão vermelho ou flash de repente, pancada na imagem (energia que
+    salta muito acima do normal) e estouro do áudio. Sem depender de ninguém falar."""
+    def serie(x):
+        return para_passo(np.asarray(x, dtype=np.float64), FPS_MOV, n) if x is not None and len(x) > 1 else np.zeros(n)
+    verm = serie(mov.get("vermelho"))
+    bri = serie(mov.get("brilho"))
+    ene = serie(mov.get("energia"))
+    # a vinheta aparece de repente e fica uns segundos: sobe em relação aos 2 s anteriores
+    # e o dano FICA na tela uns segundos; luz da cena que passa (porta, janela) dura 1 s: vale a subida sustentada
+    d_verm = np.zeros(n)
+    for t in range(20, max(20, n - 5)):
+        prev = verm[t - 20:t].mean()
+        prox = verm[t:t + 30]
+        subida = max(0.0, prox[:20].mean() - prev)
+        if subida > 0.5:
+            d_verm[t] = min(6.0, 2.0 * subida * float((prox > prev + 0.8).mean()))
+    # flash: brilho que salta e volta em menos de meio segundo (explosão, tiro), não troca de ambiente
+    d_bri = np.clip(z(np.abs(bri - suavizar(bri, 9))) - 3.0, 0, 6)
+    pancada = np.clip(z(ene) - 3.0, 0, 6)
+    dbn = np.pad(np.asarray(db, dtype=np.float64), (0, max(0, n - len(db))))[:n] if len(db) else np.full(n, -90.0)
+    estouro = np.clip(z(suavizar(dbn, 2)) - 3.0, 0, 6)
+    # câmera girando também mexe muito a imagem e não é lance: a pancada por movimento só entra fraca
+    sinal = d_verm + 0.5 * d_bri + 0.2 * pancada + 0.6 * estouro
+    # pontas do clipe (corte do gravador) e menu (tela parada) não são lance
+    sinal[:10] = 0
+    sinal[max(0, n - 10):] = 0
+    par = para_passo(parado(mov.get("energia", np.zeros(1))), FPS_MOV, n)
+    sinal = sinal * (1 - par)
+    return suavizar(sinal, 3)
 
 
 def reacao_na_camera(mov, caixa):
@@ -74,7 +118,8 @@ def reacao_na_camera(mov, caixa):
         return None
     x, y, w, h = caixa
     x0, y0 = int(x * W_MOV), int(y * H_MOV)
-    x1, y1 = max(x0 + 2, int((x + w) * W_MOV)), max(y0 + 2, int((y + h) * H_MOV))
+    # só a metade de cima da caixa: rosto e cabeça (risada, susto); mão no queixo embaixo não é reação
+    x1, y1 = max(x0 + 2, int((x + w) * W_MOV)), max(y0 + 2, int((y + h * 0.55) * H_MOV))
     reg = q[:, y0:y1, x0:x1].astype(np.float32)
     return np.abs(np.diff(reg, axis=0)).mean(axis=(1, 2))
 
@@ -118,8 +163,8 @@ def onda(db, pontos=240):
 
 
 def alinhar_falas(palavras, x):
-    """Começo de fala depois de silêncio vai pra subida real da voz no áudio: o Whisper marca a palavra uns 0,2 a
-    0,3 s depois (medido nos clipes de teste), e legenda atrasada dá a sensação de dessincronia."""
+    """Começo de fala depois de silêncio vai pra subida real da voz LOGO DEPOIS do que o Whisper marcou (nunca mais
+    de 0,05 s antes); sem subida achada, 0,08 s depois. As conferências mediram a legenda entrando antes da voz."""
     if not palavras or len(x) < SR:
         return palavras
     n = 160   # 10 ms
@@ -129,17 +174,19 @@ def alinhar_falas(palavras, x):
     antes = -1.0
     for w in palavras:
         w = dict(w)
-        if w["i"] - antes >= 0.3 and w["i"] >= 0.3:
+        if w["i"] - antes >= 0.3:
             i0 = int(w["i"] * 100)
-            lo, hi = max(0, i0 - 35), min(len(db) - 1, i0 + 5)
-            base = db[max(0, lo - 30):lo + 1]
+            lo, hi = max(0, i0 - 5), min(len(db) - 1, i0 + 40)
+            base = db[max(0, i0 - 60):max(1, i0 - 10)]
+            novo = None
             if hi > lo and len(base):
                 chao = np.percentile(base, 30)
-                sobe = np.where(db[lo:hi] > chao + 12)[0]
+                sobe = np.where(db[lo:hi] > chao + 10)[0]
                 if len(sobe):
                     novo = (lo + sobe[0]) / 100
-                    if w["i"] - 0.12 <= novo < w["i"] and novo > antes + 0.05:
-                        w["i"] = round(novo, 3)
+            if novo is None:
+                novo = w["i"] + 0.08
+            w["i"] = round(min(max(novo, w["i"] - 0.05), w["f"] - 0.05), 3)
         antes = w["f"]
         out.append(w)
     return out

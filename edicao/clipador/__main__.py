@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.3"
+VERSAO = "1.0.4"
 _cancelar = {"v": False}
 
 
@@ -167,8 +167,7 @@ def editar(a):
             pr = fala.prompt_do_jogo(a.idioma, f"{jogo} {clipe.stem}", assunto_do_nome(clipe))
             palavras, idioma, onde = fala.transcrever(aud, pm, a.idioma, lambda f, t: and_.etapa("fala", f, t), cancelado, pr)
             cache.update(palavras=palavras, idioma=idioma, onde=onde)
-        # a legenda entra 0,15 s depois do que o Whisper marcou: as conferências mediram o começo adiantado
-        palavras = [dict(w, i=round(min(w["f"] - 0.05, w["i"] + 0.15), 3)) if w["f"] - w["i"] > 0.1 else w for w in (palavras or [])]
+        palavras = palavras or []
         par = analise.para_passo(analise.parado(mov["energia"]), analise.FPS_MOV, n)
         # clipe que é quase todo menu ou tela parada, sem ninguém falando, não vira vídeo
         if float((par > 0.5).mean()) > 0.75 and not palavras and plano["trecho"] is None and not plano["inteiro"]:
@@ -221,9 +220,27 @@ def editar(a):
         com_cam = lay == "camera" and bool(caixa)
         rea = analise.reacao_na_camera(mov, caixa) if com_cam else None
         rea = analise.para_passo(rea, analise.FPS_MOV, n) if rea is not None else None
-        s = momento.sinais(meta["duracao"], db, energia, corte, palavras, plano, reacao=rea, parado=par)
+        lan = analise.lance(mov, db, n)
+        s = momento.sinais(meta["duracao"], db, energia, corte, palavras, plano, reacao=rea, parado=par, lance=lan)
         ini, fim = momento.escolher(meta["duracao"], s, palavras, plano, com_cam)
         imp = momento.impactos(ini, fim, s, plano, com_cam)
+        # o trecho escolhido é lido de novo em pedaços (fala dele por cima de outra voz) e alinhado na subida da voz
+        if plano["legenda"] and palavras:
+            from . import fala as _f
+            if _f._ESTADO["modelo"] is None and precisa_fala:
+                try:
+                    pm = _f.garantir_modelo(a.modelo, lambda f, t: None, cancelado)
+                    _f._sem_dependencias_extras()
+                    from faster_whisper import WhisperModel
+                    dev = "cuda" if _f._cuda_ok() else "cpu"
+                    _f._ESTADO.update(modelo=WhisperModel(str(pm), device=dev, compute_type="float16" if dev == "cuda" else "int8"),
+                                      audio=aud, idioma=a.idioma,
+                                      prompt=_f.prompt_do_jogo(a.idioma, clipe.stem, assunto_do_nome(clipe)))
+                except Exception:
+                    pass
+            and_.etapa("momento", 0.5, "Conferindo a fala do trecho")
+            palavras = _f.refinar(palavras, ini, fim, cancelado)
+        palavras = analise.alinhar_falas(palavras, aud)
         cx = render.seguir_acao(mov.get("col_t"), analise.FPS_MOV, ini, fim,
                                 render.SH * render.LARG / (render.ALT - (render.CAM_ALT if lay == "camera" else 0)))
 
