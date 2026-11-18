@@ -7795,6 +7795,13 @@ bool QmlMainWindow::event(QEvent *event)
         }
         QGuiApplication::sendEvent(quick_window, event);
         break;
+    case QEvent::Wheel:
+        // Incipit Play: the interface lives in an offscreen QQuickWindow, so the wheel has to be forwarded like the
+        // mouse buttons; without it no list or page scrolled with the mouse wheel (Clipes, Configurações, dialogs)
+        if (session && !grab_input)
+            return true;
+        QGuiApplication::sendEvent(quick_window, event);
+        return true;
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:

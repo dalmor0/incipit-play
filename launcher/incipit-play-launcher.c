@@ -61,13 +61,13 @@ static HWND janela_do_app(DWORD pid)
 	return b.achou;
 }
 
-/* desenho: fundo grafite, a porta-I da Incipit em azul, o nome e uma linha de apoio */
+/* desenho: fundo azul-marinho da marca, a porta-I da Incipit no degradê do logo, o nome e uma linha de apoio */
 static void desenhar(HDC dc, RECT *r)
 {
-	HBRUSH fundo = CreateSolidBrush(RGB(0x11, 0x13, 0x18));
+	HBRUSH fundo = CreateSolidBrush(RGB(0x12, 0x16, 0x24));
 	FillRect(dc, r, fundo);
 	DeleteObject(fundo);
-	HPEN borda = CreatePen(PS_SOLID, 1, RGB(0x2C, 0x31, 0x3B));
+	HPEN borda = CreatePen(PS_SOLID, 1, RGB(0x26, 0x2D, 0x41));
 	HGDIOBJ antiga = SelectObject(dc, borda);
 	SelectObject(dc, GetStockObject(NULL_BRUSH));
 	Rectangle(dc, r->left, r->top, r->right, r->bottom);
@@ -77,9 +77,9 @@ static void desenhar(HDC dc, RECT *r)
 	/* porta-I (39,58 x 96 no desenho original), 64 px de altura, centrada na vertical */
 	const int x0 = 40, y0 = (r->bottom - 64) / 2 - 2;
 	const double k = 64.0 / 96.0;
-	HBRUSH azul_claro = CreateSolidBrush(RGB(0xCC, 0xE0, 0xFF));
-	HBRUSH azul = CreateSolidBrush(RGB(0x7D, 0xB0, 0xFF));
-	HBRUSH azul_escuro = CreateSolidBrush(RGB(0x3F, 0x6F, 0xD6));
+	HBRUSH azul_claro = CreateSolidBrush(RGB(0xC4, 0xE3, 0xFF));
+	HBRUSH azul = CreateSolidBrush(RGB(0x7F, 0xA6, 0xF0));
+	HBRUSH azul_escuro = CreateSolidBrush(RGB(0x3D, 0x63, 0xD4));
 	RECT topo = { x0, y0, x0 + (int)(39.58 * k), y0 + (int)(16.32 * k) };
 	RECT base = { x0, y0 + (int)(79.68 * k), x0 + (int)(39.58 * k), y0 + (int)(96 * k) };
 	FillRect(dc, &topo, azul_escuro);
@@ -99,27 +99,31 @@ static void desenhar(HDC dc, RECT *r)
 	DeleteObject(azul_escuro);
 
 	SetBkMode(dc, TRANSPARENT);
-	SetTextColor(dc, RGB(0xE7, 0xEA, 0xF0));
+	SetTextColor(dc, RGB(0xE8, 0xED, 0xF7));
 	SelectObject(dc, fonte_titulo);
 	RECT rt = { x0 + 46, y0 - 6, r->right - 24, y0 + 40 };
 	DrawTextW(dc, TITULO, -1, &rt, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
-	SetTextColor(dc, RGB(0xA0, 0xA7, 0xB4));
+	SetTextColor(dc, RGB(0xA3, 0xAD, 0xC2));
 	SelectObject(dc, fonte_apoio);
 	RECT ra = { x0 + 48, y0 + 46, r->right - 24, y0 + 68 };
 	DrawTextW(dc, texto_abrindo, -1, &ra, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP);
 
 	/* barra fina andando no pé: diz que está carregando sem enfeitar */
 	RECT trilho = { r->left + 1, r->bottom - 4, r->right - 1, r->bottom - 1 };
-	HBRUSH cinza = CreateSolidBrush(RGB(0x2C, 0x31, 0x3B));
+	HBRUSH cinza = CreateSolidBrush(RGB(0x25, 0x2C, 0x42));
 	FillRect(dc, &trilho, cinza);
 	DeleteObject(cinza);
 	const int largura = r->right - r->left, seg = 96;
 	const int pos = (passo * 18) % (largura + seg) - seg;
 	RECT anda = { r->left + (pos < 1 ? 1 : pos), r->bottom - 4, r->left + (pos + seg > largura - 1 ? largura - 1 : pos + seg), r->bottom - 1 };
-	if(anda.right > anda.left)
+	/* o pedaço que anda leva o degradê do logo (#3D63D4 a #C4E3FF), em fatias de 4 px */
+	for(int x = anda.left; x < anda.right; x += 4)
 	{
-		HBRUSH az = CreateSolidBrush(RGB(0x7D, 0xB0, 0xFF));
-		FillRect(dc, &anda, az);
+		const int k = (x - (r->left + pos)) * 255 / seg;
+		const int kk = k < 0 ? 0 : k > 255 ? 255 : k;
+		RECT fatia = { x, anda.top, x + 4 > anda.right ? anda.right : x + 4, anda.bottom };
+		HBRUSH az = CreateSolidBrush(RGB(0x3D + (0xC4 - 0x3D) * kk / 255, 0x63 + (0xE3 - 0x63) * kk / 255, 0xD4 + (0xFF - 0xD4) * kk / 255));
+		FillRect(dc, &fatia, az);
 		DeleteObject(az);
 	}
 }
@@ -153,6 +157,9 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l)
 			return 0;
 		case WM_NCHITTEST:
 			return HTCAPTION;   /* dá pra arrastar */
+		case WM_KEYDOWN:
+			if(w == VK_ESCAPE) ShowWindow(h, SW_HIDE);   /* Esc tira a abertura da frente; o app segue abrindo */
+			return 0;
 	}
 	return DefWindowProcW(h, m, w, l);
 }
@@ -244,7 +251,6 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR linha, int mostrar)
 	SetTimer(janela_abertura, 2, 100, NULL);
 
 	MSG msg;
-	DWORD inicio = GetTickCount();
 	for(;;)
 	{
 		while(PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
@@ -253,8 +259,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR linha, int mostrar)
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 		}
-		/* o app fechou sem abrir janela, ou passou de 2 minutos: some com a abertura */
-		if(WaitForSingleObject(pi.hProcess, 0) == WAIT_OBJECT_0 || GetTickCount() - inicio > 120000)
+		/* a abertura fica enquanto o app estiver vivo sem janela (disco lento pode levar minutos); some se ele fechar */
+		if(WaitForSingleObject(pi.hProcess, 0) == WAIT_OBJECT_0)
 			break;
 		MsgWaitForMultipleObjects(1, &pi.hProcess, FALSE, 100, QS_ALLINPUT);
 	}
