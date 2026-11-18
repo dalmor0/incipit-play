@@ -188,8 +188,13 @@ def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
     antes = -1.0
     for w in palavras:
         w = dict(w)
-        if ini <= w["i"] < fim and not any(r[0] - 0.1 < w["f"] and w["i"] < r[1] + 0.1 for r in voz):
-            continue    # palavra inteira no silêncio: o Whisper inventou (o terceiro "Pegou?")
+        if ini <= w["i"] < fim and not any(r[0] - 0.05 <= w["i"] < r[1] for r in voz):
+            # começa no silêncio: vai pro começo da próxima fala; sem fala perto, o Whisper inventou e sai
+            prox = [r for r in voz if w["i"] < r[0] <= w["i"] + 1.5 and r[0] >= antes - 0.01]
+            if not prox:
+                continue
+            dur = min(w["f"] - w["i"], 0.8)
+            w["i"], w["f"] = round(prox[0][0] + 0.03, 3), round(prox[0][0] + 0.03 + dur, 3)
         if w["i"] - antes >= 0.3:
             dentro = [r for r in voz if r[0] - 0.05 <= w["i"] < r[1]]
             if dentro:

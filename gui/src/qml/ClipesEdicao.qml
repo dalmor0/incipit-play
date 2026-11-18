@@ -16,6 +16,7 @@ ColumnLayout {
     readonly property var res: Edicao.resultado
     property bool ajustando: false
     readonly property bool estragado: /corrompido|estragado|não é um vídeo/i.test(Edicao.motivo)
+    readonly property bool soMenu: /menu ou tela parada/i.test(Edicao.motivo)
     property var editados: Edicao.editados(8)
     property real largura: 900
     signal pedirEdicao(var clipe)
@@ -119,27 +120,27 @@ ColumnLayout {
     // ------------------------------------------------------------ erro
     InCartao {
         visible: ed.estado === "erro"
-        corFio: ed.tema.alerta
+        corFio: ed.soMenu ? "transparent" : ed.tema.alerta
         RowLayout {
             Layout.fillWidth: true
             spacing: 16
-            InIcone { nome: "alerta"; tamanho: 24; cor: ed.tema.alerta; Layout.alignment: Qt.AlignTop }
+            InIcone { nome: ed.soMenu ? "info" : "alerta"; tamanho: 24; cor: ed.soMenu ? ed.tema.destaque : ed.tema.alerta; Layout.alignment: Qt.AlignTop }
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.maximumWidth: Number.POSITIVE_INFINITY
                 spacing: 4
-                InTexto { Layout.fillWidth: true; tipo: "titulo"; text: root.t("Não deu pra editar") }
+                InTexto { Layout.fillWidth: true; tipo: "titulo"; text: ed.soMenu ? root.t("Esse clipe não tem jogada pra cortar") : root.t("Não deu pra editar") }
                 InTexto { Layout.fillWidth: true; tipo: "apoio"; text: root.t(Edicao.motivo) }
                 InTexto {
                     Layout.fillWidth: true
                     tipo: "pequeno"
-                    visible: Edicao.clipe !== ""
+                    visible: Edicao.clipe !== "" && !ed.soMenu
                     text: root.t("Se o clipe não abre no seu player, ele veio estragado e não dá pra editar. Se abre, tente de novo.")
                 }
             }
             InBotao { text: root.t("Fechar"); Layout.alignment: Qt.AlignTop; onClicked: Edicao.fechar() }
             InBotao { visible: Edicao.clipe !== ""; Layout.alignment: Qt.AlignTop; tipo: ed.estragado ? "forte" : "normal"; text: root.t("Abrir pasta do clipe"); icone: "externo"; onClicked: Edicao.abrirPasta(String(Edicao.clipe).replace(/[\\\/][^\\\/]*$/, "")) }
-            InBotao { tipo: ed.estragado ? "normal" : "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== ""; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
+            InBotao { tipo: ed.estragado ? "normal" : "forte"; Layout.alignment: Qt.AlignTop; text: root.t("Tentar de novo"); visible: Edicao.clipe !== "" && !ed.soMenu; onClicked: { Edicao.fechar(); ed.pedirEdicao({ caminho: Edicao.clipe, miniatura: Edicao.quadroDoClipe(Edicao.clipe) }); } }
         }
     }
 

@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.5"
+VERSAO = "1.0.6"
 _cancelar = {"v": False}
 
 
@@ -238,6 +238,8 @@ def editar(a):
                                       prompt=_f.prompt_do_jogo(a.idioma, clipe.stem, assunto_do_nome(clipe)))
                 except Exception:
                     pass
+            and_.etapa("momento", 0.5, "Conferindo a fala do trecho")
+            palavras = _f.refinar(palavras, ini, fim, cancelado)
         cens = legenda.trechos_censurados(palavras, ini, fim) if plano["censura"] else []
         medida = render.medir_volume(clipe, ini, fim - ini, trabalho, meta.get("faixas", 1)) if meta["audio"] else None
         pronto_aud = render.audio_final(clipe, meta, ini, fim - ini, medida, cens, trabalho) if palavras else None

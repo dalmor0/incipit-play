@@ -289,7 +289,8 @@ def impactos(a, b, s, plano, com_camera=False):
     if com_camera:
         # com câmera: só a voz dele (grito já filtrado pela reação), a risada e o rosto que reage
         # reação só conta forte (rosto que se mexe muito); risada dele sempre
-        imp = 1.2 * s["grito"] + 1.8 * s["riso"] + 0.9 * np.clip(s["reacao"] - 1.0, 0, 6)
+        rosto = s["reacao"] > 1.0
+        imp = 1.8 * s["riso"] + 1.0 * np.clip(s["reacao"] - 1.0, 0, 6) + 1.2 * s["grito"] * rosto + 0.8 * s["vol"] * rosto
     else:
         imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 1.5 * s["lance"] + 0.3 * s["vol"]
     imp = imp * (1 - s["parado"])
@@ -305,7 +306,7 @@ def impactos(a, b, s, plano, com_camera=False):
     for i in ordem:
         if seg[i] < limiar or len(pegos) >= maximo:
             break
-        if i * PASSO < 1.5 or i * PASSO > (b - a) - 0.8:
+        if i * PASSO < 2.0 or i * PASSO > (b - a) - 0.8:
             continue
         if all(abs(i - j) >= vao for j, _ in pegos):
             pegos.append((i, float(seg[i])))
