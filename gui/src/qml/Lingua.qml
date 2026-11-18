@@ -356,7 +356,7 @@ QtObject {
         "Não tenho câmera": "I don't have a camera",
         "Salvar câmera": "Save camera",
         "Automático": "Automatic",
-        "Creme, palavra por palavra (padrão)": "Cream, word by word (default)",
+        "Creme, palavra por palavra": "Cream, word by word",
         "Amarela, uma palavra por vez": "Yellow, one word at a time",
         "Branca com a palavra dita em azul": "White with the spoken word in blue",
         "Simples, frase inteira": "Simple, whole sentence",

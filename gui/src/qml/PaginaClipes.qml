@@ -210,7 +210,7 @@ InPagina {
                 }
                 InTexto { tipo: "pequeno"; Layout.alignment: Qt.AlignBaseline; lineHeight: 1.0; lineHeightMode: Text.ProportionalHeight; wrapMode: Text.NoWrap; text: (sessao.modelData.clipes.length === 1 ? root.t("1 clipe") : root.t("%1 clipes").arg(sessao.modelData.clipes.length)) }
                 Item { Layout.fillWidth: true }
-                InBotao { tipo: "quieto"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Qt.openUrlExternally("file:///" + sessao.modelData.pasta) }
+                InBotao { tipo: "quieto"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.abrirPasta(sessao.modelData.pasta) }
             }
 
             GridLayout {
@@ -255,7 +255,7 @@ InPagina {
                                     Text { id: dur; anchors.centerIn: parent; color: "white"; font.family: root.tema.sans; font.pixelSize: 13; font.weight: Font.DemiBold
                                         text: { const s = Math.round(item.modelData.segundos || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); } }
                                 }
-                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("file:///" + item.modelData.caminho) }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Edicao.abrirVideo(item.modelData.caminho) }
                             }
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -278,7 +278,7 @@ InPagina {
                                         tipo: "quieto"; icone: "jogar"
                                         Accessible.name: root.t("Assistir")
                                         ToolTip.visible: hovered; ToolTip.text: root.t("Assistir")
-                                        onClicked: Qt.openUrlExternally("file:///" + item.modelData.caminho)
+                                        onClicked: Edicao.abrirVideo(item.modelData.caminho)
                                     }
                                     InBotao {
                                         tipo: "quieto"; icone: "lixo"
@@ -301,7 +301,7 @@ InPagina {
     }
     EdicaoCamera {
         id: marcaCamera
-        onClosed: if (pedidoEdicao.clipe.caminho && !pedidoEdicao.visible) pedidoEdicao.open()
+        onClosed: if (pedidoEdicao.clipe.caminho && !pedidoEdicao.visible && Edicao.estado !== "editando") pedidoEdicao.open()
     }
 
     FolderDialog {

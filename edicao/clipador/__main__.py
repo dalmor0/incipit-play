@@ -18,7 +18,7 @@ from pathlib import Path
 from . import analise, camera as cam_mod, legenda, momento, pedido as ped, render
 from .base import Andamento, Falha, avisar, conferir_clipe, medir, pasta_trabalho, prioridade_baixa
 
-VERSAO = "1.0.0"
+VERSAO = "1.0.1"
 _cancelar = {"v": False}
 
 
@@ -47,6 +47,14 @@ def pasta_cache():
     la = os.environ.get("LOCALAPPDATA") or str(Path.home())
     p = Path(os.environ.get("INCIPIT_EDICAO_CACHE") or Path(la) / "Incipit" / "Incipit Play" / "edicao-cache")
     p.mkdir(parents=True, exist_ok=True)
+    # a fala lida fica guardada 30 dias (refazer sai rápido); depois some
+    agora = time.time()
+    for velho in p.glob("*.json"):
+        try:
+            if agora - velho.stat().st_mtime > 30 * 86400:
+                velho.unlink()
+        except OSError:
+            pass
     return p
 
 

@@ -35,8 +35,15 @@ def sinais(dur, db, energia, corte, palavras, plano):
     grito = np.zeros(n)
     assunto = np.zeros(n)
     alvos = []
+    chaves = [sem_acento(w.lower()) for w in plano.get("foco") or []]
     for w in plano.get("foco") or []:
         alvos += radicais(w)
+    from difflib import SequenceMatcher
+
+    def do_assunto(t):
+        if any(t.startswith(r) for r in alvos):
+            return True
+        return any(len(k) >= 4 and len(t) >= 3 and SequenceMatcher(None, t, k).ratio() >= 0.75 for k in chaves)
     for w in palavras:
         a, b = int(w["i"] / PASSO), max(int(w["i"] / PASSO) + 1, int(w["f"] / PASSO))
         a, b = min(a, n - 1), min(b, n)
@@ -46,7 +53,7 @@ def sinais(dur, db, energia, corte, palavras, plano):
             riso[a:b] += 3
         if "!" in w["p"] or EXCLAMA.match(t) or PALAVRAO.match(t):
             grito[a:b] += 2
-        if alvos and any(t.startswith(r) for r in alvos):
+        if alvos and do_assunto(t):
             lo, hi = max(0, a - 20), min(n, b + 30)
             assunto[lo:hi] += 4
     # grito de verdade: fala alta (volume bem acima do resto enquanto tem fala)
@@ -142,6 +149,8 @@ def escolher(dur, s, palavras, plano):
             for w in palavras:
                 if w["i"] < b < w["f"]:
                     b = min(dur, w["f"] + 0.3)
+    if plano.get("duracao") and b - a > plano["duracao"] + 1.5:
+        b = round(a + plano["duracao"] + 1.0, 2)
     # clipe curto inteiro: tira só o silêncio parado das pontas
     if not plano.get("duracao") and dur <= 40 and a == 0 and b == dur:
         vivo = np.where((s["vol"] > 0.3) | (s["mov"] > 0.3) | (s["fala"] > 0))[0]

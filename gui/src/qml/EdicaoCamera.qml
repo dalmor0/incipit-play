@@ -21,10 +21,12 @@ T.Dialog {
     parent: Overlay.overlay
     x: Math.round((root.width - width) / 2)
     y: Math.max(16, Math.round((root.height - height) / 2))
-    width: Math.min(880, root.width - 48)
+    width: Math.min(880, root.width - 48, (root.height - 32 - 260) * 16 / 9 + 56)
+    height: corpo.implicitHeight + topPadding + bottomPadding
     padding: 28
     topPadding: 24
     modal: true
+    dim: true
     onOpened: {
         const c = cfg.camera;
         if (c.length === 4) { x0 = c[0]; y0 = c[1]; x1 = c[0] + c[2]; y1 = c[1] + c[3]; }
@@ -35,6 +37,7 @@ T.Dialog {
     Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.55) }
 
     contentItem: ColumnLayout {
+        id: corpo
         spacing: 16
         Keys.onEscapePressed: d.close()
         Text {

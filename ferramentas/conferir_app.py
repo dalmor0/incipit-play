@@ -179,7 +179,7 @@ def limpar_geometria():
         winreg.SetValueEx(k, "geometry", 0, winreg.REG_SZ, GEOMETRIA)
 
 
-GEOMETRIA = "@Rect(40 60 1280 800)"
+GEOMETRIA = "@Rect(" + __import__("os").environ.get("UI_X", "40") + " 60 1280 800)"
 
 
 def abrir(app, ui, env_extra=None):

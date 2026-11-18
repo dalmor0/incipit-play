@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -28,10 +29,10 @@
 // ---------------------------------------------------------------- o pacote de edição
 // Montado por edicao/pacote/montar_pacote.py e publicado como asset de um release próprio (não o Latest) em
 // dalmor0/incipit-releases. O Play só usa o arquivo se o tamanho e o SHA-256 baterem com estes.
-static const char *PACOTE_VERSAO = "1.0.0";
-static const char *PACOTE_URL = "https://github.com/dalmor0/incipit-releases/releases/download/edicao-1.0.0/IncipitPlay-Edicao-1.0.0.zip";
-static const char *PACOTE_SHA256 = "e02fb097d3240ec72a8ca602cbc6d5bb7105d7124fe0f0c57339e2a322e8d79e";
-static const qint64 PACOTE_TAMANHO = 172288996;
+static const char *PACOTE_VERSAO = "1.0.1";
+static const char *PACOTE_URL = "https://github.com/dalmor0/incipit-releases/releases/download/edicao-1.0.1/IncipitPlay-Edicao-1.0.1.zip";
+static const char *PACOTE_SHA256 = "aec4bb7fb55037b6c80076fd07ca99d18b7bb73f5e0875a5b5f0ab8e912a294a";
+static const qint64 PACOTE_TAMANHO = 145662900;
 static const qint64 ESPACO_MINIMO = qint64(3) * 1024 * 1024 * 1024;   // pacote aberto + leitor de fala (1,5 GB) + folga
 
 IncipitEdicao *IncipitEdicao::instance()
@@ -53,6 +54,10 @@ IncipitEdicao::IncipitEdicao(QObject *parent) : QObject(parent)
 
 static QString base()
 {
+	// teste de "PC limpo" com outro disco: INCIPIT_EDICAO_BASE troca a pasta do editor, do leitor de fala e do log
+	const QString teste = qEnvironmentVariable("INCIPIT_EDICAO_BASE");
+	if(!teste.isEmpty())
+		return QDir::cleanPath(teste);
 	return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 }
 
@@ -177,6 +182,11 @@ void IncipitEdicao::fechar()
 
 void IncipitEdicao::baixarPacote()
 {
+	if(!qEnvironmentVariable("INCIPIT_EDICAO_DIR").isEmpty())
+	{
+		falhar(QStringLiteral("O pacote de edição está incompleto (falta o ffmpeg)."));
+		return;
+	}
 	if(QByteArray(PACOTE_SHA256).size() != 64 || PACOTE_TAMANHO <= 0)
 	{
 		falhar(QStringLiteral("Esta versão do Play ainda não tem o editor. Atualize o Incipit Play."));
@@ -205,6 +215,7 @@ void IncipitEdicao::baixarPacote()
 	QNetworkRequest req{QUrl(QString::fromLatin1(PACOTE_URL))};
 	req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
 	req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("IncipitPlay"));
+	req.setTransferTimeout(30000);   // rede parada 30 s: erro, não espera pra sempre
 	m_download = m_rede->get(req);
 	definir(QStringLiteral("baixando"), 0, QStringLiteral("Preparando o editor (só na primeira vez)"));
 	connect(m_download, &QNetworkReply::readyRead, this, [this]() {
@@ -279,7 +290,8 @@ void IncipitEdicao::instalarPacote(const QString &zip)
 			falhar(QStringLiteral("Não deu pra abrir o editor no disco. Tente de novo."));
 			return;
 		}
-		QDir(destino).removeRecursively();
+		if(destino.startsWith(base() + QStringLiteral("/edicao/")))
+			QDir(destino).removeRecursively();
 		if(!QDir().rename(temp, destino))
 		{
 			QDir(temp).removeRecursively();
@@ -313,11 +325,11 @@ void IncipitEdicao::comecar()
 	const QString saida = pastaSaida();
 	QDir().mkpath(saida);
 	QStringList args = {QStringLiteral("-I"), QStringLiteral("-X"), QStringLiteral("utf8"), QStringLiteral("-m"), QStringLiteral("clipador"),
-		QStringLiteral("editar"), QStringLiteral("--clipe"), QDir::toNativeSeparators(m_clipe),
-		QStringLiteral("--saida"), QDir::toNativeSeparators(saida)};
+		QStringLiteral("editar"), QStringLiteral("--clipe=") + QDir::toNativeSeparators(m_clipe),
+		QStringLiteral("--saida=") + QDir::toNativeSeparators(saida)};
 	const QString pedido = m_opcoes.value(QStringLiteral("pedido")).toString().left(500).simplified();
 	if(!pedido.isEmpty())
-		args << QStringLiteral("--pedido") << pedido;
+		args << QStringLiteral("--pedido=") + pedido;
 	const QString layout = m_opcoes.value(QStringLiteral("layout")).toString();
 	if(QStringList{QStringLiteral("camera"), QStringLiteral("centro"), QStringLiteral("desfocado")}.contains(layout))
 		args << QStringLiteral("--layout") << layout;
@@ -328,7 +340,7 @@ void IncipitEdicao::comecar()
 		args << QStringLiteral("--sem-legenda");
 	const QString titulo = m_opcoes.value(QStringLiteral("titulo")).toString().left(60).simplified();
 	if(!titulo.isEmpty())
-		args << QStringLiteral("--titulo") << titulo;
+		args << QStringLiteral("--titulo=") + titulo;
 	const double zoom = m_opcoes.value(QStringLiteral("zoom"), -1).toDouble();
 	if(zoom == 0.0 || zoom == 0.5 || zoom == 1.0 || zoom == 2.0)
 		args << QStringLiteral("--zoom") << QString::number(zoom, 'f', 1);
@@ -346,7 +358,7 @@ void IncipitEdicao::comecar()
 	}
 	const QString musica = m_opcoes.value(QStringLiteral("musica")).toString();
 	if(!musica.isEmpty() && QFileInfo(musica).isDir())
-		args << QStringLiteral("--musica") << QDir::toNativeSeparators(musica);
+		args << QStringLiteral("--musica=") + QDir::toNativeSeparators(musica);
 	if(QSettings().value(QStringLiteral("idioma/lingua")).toString() == QStringLiteral("en"))
 		args << QStringLiteral("--idioma") << QStringLiteral("auto");
 
@@ -356,6 +368,8 @@ void IncipitEdicao::comecar()
 	m_proc->setWorkingDirectory(QDir::tempPath());
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 	env.insert(QStringLiteral("INCIPIT_EDICAO_ENTRADA"), QStringLiteral("1"));
+	env.insert(QStringLiteral("INCIPIT_EDICAO_MODELOS"), QDir::toNativeSeparators(base() + QStringLiteral("/modelos")));
+	env.insert(QStringLiteral("INCIPIT_EDICAO_CACHE"), QDir::toNativeSeparators(base() + QStringLiteral("/edicao-cache")));
 	env.remove(QStringLiteral("PYTHONHOME"));
 	env.remove(QStringLiteral("PYTHONPATH"));
 	m_proc->setProcessEnvironment(env);
@@ -427,7 +441,8 @@ void IncipitEdicao::ajustarPrioridade()
 	if(!m_job)
 		return;
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION lim = {};
-	lim.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_PRIORITY_CLASS;
+	lim.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_PRIORITY_CLASS | JOB_OBJECT_LIMIT_JOB_MEMORY;
+	lim.JobMemoryLimit = SIZE_T(6) * 1024 * 1024 * 1024;
 	lim.BasicLimitInformation.PriorityClass = ClipRecorder::instance()->streaming() ? IDLE_PRIORITY_CLASS : BELOW_NORMAL_PRIORITY_CLASS;
 	SetInformationJobObject((HANDLE)m_job, JobObjectExtendedLimitInformation, &lim, sizeof(lim));
 #endif
@@ -457,6 +472,7 @@ void IncipitEdicao::lerSaida()
 		{
 			m_recebeuFim = true;
 			m_resultado = o.toVariantMap();
+			m_resultado[QStringLiteral("miniaturaUrl")] = QUrl::fromLocalFile(o.value(QStringLiteral("miniatura")).toString()).toString();
 			registrar(QStringLiteral("pronto ") + o.value(QStringLiteral("arquivo")).toString());
 			definir(QStringLiteral("pronto"), 100, QString());
 			emit editadosMudaram();
@@ -528,12 +544,12 @@ void IncipitEdicao::mostrarNaPasta(const QString &arquivo) const
 	if(!dentroDe(arquivo, pastaSaida()))
 	{
 		QDir().mkpath(pastaSaida());
-		QProcess::startDetached(QStringLiteral("explorer.exe"), {QDir::toNativeSeparators(pastaSaida())});
+		QProcess::startDetached(QDir::fromNativeSeparators(qEnvironmentVariable("SystemRoot", QStringLiteral("C:/Windows"))) + QStringLiteral("/explorer.exe"), {QDir::toNativeSeparators(pastaSaida())});
 		return;
 	}
 #ifdef Q_OS_WIN
 	QProcess p;
-	p.setProgram(QStringLiteral("explorer.exe"));
+	p.setProgram(QDir::fromNativeSeparators(qEnvironmentVariable("SystemRoot", QStringLiteral("C:/Windows"))) + QStringLiteral("/explorer.exe"));
 	p.setNativeArguments(QStringLiteral("/select,\"") + QDir::toNativeSeparators(arquivo) + QStringLiteral("\""));
 	p.startDetached();
 #endif
@@ -594,4 +610,23 @@ QString IncipitEdicao::quadroDoClipe(const QString &clipe) const
 	const QFileInfo fi(clipe);
 	const QString jpg = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".jpg");
 	return QFileInfo::exists(jpg) ? QUrl::fromLocalFile(jpg).toString() : QString();
+}
+
+bool IncipitEdicao::abrirVideo(const QString &arquivo) const
+{
+	const QFileInfo fi(arquivo);
+	const QString ext = fi.suffix().toLower();
+	if(!fi.isFile() || !(ext == QStringLiteral("mp4") || ext == QStringLiteral("mkv") || ext == QStringLiteral("mov"))
+		|| !dentroDe(arquivo, ClipRecorder::instance()->clipsDir()))
+		return false;
+	return QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
+}
+
+bool IncipitEdicao::abrirPasta(const QString &pasta) const
+{
+	const QFileInfo fi(pasta);
+	const QString raiz = QDir(ClipRecorder::instance()->clipsDir()).canonicalPath();
+	if(!fi.isDir() || (fi.canonicalFilePath().compare(raiz, Qt::CaseInsensitive) != 0 && !dentroDe(pasta, raiz)))
+		return false;
+	return QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
 }

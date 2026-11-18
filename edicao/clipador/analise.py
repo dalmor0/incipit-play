@@ -12,7 +12,8 @@ def audio(clipe, meta):
     if not meta["audio"]:
         return np.zeros(int(meta["duracao"] * SR), dtype=np.float32)
     filtro = audio_de(0, meta.get("faixas", 1)) + "aformat=channel_layouts=mono,aresample=16000[a]"
-    p = abrir([*entrada(clipe), "-filter_complex", filtro, "-map", "[a]", "-f", "f32le", "-"])
+    # lê só o que o cabeçalho diz (+1 s): arquivo que mente a duração não come a memória (achado M1)
+    p = abrir([*entrada(clipe, duracao=meta["duracao"] + 1), "-filter_complex", filtro, "-map", "[a]", "-f", "f32le", "-"])
     dados, err = p.communicate()
     if p.returncode != 0 and not dados:
         raise Falha("Não consegui ler o áudio do clipe.", err.decode("utf-8", "replace")[-400:])
@@ -35,7 +36,7 @@ W_MOV, H_MOV, FPS_MOV = 96, 54, 10
 
 def movimento(clipe, meta, cancelado=lambda: False):
     """Quadros pequenos em cinza a 10 fps: energia de movimento por quadro e por coluna."""
-    p = abrir([*entrada(clipe), "-an", "-vf", f"fps={FPS_MOV},scale={W_MOV}:{H_MOV}:flags=area,format=gray",
+    p = abrir([*entrada(clipe, duracao=meta["duracao"] + 1), "-an", "-vf", f"fps={FPS_MOV},scale={W_MOV}:{H_MOV}:flags=area,format=gray",
                "-f", "rawvideo", "-"])
     tam = W_MOV * H_MOV
     quadros = []

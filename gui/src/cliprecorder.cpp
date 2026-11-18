@@ -758,7 +758,8 @@ QVariantList ClipRecorder::library() const
 	if(!session_dir.isEmpty())
 		juntar(QFileInfo(session_dir), true);
 	for(const QFileInfo &p : pastas)
-		if(QDir(p.absoluteFilePath()) != QDir(session_dir))
+		// "Editados" é a saída da edição automática (IncipitEdicao), não uma transmissão
+		if(QDir(p.absoluteFilePath()) != QDir(session_dir) && p.fileName().compare(QStringLiteral("Editados"), Qt::CaseInsensitive) != 0)
 			juntar(p, false);
 	// clipes soltos na raiz (versão antiga ou copiados à mão)
 	QVariantList soltos;

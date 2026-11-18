@@ -132,10 +132,16 @@ def medir_volume(clipe, a, dur, cwd, faixas=1):
                           audio_de(0, faixas) + "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json[a]",
                           "-map", "[a]", "-f", "null", "-"], cwd=cwd)
     try:
-        js = err[err.rindex("{"):err.rindex("}") + 1]
-        return json.loads(js)
-    except ValueError:
+        js = json.loads(err[err.rindex("{"):err.rindex("}") + 1])
+        campos = ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")
+        med = {k: float(js[k]) for k in campos}
+    except (ValueError, KeyError, TypeError):
         return None
+    import math
+    # áudio mudo mede -inf: sem medida, sem loudnorm (achado B1); só número de verdade entra no filtro (B6)
+    if not all(math.isfinite(v) for v in med.values()) or med["input_i"] < -70:
+        return None
+    return {k: f"{v:.2f}" for k, v in med.items()}
 
 
 def _apagar(arq):
@@ -186,7 +192,8 @@ def render(clipe, meta, a, b, layout, camera, impactos, forca, centro_x, ass_tex
         args += entrada(clipe, a, dur)
     mus = escolher_musica(musica)
     if mus:
-        args += ["-protocol_whitelist", "file,pipe", "-stream_loop", "-1", "-i", str(mus)]
+        args += ["-protocol_whitelist", "file,pipe", "-format_whitelist", "mp3,mov,mp4,m4a,wav,ogg,flac,aac",
+                 "-stream_loop", "-1", "-i", str(mus)]
     vf = "ass=leg.ass:fontsdir=f,format=yuv420p"
     voz_in = audio_de(1, meta.get("faixas", 1))
     if meta["audio"] and mus:

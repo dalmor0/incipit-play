@@ -36,7 +36,8 @@ def _ts(t):
 
 def _esc(t):
     """Texto da pessoa ou da fala não pode virar comando de ASS."""
-    return t.replace("\\", "／").replace("{", "(").replace("}", ")").replace("\n", " ")
+    t = "".join(c if c.isprintable() else " " for c in t)   # \r, \n e controle viram espaço (achado B2)
+    return t.replace("\\", "／").replace("{", "(").replace("}", ")")
 
 
 def _censura(p):

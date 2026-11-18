@@ -19,12 +19,18 @@ T.Dialog {
     x: Math.round((root.width - width) / 2)
     y: Math.max(16, Math.round((root.height - height) / 2))
     width: Math.min(640, root.width - 48)
-    height: Math.min(implicitHeight, root.height - 32)
+    height: Math.min(corpo.implicitHeight + topPadding + bottomPadding, root.height - 32)
     padding: 28
     topPadding: 24
     modal: true
+    dim: true
     focus: true
-    onOpened: { pedido.text = ""; pedido.forceActiveFocus(); }
+    property string ultimoClipe: ""
+    // volta da marcação da câmera com o texto que a pessoa já escreveu; clipe novo começa em branco
+    onOpened: {
+        if (clipe.caminho !== ultimoClipe) { pedido.text = ""; ultimoClipe = clipe.caminho || ""; }
+        pedido.forceActiveFocus();
+    }
 
     readonly property var layouts: [
         { id: "auto", nome: root.t("Automático") },
@@ -33,7 +39,7 @@ T.Dialog {
         { id: "desfocado", nome: root.t("Jogo inteiro, fundo desfocado") }
     ]
     readonly property var estilos: [
-        { id: "creme", nome: root.t("Creme, palavra por palavra (padrão)") },
+        { id: "creme", nome: root.t("Creme, palavra por palavra") },
         { id: "amarela", nome: root.t("Amarela, uma palavra por vez") },
         { id: "destaque", nome: root.t("Branca com a palavra dita em azul") },
         { id: "limpa", nome: root.t("Simples, frase inteira") },
@@ -183,7 +189,7 @@ T.Dialog {
                     tipo: "pequeno"
                     text: d.cfg.camera.length === 4 ? root.t("Sua câmera está marcada. O Play também procura sozinho.") : root.t("O Play procura sua câmera sozinho. Se errar, marque onde ela fica.")
                 }
-                InBotao { compacto: true; text: d.cfg.camera.length === 4 ? root.t("Mudar câmera") : root.t("Marcar câmera"); icone: "video"; onClicked: d.marcarCamera(d.clipe) }
+                InBotao { compacto: true; text: d.cfg.camera.length === 4 ? root.t("Mudar câmera") : root.t("Marcar câmera"); icone: "video"; onClicked: { d.close(); d.marcarCamera(d.clipe); } }
             }
 
             InTexto {

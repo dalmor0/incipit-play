@@ -56,6 +56,10 @@ public:
 	Q_INVOKABLE QString editadoDe(const QString &clipe) const;   // o editado mais novo de um clipe, ou vazio
 	Q_INVOKABLE bool apagarEditado(const QString &arquivo);      // vai pra Lixeira
 	Q_INVOKABLE QString quadroDoClipe(const QString &clipe) const; // miniatura 16:9 do clipe (pra marcar a câmera)
+	// abrir vídeo e pasta sempre por aqui (QUrl::fromLocalFile), nunca colando "file:///" + nome no QML: um nome
+	// de arquivo com %5C e %00 virava outro caminho e o Windows abria outro programa (achado A1 da segurança)
+	Q_INVOKABLE bool abrirVideo(const QString &arquivo) const;
+	Q_INVOKABLE bool abrirPasta(const QString &pasta) const;
 
 signals:
 	void mudou();

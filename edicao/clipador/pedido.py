@@ -196,7 +196,7 @@ def ler(texto):
     else:
         if re.search(r"legenda\s+amarel|\bamarel", n):
             plano["estilo"] = "amarela"
-        elif re.search(r"legenda\s+(azul|colorida)|\bdestac", n):
+        elif re.search(r"legenda\s+(azul|colorida)|\bdestaq|\bdestac", n):
             plano["estilo"] = "destaque"
         elif re.search(r"legenda\s+(branca|simples|limpa|normal|discreta|pequena)", n):
             plano["estilo"] = "limpa"

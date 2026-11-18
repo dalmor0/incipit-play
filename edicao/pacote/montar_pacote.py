@@ -20,9 +20,9 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-VERSAO = "1.0.0"
-PY = ("https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip", None)
-FFMPEG = ("https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip", None)
+VERSAO = "1.0.1"
+PY = ("https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip", "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3")
+FFMPEG = ("https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip", "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba")
 PACOTES = ["faster-whisper==1.2.1", "ctranslate2==4.8.2", "onnxruntime==1.30.0", "tokenizers==0.23.2",
            "opencv-python-headless==5.0.0.93", "numpy==2.5.3", "tqdm==4.70.1", "colorama", "pyyaml",
            "flatbuffers", "packaging", "protobuf"]
@@ -39,12 +39,16 @@ def sha(p):
     return h.hexdigest()
 
 
-def baixar(url, destino):
+def baixar(url, destino, esperado):
     if not destino.exists():
         print("baixando", url)
         with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "IncipitPlay-build"})) as r, open(destino, "wb") as f:
             shutil.copyfileobj(r, f)
-    print(destino.name, sha(destino))
+    h = sha(destino)
+    print(destino.name, h)
+    if h != esperado:
+        destino.unlink()
+        raise SystemExit(f"{destino.name}: SHA-256 diferente do fixado ({h}); nada foi montado")
     return destino
 
 
@@ -56,7 +60,7 @@ def main():
         shutil.rmtree(raiz)
     raiz.mkdir()
     # Python embutido
-    pz = baixar(PY[0], trab / "python-embed.zip")
+    pz = baixar(PY[0], trab / "python-embed.zip", PY[1])
     with zipfile.ZipFile(pz) as z:
         z.extractall(raiz / "python")
     (raiz / "python" / "python312._pth").write_text("python312.zip\n.\n..\n..\\site-packages\n", encoding="ascii")
@@ -66,13 +70,13 @@ def main():
                            "--platform", "win_amd64", "--python-version", "3.12", "--implementation", "cp",
                            "--target", str(raiz / "site-packages"), *PACOTES], env=env)
     for nome in os.listdir(raiz / "site-packages"):
-        base = nome.split("-")[0].lower()
+        base = nome.split("-")[0].lower().removesuffix(".libs")   # "av.libs" (as DLL do PyAV) sai junto
         if base in FORA or base.replace("_", "-") in FORA:
             p = raiz / "site-packages" / nome
             shutil.rmtree(p) if p.is_dir() else p.unlink()
     shutil.rmtree(raiz / "site-packages" / "bin", ignore_errors=True)
     # ffmpeg
-    fz = baixar(FFMPEG[0], trab / "ffmpeg-essentials.zip")
+    fz = baixar(FFMPEG[0], trab / "ffmpeg-essentials.zip", FFMPEG[1])
     (raiz / "bin").mkdir()
     with zipfile.ZipFile(fz) as z:
         for n in z.namelist():

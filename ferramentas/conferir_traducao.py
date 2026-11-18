@@ -47,7 +47,7 @@ def usados():
                 achou.setdefault(m.group(1), "clipador/" + nome)
             for m in re.finditer(r'\("[a-z]+", "([^"]+)", [0-9.]+', txt):
                 achou.setdefault(m.group(1), "clipador/" + nome)
-            for m in re.finditer(r'\{"amarela": "([^"]+)", "destaque": "([^"]+)",\s*"limpa": "([^"]+)", "gustavo": "([^"]+)"\}', txt):
+            for m in re.finditer(r'\{"amarela": "([^"]+)", "destaque": "([^"]+)",\s*"limpa": "([^"]+)", "creme": "([^"]+)"\}', txt):
                 for g in m.groups():
                     achou.setdefault(g, "clipador/" + nome)
     # nomes das cores de destaque (Tema.qml), que a tela passa por root.t(modelData.nome)

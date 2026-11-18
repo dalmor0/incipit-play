@@ -139,7 +139,7 @@ ColumnLayout {
                 color: "black"
                 Image {
                     anchors.fill: parent
-                    source: ed.res.miniatura ? "file:///" + ed.res.miniatura : ""
+                    source: ed.res.miniaturaUrl || ""
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     cache: false
@@ -150,7 +150,7 @@ ColumnLayout {
                     color: Qt.rgba(0, 0, 0, 0.6)
                     InIcone { anchors.centerIn: parent; nome: "jogar"; tamanho: 26; cor: "white" }
                 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("file:///" + ed.res.arquivo) }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Edicao.abrirVideo(ed.res.arquivo) }
                 Accessible.role: Accessible.Button
                 Accessible.name: root.t("Assistir o vídeo editado")
             }
@@ -178,13 +178,13 @@ ColumnLayout {
                     color: ed.tema.alerta
                     text: root.t(ed.res.aviso || "")
                 }
-                InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("MP4 1080x1920, H.264, áudio no volume das redes. Salvo em %1").arg(Edicao.pastaSaida()); elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
+                InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("MP4 1080x1920, H.264, áudio no volume das redes. Salvo em %1").arg(String(ed.res.arquivo || "").replace(/[\\\/][^\\\/]*$/, "")); elide: Text.ElideMiddle; wrapMode: Text.NoWrap }
                 Flow {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
                     spacing: 12
                     InBotao { tipo: "forte"; text: root.t("Abrir pasta"); icone: "externo"; onClicked: Edicao.mostrarNaPasta(ed.res.arquivo) }
-                    InBotao { text: root.t("Assistir"); icone: "jogar"; onClicked: Qt.openUrlExternally("file:///" + ed.res.arquivo) }
+                    InBotao { text: root.t("Assistir"); icone: "jogar"; onClicked: Edicao.abrirVideo(ed.res.arquivo) }
                     InBotao { text: ed.ajustando ? root.t("Fechar ajuste") : root.t("Ajustar"); icone: "engrenagem"; onClicked: ed.ajustando = !ed.ajustando }
                     InBotao { tipo: "quieto"; text: root.t("Concluir"); onClicked: Edicao.fechar() }
                 }
@@ -285,6 +285,8 @@ ColumnLayout {
                 rowSpacing: 12
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.alignment: Qt.AlignTop
                     spacing: 6
                     InTexto { text: root.t("Enquadramento"); font.weight: Font.DemiBold }
                     InEscolha {
@@ -297,6 +299,8 @@ ColumnLayout {
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.alignment: Qt.AlignTop
                     spacing: 6
                     InTexto { text: root.t("Legenda"); font.weight: Font.DemiBold }
                     InEscolha {
@@ -310,6 +314,9 @@ ColumnLayout {
                 InCampo {
                     id: titulo
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.alignment: Qt.AlignTop
+                    tamanhoFonte: 15
                     rotulo: root.t("Título na tela")
                     placeholderText: root.t("Opcional")
                     maximumLength: 60
@@ -318,7 +325,7 @@ ColumnLayout {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
-                InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: root.t("Refazer usa a fala já lida: sai bem mais rápido.") }
+                InTexto { Layout.fillWidth: true; Layout.maximumWidth: Number.POSITIVE_INFINITY; tipo: "pequeno"; text: root.t("Refazer usa a fala já lida: sai bem mais rápido.") }
                 InBotao {
                     tipo: "forte"
                     text: root.t("Refazer")
@@ -378,13 +385,13 @@ ColumnLayout {
                             Layout.margins: 1
                             color: "black"
                             Image { anchors.fill: parent; source: ce.modelData.miniatura || ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 360; cache: false }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("file:///" + ce.modelData.arquivo) }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Edicao.abrirVideo(ce.modelData.arquivo) }
                         }
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.margins: 8
                             spacing: 4
-                            InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: Math.round(ce.modelData.duracao || 0) + " s · " + Qt.formatDateTime(ce.modelData.criado, "dd/MM HH:mm"); wrapMode: Text.NoWrap; elide: Text.ElideRight }
+                            InTexto { Layout.fillWidth: true; tipo: "pequeno"; text: Math.round(ce.modelData.duracao || 0) + " s · " + Qt.formatDateTime(ce.modelData.criado, "HH:mm"); wrapMode: Text.NoWrap; elide: Text.ElideRight }
                             InBotao {
                                 compacto: true; tipo: "quieto"; icone: "externo"
                                 Accessible.name: root.t("Mostrar na pasta")
