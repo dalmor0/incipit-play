@@ -229,6 +229,11 @@ def ponta_no_vao(e, t, voz, antes, depois, dur, palavras=()):
             notas.append((vao + fim_frase - 0.08 * abs(ponto - t), ponto))
         if notas:
             melhor = max(notas)[1]
+            # o tempo do Whisper erra uns 0,1 s: confere na energia e fica no ponto mais baixo a até 0,15 s
+            c, r = int(melhor * 100), 15
+            lo, hi = max(0, c - r), min(len(e), c + r + 1)
+            if hi > lo:
+                melhor = (lo + int(np.argmin(e[lo:hi]))) / 100.0
         else:
             for w in palavras:
                 if w["i"] < t < w["f"]:

@@ -155,14 +155,19 @@ def _apagar(arq):
             time.sleep(0.25)
 
 
-def filtros_de_audio(medida, censurados):
+def filtros_de_audio(medida, censurados, dur=None):
     af = []
     for i, f in censurados:
         af.append(f"volume=enable='between(t,{i:.2f},{f:.2f})':volume=0")
     if medida:
         af.append("loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={input_i}:measured_TP={input_tp}:measured_LRA={input_lra}:"
                   "measured_thresh={input_thresh}:offset={target_offset}:linear=true".format(**medida))
-    af.append("alimiter=limit=0.84:level=false:attack=5:release=50")   # pico real abaixo de -1,5 dB sempre
+    # entrada e saída em 30 ms: o primeiro som cortado no meio passava do limitador (+0,3 dBTP no react)
+    af.append("afade=t=in:d=0.03")
+    if dur:
+        af.append(f"afade=t=out:st={max(0.0, dur - 0.03):.3f}:d=0.03")
+    # 0,78 (-2,2 dB) na amostra deixa folga pro pico entre amostras: pico real abaixo de -1,0 dB
+    af.append("alimiter=limit=0.78:level=false:attack=3:release=50")
     af.append("aresample=48000")
     return af
 
@@ -172,7 +177,7 @@ def audio_final(clipe, meta, a, dur, medida, censurados, cwd):
     se alinha (o detector de voz muda com o nível e a compressão)."""
     if not meta["audio"]:
         return None
-    af = filtros_de_audio(medida, censurados)
+    af = filtros_de_audio(medida, censurados, dur)
     p = abrir([*entrada(clipe, a, dur), "-filter_complex",
                audio_de(0, meta.get("faixas", 1)) + ",".join(af) + ",aformat=channel_layouts=mono,aresample=16000[a]",
                "-map", "[a]", "-f", "f32le", "-"], cwd=cwd)
@@ -205,7 +210,7 @@ def render(clipe, meta, a, b, layout, camera, impactos, forca, centro_x, ass_tex
 
     if medida is False:
         medida = medir_volume(clipe, a, dur, trabalho, meta.get("faixas", 1)) if meta["audio"] else None
-    af = filtros_de_audio(medida, censurados)
+    af = filtros_de_audio(medida, censurados, dur)
 
     args = ["-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{LARG}x{ALT}", "-r", str(FPS), "-i", "-"]
     if meta["audio"]:

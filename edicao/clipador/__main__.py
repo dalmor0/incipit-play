@@ -2,7 +2,7 @@
 
   python -I -m clipador editar --clipe C --saida PASTA [--pedido TEXTO] [--layout auto|camera|centro|desfocado]
          [--estilo creme|amarela|destaque|limpa] [--camera x,y,w,h] [--inicio S --fim S] [--titulo T]
-         [--sem-legenda] [--zoom 0|0.5|1|2] [--musica PASTA] [--idioma pt|auto] [--modelo medium|small|base]
+         [--sem-legenda] [--zoom 0|0.5|1|2] [--musica PASTA] [--idioma pt|auto] [--modelo medium|small|base|large-v3]
   python -I -m clipador pedido "texto"      mostra o que o leitor entendeu (teste)
 
 A saída é uma linha JSON por evento (ver base.py). Tudo roda neste PC.
@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada, em Segurança do Windows > Controle de aplicativos e do navegador. Leia o aviso do Windows antes: em algumas versões ela só liga de novo reinstalando o Windows.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.10"
+VERSAO = "1.0.11"
 _cancelar = {"v": False}
 
 
@@ -302,7 +302,7 @@ def main(argv=None):
     e.add_argument("--zoom", type=float, default=None, choices=[0.0, 0.5, 1.0, 2.0])
     e.add_argument("--musica", default=None)
     e.add_argument("--idioma", default="pt")
-    e.add_argument("--modelo", default="medium", choices=["medium", "small", "base"])
+    e.add_argument("--modelo", default="medium", choices=["medium", "small", "base", "large-v3"])
     sub.add_parser("versao")
     t = sub.add_parser("pedido")
     t.add_argument("texto")
