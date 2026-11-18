@@ -155,6 +155,18 @@ def _aparar_parado(a, b, s, palavras, folga=1.0):
     return a, b
 
 
+def ajustar_pontas_na_voz(a, b, voz, dur):
+    """Começo e fim do trecho fora do meio de uma fala (pela voz detectada, não só pelas palavras transcritas:
+    quando a palavra some da transcrição, a fronteira dela some junto)."""
+    # só estende: o começo volta até o começo da fala, o fim avança até o fim dela (fala longa demais: fica como está)
+    for r0, r1 in voz:
+        if r0 + 0.05 < a < r1 - 0.05 and a - r0 <= 2.5:
+            a = r0 - 0.1
+        if r0 + 0.05 < b < r1 - 0.05 and r1 - b <= 3.0:
+            b = r1 + 0.3
+    return round(max(0.0, a), 2), round(min(dur, b), 2)
+
+
 def escolher(dur, s, palavras, plano, com_camera=False):
     """Devolve (inicio, fim) em segundos."""
     if plano.get("trecho"):
@@ -175,7 +187,7 @@ def escolher(dur, s, palavras, plano, com_camera=False):
         if tem_foco or tem_tipo:
             alvo = 15.0
         elif 20 < dur <= 40:
-            alvo, janela_curta = 18.0, True     # clipe de 20 a 40 s: o lance costuma estar em 15 a 20 s dele
+            alvo, janela_curta = 14.0, True     # clipe de 20 a 40 s: o lance com o antes e o depois cabe em uns 14 s
         else:
             alvo = dur if dur <= 40 else 30
     alvo = float(min(alvo, dur))

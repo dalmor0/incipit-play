@@ -172,45 +172,53 @@ def regioes_de_voz(x):
 
 
 def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
-    """O Whisper marca a primeira palavra depois de silêncio cedo demais (até 1 s antes, medido nas conferências):
-    a legenda aparecia com a tela em silêncio. O começo de cada fala vai pro começo do pedaço de voz (VAD) em que ela
-    cai; se cair no silêncio, vai pro próximo pedaço de voz (até 1,5 s depois)."""
+    """O Whisper marca o começo de uma frase depois de silêncio cedo demais (até 1 s antes, medido nas
+    conferências): a legenda aparecia com a tela em silêncio. Cada FRASE (palavras separadas por pausa de 0,3 s) anda
+    inteira, sem mudar a ordem: o começo dela vai pro começo do pedaço de voz (VAD do áudio do trecho como sai no
+    vídeo) em que ela cai, ou pro próximo pedaço de voz se cair no silêncio (até 1,5 s); sem voz perto, a frase é
+    invenção do Whisper e sai."""
     if not palavras or len(x) < SR:
         return palavras
-    # VAD no TRECHO que vai pro vídeo (o mesmo áudio que a pessoa ouve); no clipe inteiro ele marca diferente
     fim = len(x) / SR if fim is None else fim
-    # de preferência o áudio do trecho como vai sair (nivelado e limitado): o detector de voz muda com o nível
     trecho = trecho_pronto if trecho_pronto is not None else np.asarray(x[int(ini * SR):int(fim * SR)], dtype=np.float32)
-    voz = [(a + ini, b + ini) for a, b in regioes_de_voz(trecho)]
+    voz = [(r0 + ini, r1 + ini) for r0, r1 in regioes_de_voz(trecho)]
     if not voz:
         return palavras
+    ordem = sorted((dict(w) for w in palavras), key=lambda w: w["i"])
+    # frases
+    frases, atual = [], []
+    for w in ordem:
+        if atual and w["i"] - atual[-1]["f"] >= 0.3:
+            frases.append(atual)
+            atual = []
+        atual.append(w)
+    if atual:
+        frases.append(atual)
     out = []
-    antes = -1.0
-    for w in palavras:
-        w = dict(w)
-        if ini <= w["i"] < fim and not any(r[0] - 0.05 <= w["i"] < r[1] for r in voz):
-            # começa no silêncio: vai pro começo da próxima fala; sem fala perto, o Whisper inventou e sai
-            prox = [r for r in voz if w["i"] < r[0] <= w["i"] + 1.5 and r[0] >= antes - 0.01]
+    fim_ant = -1.0
+    for fr in frases:
+        c0 = fr[0]["i"]
+        if not (ini <= c0 < fim):
+            out.extend(fr)
+            fim_ant = fr[-1]["f"]
+            continue
+        dentro = [r for r in voz if r[0] - 0.05 <= c0 < r[1]]
+        if dentro:
+            comeco = dentro[0][0] if c0 - dentro[0][0] <= 0.6 else c0
+        else:
+            prox = [r for r in voz if c0 < r[0] <= c0 + 1.5]
             if not prox:
-                continue
-            dur = min(w["f"] - w["i"], 0.8)
-            w["i"], w["f"] = round(prox[0][0] + 0.03, 3), round(prox[0][0] + 0.03 + dur, 3)
-        if w["i"] - antes >= 0.3:
-            dentro = [r for r in voz if r[0] - 0.05 <= w["i"] < r[1]]
-            if dentro:
-                ini = dentro[0][0]
-                # começo do pedaço de voz bem antes da palavra é outra fala (ou o próprio barulho): fica a do Whisper
-                if w["i"] - ini > 0.6:
-                    ini = w["i"]
+                # frase toda no silêncio: o Whisper inventou
+                if not any(r[0] < fr[-1]["f"] and fr[0]["i"] < r[1] for r in voz):
+                    continue
+                comeco = c0 + 0.1
             else:
-                prox = [r for r in voz if w["i"] < r[0] <= w["i"] + 1.5]
-                ini = prox[0][0] + 0.03 if prox else w["i"] + 0.1
-            novo = max(ini, w["i"] - 0.05)
-            if novo < w["f"] - 0.05:
-                w["i"] = round(novo, 3)
-            elif novo < w["f"] + 1.0:
-                dur = w["f"] - w["i"]
-                w["i"], w["f"] = round(novo, 3), round(novo + dur, 3)
-        antes = w["f"]
-        out.append(w)
+                comeco = prox[0][0] + 0.03
+        comeco = max(comeco, c0 - 0.05, fim_ant + 0.02)
+        delta = comeco - c0
+        for w in fr:
+            w["i"] = round(w["i"] + delta, 3)
+            w["f"] = round(w["f"] + delta, 3)
+        out.extend(fr)
+        fim_ant = fr[-1]["f"]
     return out

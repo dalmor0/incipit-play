@@ -379,7 +379,7 @@ def refinar(palavras, ini, fim, cancelado=lambda: False):
             break
         i, f = i + ini, f + ini
         velhas = [w for w in saida if w["f"] > i and w["i"] < f]
-        novas = _transcrever_pedaco(modelo, audio, i, f, _ESTADO["idioma"], _ESTADO["prompt"])
+        novas = _transcrever_pedaco(modelo, audio, i, f, _ESTADO["idioma"], None)
         if not novas:
             continue
         # fica a leitura que ouviu mais fala no pedaço (a primeira passada pula a voz por cima de outra voz);
