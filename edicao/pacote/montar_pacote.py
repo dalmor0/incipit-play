@@ -20,7 +20,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-VERSAO = "1.0.4"
+VERSAO = "1.0.5"
 PY = ("https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip", "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3")
 FFMPEG = ("https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip", "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba")
 PACOTES = ["faster-whisper==1.2.1", "ctranslate2==4.8.2", "onnxruntime==1.30.0", "tokenizers==0.23.2",

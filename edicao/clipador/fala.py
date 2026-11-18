@@ -262,6 +262,17 @@ def limpar(palavras):
             else:
                 i += 1
     out = [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+    # mesma frase de 3+ palavras duas vezes em sequência, a segunda começando em até 0,5 s do fim da primeira e com
+    # tempos sobrepostos ou quase: é emenda de passadas, não fala repetida
+    norm2 = [re.sub(r"[^\w]", "", w["p"].lower()) for w in out]
+    tirar = set()
+    for n in range(6, 2, -1):
+        for i in range(len(out) - 2 * n + 1):
+            if any(k in tirar for k in range(i, i + 2 * n)):
+                continue
+            if norm2[i:i + n] == norm2[i + n:i + 2 * n] and out[i + n]["i"] - out[i + n - 1]["f"] < 0.15 and out[i + n]["i"] < out[i]["i"] + 0.3 + (out[i + n - 1]["f"] - out[i]["i"]) * 0.5:
+                tirar.update(range(i + n, i + 2 * n))
+    out = [w for k, w in enumerate(out) if k not in tirar]
     # a mesma palavra duas vezes começando a menos de 0,3 s uma da outra é a mesma fala lida duas vezes
     limpo = []
     for w in out:
@@ -332,6 +343,7 @@ def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None], prompt_ref=[N
     except Exception:
         return palavras
     saida = list(palavras)
+    usados = [0]
     for i, f in regioes:
         if cancelado():
             break
@@ -339,6 +351,9 @@ def buracos(modelo, palavras, idioma, cancelado, audio_ref=[None], prompt_ref=[N
         marcos = [i] + [x for w in dentro for x in (w["i"], w["f"])] + [f]
         vaos = [(marcos[k], marcos[k + 1]) for k in range(0, len(marcos) - 1, 2) if marcos[k + 1] - marcos[k] > 0.8]
         for vi, vf in vaos:
+            usados[0] += 1
+            if usados[0] > 40:      # clipe longo: no máximo 40 releituras (tempo de CPU)
+                break
             novas = _transcrever_pedaco(modelo, audio, vi, vf, idioma, prompt_ref[0] or PROMPT.get(idioma))
             novas = [w for w in novas if w["i"] >= vi - 0.1 and w["f"] <= vf + 0.1]
             if novas:
@@ -477,6 +492,17 @@ def limpar(palavras):
             else:
                 i += 1
     out = [w for k, w in enumerate(palavras) if k not in fora and w["prob"] >= 0.08]
+    # mesma frase de 3+ palavras duas vezes em sequência, a segunda começando em até 0,5 s do fim da primeira e com
+    # tempos sobrepostos ou quase: é emenda de passadas, não fala repetida
+    norm2 = [re.sub(r"[^\w]", "", w["p"].lower()) for w in out]
+    tirar = set()
+    for n in range(6, 2, -1):
+        for i in range(len(out) - 2 * n + 1):
+            if any(k in tirar for k in range(i, i + 2 * n)):
+                continue
+            if norm2[i:i + n] == norm2[i + n:i + 2 * n] and out[i + n]["i"] - out[i + n - 1]["f"] < 0.15 and out[i + n]["i"] < out[i]["i"] + 0.3 + (out[i + n - 1]["f"] - out[i]["i"]) * 0.5:
+                tirar.update(range(i + n, i + 2 * n))
+    out = [w for k, w in enumerate(out) if k not in tirar]
     # a mesma palavra duas vezes começando a menos de 0,3 s uma da outra é a mesma fala lida duas vezes
     limpo = []
     for w in out:

@@ -234,7 +234,7 @@ def escolher(dur, s, palavras, plano, com_camera=False):
         seguinte = [w for w in palavras if b - 0.5 <= w["i"] <= b + 8.0]
         fim_fala = b
         for w in sorted(seguinte, key=lambda w: w["i"]):
-            if w["i"] - fim_fala > 1.0:
+            if w["i"] - fim_fala > 1.5:
                 break
             fim_fala = max(fim_fala, w["f"])
         if fim_fala > b:
@@ -263,6 +263,11 @@ def escolher(dur, s, palavras, plano, com_camera=False):
         lim = a + plano["duracao"]
         fechos = [x for x in fins if lim - 3.0 <= x <= lim + 3.0]
         b = round(min(dur, (min(fechos, key=lambda x: abs(x - lim)) + 0.4) if fechos else lim + 1.0), 2)
+    if plano.get("duracao") and b - a < plano["duracao"] - 3 and dur >= plano["duracao"]:
+        falta = plano["duracao"] - (b - a)
+        b = min(dur, b + falta)
+        if b - a < plano["duracao"] - 3:
+            a = max(0.0, b - plano["duracao"])
     a, b = _aparar_parado(a, b, s, palavras)
     # clipe curto inteiro: tira só o silêncio parado das pontas
     if not plano.get("duracao") and dur <= 40 and a == 0 and b == dur:
@@ -283,7 +288,8 @@ def impactos(a, b, s, plano, com_camera=False):
         return []
     if com_camera:
         # com câmera: só a voz dele (grito já filtrado pela reação), a risada e o rosto que reage
-        imp = 1.4 * s["grito"] + 1.6 * s["riso"] + 0.9 * s["reacao"]
+        # reação só conta forte (rosto que se mexe muito); risada dele sempre
+        imp = 1.2 * s["grito"] + 1.8 * s["riso"] + 0.9 * np.clip(s["reacao"] - 1.0, 0, 6)
     else:
         imp = 1.4 * s["grito"] + 1.4 * s["riso"] + 1.5 * s["lance"] + 0.3 * s["vol"]
     imp = imp * (1 - s["parado"])
@@ -299,7 +305,7 @@ def impactos(a, b, s, plano, com_camera=False):
     for i in ordem:
         if seg[i] < limiar or len(pegos) >= maximo:
             break
-        if i * PASSO < 0.6 or i * PASSO > (b - a) - 0.8:
+        if i * PASSO < 1.5 or i * PASSO > (b - a) - 0.8:
             continue
         if all(abs(i - j) >= vao for j, _ in pegos):
             pegos.append((i, float(seg[i])))

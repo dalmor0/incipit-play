@@ -68,6 +68,26 @@ def legenda_no_tempo(v, js):
     if not info.get("legenda") or not info.get("palavras_na_legenda"):
         return None
     if info.get("legendas"):
+        # começo de fala pelo VAD do áudio MONTADO (Silero), o mesmo que um ouvido usaria
+        from clipador import analise as an
+        r = subprocess.run(["ffmpeg", "-v", "error", "-i", v, "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "-"], capture_output=True)
+        x = np.frombuffer(r.stdout, np.float32)
+        voz = an.regioes_de_voz(x)
+        # de cada começo de fala (depois de 0,4 s de silêncio) até a legenda que entra ali
+        inis = [b[0] for b in info["legendas"]]
+        difs = []
+        fim_ant = -9
+        for rv in voz:
+            if rv[0] - fim_ant >= 0.4 and rv[0] > 0.3:
+                perto = [t for t in inis if abs(t - rv[0]) <= 0.8]
+                if perto:
+                    difs.append(round(min(perto, key=lambda t: abs(t - rv[0])) - rv[0], 3))
+            fim_ant = rv[1]
+        if difs:
+            d = np.array(difs)
+            return {"medida": "VAD", "blocos_medidos": len(d), "atraso_mediano_s": round(float(np.median(d)), 3),
+                    "maior_adiantado_s": round(float(d.min()), 3), "maior_atrasado_s": round(float(d.max()), 3),
+                    "dentro_de_0_10s": int((np.abs(d) <= 0.10).sum())}
         # o que foi pro vídeo: começo de cada bloco e o fim do bloco anterior (aproximado pelo começo do próximo)
         blocos_t = [b[0] for b in info["legendas"]]
         db = onsets(v)

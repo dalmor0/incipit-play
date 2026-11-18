@@ -23,7 +23,7 @@ except ImportError as _e:   # DLL barrada pelo Windows (Smart App Control) ou pa
     avisar("erro", motivo="O Windows bloqueou uma parte do editor (Controle Inteligente de Aplicativos). Enquanto o editor não tem assinatura, ele só roda com essa proteção desligada.", detalhe=repr(_e))
     sys.exit(3)
 
-VERSAO = "1.0.4"
+VERSAO = "1.0.5"
 _cancelar = {"v": False}
 
 
@@ -238,15 +238,15 @@ def editar(a):
                                       prompt=_f.prompt_do_jogo(a.idioma, clipe.stem, assunto_do_nome(clipe)))
                 except Exception:
                     pass
-            and_.etapa("momento", 0.5, "Conferindo a fala do trecho")
-            palavras = _f.refinar(palavras, ini, fim, cancelado)
-        palavras = analise.alinhar_falas(palavras, aud)
+        cens = legenda.trechos_censurados(palavras, ini, fim) if plano["censura"] else []
+        medida = render.medir_volume(clipe, ini, fim - ini, trabalho, meta.get("faixas", 1)) if meta["audio"] else None
+        pronto_aud = render.audio_final(clipe, meta, ini, fim - ini, medida, cens, trabalho) if palavras else None
+        palavras = analise.alinhar_falas(palavras, aud, ini, fim, pronto_aud)
         cx = render.seguir_acao(mov.get("col_t"), analise.FPS_MOV, ini, fim,
                                 render.SH * render.LARG / (render.ALT - (render.CAM_ALT if lay == "camera" else 0)))
 
         ass, n_pal = legenda.montar(palavras if plano["legenda"] else [], ini, fim, plano["estilo"], plano["maiuscula"],
                                     plano["censura"], plano["titulo"], lay)
-        cens = legenda.trechos_censurados(palavras, ini, fim) if plano["censura"] else []
         # o começo de cada bloco de legenda que foi pro vídeo (conferência: legenda no tempo da voz)
         blocos_leg = []
         if plano["legenda"]:
@@ -257,7 +257,7 @@ def editar(a):
         and_.etapa("montar")
         info = render.render(clipe, meta, ini, fim, lay, caixa if lay == "camera" else None, imp, plano["zoom"], cx, ass,
                              cens, a.musica if plano["musica"] else None, destino,
-                             lambda f: and_.etapa("montar", f), cancelado, trabalho)
+                             lambda f: and_.etapa("montar", f), cancelado, trabalho, medida)
         and_.etapa("fim")
         resumo = {
             "arquivo": str(destino), "miniatura": str(destino.with_suffix(".jpg")), "origem": str(clipe),

@@ -162,31 +162,50 @@ def onda(db, pontos=240):
     return [round(float(x), 3) for x in v]
 
 
-def alinhar_falas(palavras, x):
-    """Começo de fala depois de silêncio vai pra subida real da voz LOGO DEPOIS do que o Whisper marcou (nunca mais
-    de 0,05 s antes); sem subida achada, 0,08 s depois. As conferências mediram a legenda entrando antes da voz."""
+def regioes_de_voz(x):
+    """Pedaços com voz (VAD do faster-whisper, Silero), em segundos."""
+    try:
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+    except Exception:
+        return []
+    return [(r["start"] / SR, r["end"] / SR) for r in get_speech_timestamps(x, VadOptions(min_silence_duration_ms=250, speech_pad_ms=60))]
+
+
+def alinhar_falas(palavras, x, ini=0.0, fim=None, trecho_pronto=None):
+    """O Whisper marca a primeira palavra depois de silêncio cedo demais (até 1 s antes, medido nas conferências):
+    a legenda aparecia com a tela em silêncio. O começo de cada fala vai pro começo do pedaço de voz (VAD) em que ela
+    cai; se cair no silêncio, vai pro próximo pedaço de voz (até 1,5 s depois)."""
     if not palavras or len(x) < SR:
         return palavras
-    n = 160   # 10 ms
-    m = len(x) // n
-    db = 20 * np.log10(np.sqrt((x[: m * n].reshape(m, n).astype(np.float64) ** 2).mean(axis=1)) + 1e-9)
+    # VAD no TRECHO que vai pro vídeo (o mesmo áudio que a pessoa ouve); no clipe inteiro ele marca diferente
+    fim = len(x) / SR if fim is None else fim
+    # de preferência o áudio do trecho como vai sair (nivelado e limitado): o detector de voz muda com o nível
+    trecho = trecho_pronto if trecho_pronto is not None else np.asarray(x[int(ini * SR):int(fim * SR)], dtype=np.float32)
+    voz = [(a + ini, b + ini) for a, b in regioes_de_voz(trecho)]
+    if not voz:
+        return palavras
     out = []
     antes = -1.0
     for w in palavras:
         w = dict(w)
+        if ini <= w["i"] < fim and not any(r[0] - 0.1 < w["f"] and w["i"] < r[1] + 0.1 for r in voz):
+            continue    # palavra inteira no silêncio: o Whisper inventou (o terceiro "Pegou?")
         if w["i"] - antes >= 0.3:
-            i0 = int(w["i"] * 100)
-            lo, hi = max(0, i0 - 5), min(len(db) - 1, i0 + 40)
-            base = db[max(0, i0 - 60):max(1, i0 - 10)]
-            novo = None
-            if hi > lo and len(base):
-                chao = np.percentile(base, 30)
-                sobe = np.where(db[lo:hi] > chao + 10)[0]
-                if len(sobe):
-                    novo = (lo + sobe[0]) / 100
-            if novo is None:
-                novo = w["i"] + 0.08
-            w["i"] = round(min(max(novo, w["i"] - 0.05), w["f"] - 0.05), 3)
+            dentro = [r for r in voz if r[0] - 0.05 <= w["i"] < r[1]]
+            if dentro:
+                ini = dentro[0][0]
+                # começo do pedaço de voz bem antes da palavra é outra fala (ou o próprio barulho): fica a do Whisper
+                if w["i"] - ini > 0.6:
+                    ini = w["i"]
+            else:
+                prox = [r for r in voz if w["i"] < r[0] <= w["i"] + 1.5]
+                ini = prox[0][0] + 0.03 if prox else w["i"] + 0.1
+            novo = max(ini, w["i"] - 0.05)
+            if novo < w["f"] - 0.05:
+                w["i"] = round(novo, 3)
+            elif novo < w["f"] + 1.0:
+                dur = w["f"] - w["i"]
+                w["i"], w["f"] = round(novo, 3), round(novo + dur, 3)
         antes = w["f"]
         out.append(w)
     return out
