@@ -390,7 +390,9 @@ ColumnLayout {
                 delegate: Rectangle {
                     id: ce
                     required property var modelData
-                    width: 212
+                    // os cartões enchem a linha inteira (sem sobra de 72 px no fim)
+                    readonly property int nCartoes: Math.max(1, Math.floor((ed.largura + 16) / 228))
+                    width: Math.floor((ed.largura - 16 * (nCartoes - 1)) / nCartoes)
                     height: colE.implicitHeight
                     color: ed.tema.sup
                     border.width: 1
