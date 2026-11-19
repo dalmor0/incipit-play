@@ -82,8 +82,9 @@ InPagina {
         spacing: 16
 
         InCartao {
-            border.width: root.psnRecemConectada ? 2 : 1
-            border.color: root.psnRecemConectada ? root.tema.ok : root.tema.linha
+            // sem borda como os outros cartões; logo depois de conectar, um fio verde por uns segundos
+            border.width: root.psnRecemConectada ? 2 : 0
+            border.color: root.tema.ok
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
