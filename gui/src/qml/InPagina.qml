@@ -65,6 +65,7 @@ Item {
                 Item { visible: !parent.estreito; Layout.fillWidth: true; Layout.minimumWidth: 0 }
                 Row {
                     id: acoesRow
+                    visible: children.length > 0
                     Layout.alignment: parent.estreito ? (Qt.AlignTop | Qt.AlignLeft) : (Qt.AlignTop | Qt.AlignRight)
                     Layout.topMargin: parent.estreito ? 0 : 6
                     spacing: 12

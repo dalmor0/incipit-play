@@ -30,7 +30,7 @@ T.AbstractButton {
         Row {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
-            x: 14 - o.leftPadding
+            x: (o.caixa ? 0 : 14) - o.leftPadding   // a caixa de marcar não tem moldura: encosta na coluna dos rótulos
             spacing: 12
             Rectangle {
                 visible: o.caixa
