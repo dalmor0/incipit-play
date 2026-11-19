@@ -44,6 +44,7 @@ QtObject {
         "Cancelar": "Cancel",
         "Mandar pra Lixeira": "Move to Recycle Bin",
         "Porta": "Port",
+        "Sua câmera: o Play acha sozinho.": "Your camera: the Play finds it on its own.",
         "Mandar pra edição devolve o clipe na vertical, com legenda, pronto pro Reels, TikTok e Shorts.": "Send to editing returns the clip vertical, with captions, ready for Reels, TikTok and Shorts.",
         "Senha do WebSocket": "WebSocket password",
         "Adicionar": "Add",

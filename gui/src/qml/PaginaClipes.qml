@@ -144,7 +144,7 @@ InPagina {
             Layout.fillWidth: true
             spacing: 12
             InOpcao { Layout.alignment: Qt.AlignBottom; caixa: true; texto: root.t("Salvar no OBS também"); marcada: cl.cfg.guardado.obs; onClicked: cl.cfg.mudarObs(!cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text) }
-            InCampo { id: porta; Layout.preferredWidth: 96; numerico: true; rotulo: root.t("Porta"); placeholderText: "4455"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
+            InCampo { id: porta; Layout.fillWidth: false; Layout.preferredWidth: 96; Layout.maximumWidth: 96; numerico: true; rotulo: root.t("Porta"); placeholderText: "4455"; text: String(cl.cfg.guardado.obsPorta); validator: IntValidator { bottom: 1; top: 65535 } }
             InCampo { id: senha; Layout.preferredWidth: 240; rotulo: root.t("Senha do WebSocket"); text: Clips.obsPassword(); echoMode: TextInput.Password }
             InBotao { Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: 2; text: root.t("Testar"); onClicked: { cl.cfg.mudarObs(cl.cfg.guardado.obs, Number(porta.text) || 4455, senha.text); Clips.testObs(); } }
         }
@@ -273,13 +273,13 @@ InPagina {
                                     InBotao {
                                         tipo: "quieto"; icone: "jogar"
                                         Accessible.name: root.t("Assistir")
-                                        ToolTip.visible: hovered; ToolTip.text: root.t("Assistir")
+                                        dica: root.t("Assistir")
                                         onClicked: Edicao.abrirVideo(item.modelData.caminho)
                                     }
                                     InBotao {
                                         tipo: "quieto"; icone: "lixo"
                                         Accessible.name: root.t("Apagar clipe")
-                                        ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
+                                        dica: root.t("Apagar (vai pra Lixeira)")
                                         onClicked: root.showConfirmDialog(root.t("Apagar clipe"), root.t("Mandar este clipe pra Lixeira do Windows? Dá pra recuperar de lá."), () => Clips.trash(item.modelData.caminho), null, root.t("Mandar pra Lixeira"), true)
                                     }
                                 }

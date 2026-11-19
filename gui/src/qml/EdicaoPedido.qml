@@ -195,7 +195,7 @@ T.Dialog {
                 InTexto {
                     Layout.fillWidth: true
                     tipo: "pequeno"
-                    text: d.cfg.camera.length === 4 ? root.t("Sua câmera está marcada.") : ""
+                    text: d.cfg.camera.length === 4 ? root.t("Sua câmera está marcada.") : root.t("Sua câmera: o Play acha sozinho.")
                 }
                 InBotao { text: d.cfg.camera.length === 4 ? root.t("Mudar câmera") : root.t("Marcar câmera"); icone: "video"; onClicked: { d.close(); d.marcarCamera(d.clipe); } }
             }

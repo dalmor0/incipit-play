@@ -45,7 +45,7 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: 10
         InIcone { nome: "video"; tamanho: 18; cor: ed.tema.destaque; Layout.alignment: Qt.AlignVCenter }
-        InTexto { text: root.t("Edição automática"); font.weight: Font.DemiBold; wrapMode: Text.NoWrap; Layout.alignment: Qt.AlignVCenter }
+        InTexto { text: root.t("Edição automática"); font.weight: Font.DemiBold; wrapMode: Text.NoWrap; lineHeight: 1.0; Layout.alignment: Qt.AlignVCenter }
         // primeira versão: a escolha do trecho e a legenda ainda erram em parte dos clipes
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
@@ -62,8 +62,6 @@ ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             tipo: "pequeno"
             color: ed.tema.texto3
-            elide: Text.ElideRight
-            wrapMode: Text.NoWrap
             text: root.t("Mandar pra edição devolve o clipe na vertical, com legenda, pronto pro Reels, TikTok e Shorts.")
         }
     }
@@ -442,13 +440,13 @@ ColumnLayout {
                             InBotao {
                                 tipo: "quieto"; icone: "externo"
                                 Accessible.name: root.t("Mostrar na pasta")
-                                ToolTip.visible: hovered; ToolTip.text: root.t("Mostrar na pasta")
+                                dica: root.t("Mostrar na pasta")
                                 onClicked: Edicao.mostrarNaPasta(ce.modelData.arquivo)
                             }
                             InBotao {
                                 tipo: "quieto"; icone: "lixo"
                                 Accessible.name: root.t("Apagar vídeo editado")
-                                ToolTip.visible: hovered; ToolTip.text: root.t("Apagar (vai pra Lixeira)")
+                                dica: root.t("Apagar (vai pra Lixeira)")
                                 onClicked: root.showConfirmDialog(root.t("Apagar vídeo editado"), root.t("Mandar este vídeo editado pra Lixeira do Windows? O clipe original fica."), () => Edicao.apagarEditado(ce.modelData.arquivo), null, root.t("Mandar pra Lixeira"), true)
                             }
                         }

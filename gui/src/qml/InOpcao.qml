@@ -9,7 +9,7 @@ T.AbstractButton {
     property bool marcada: false
     property bool caixa: false          // liga e desliga (caixa de marcar à esquerda) em vez de escolha única
     readonly property var tema: root.tema
-    implicitHeight: 44
+    implicitHeight: caixa ? 48 : 44
     implicitWidth: linha.implicitWidth + 28 + 26
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
@@ -21,8 +21,8 @@ T.AbstractButton {
     Accessible.checked: marcada
 
     background: Rectangle {
-        color: o.tema.fundo
-        border.width: o.marcada && !o.caixa ? 2 : 1
+        color: o.caixa ? (o.hovered ? o.tema.sup3 : "transparent") : o.tema.fundo
+        border.width: o.caixa ? 0 : o.marcada ? 2 : 1
         border.color: o.marcada && !o.caixa ? o.tema.texto : (o.hovered ? o.tema.borda : o.tema.linha)
         Rectangle { visible: o.visualFocus; anchors.fill: parent; anchors.margins: -4; color: "transparent"; border.width: 2; border.color: o.tema.texto }
     }

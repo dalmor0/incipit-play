@@ -30,10 +30,14 @@ Item {
             width: pg.largura
             spacing: 0
 
-            RowLayout {
+            // título e apoio à esquerda, ações à direita; na janela pequena as ações descem pra baixo do apoio
+            GridLayout {
+                readonly property bool estreito: pg.largura < 900
                 Layout.fillWidth: true
                 Layout.bottomMargin: 28
-                spacing: 24
+                columns: estreito ? 1 : 3
+                columnSpacing: 24
+                rowSpacing: 16
                 ColumnLayout {
                     // encolhe quando os botões precisam do espaço (1280 e menor) e para em 720 px em tela larga
                     Layout.fillWidth: true
@@ -58,11 +62,11 @@ Item {
                         color: pg.tema.texto2
                     }
                 }
-                Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
+                Item { visible: !parent.estreito; Layout.fillWidth: true; Layout.minimumWidth: 0 }
                 Row {
                     id: acoesRow
-                    Layout.alignment: Qt.AlignTop | Qt.AlignRight
-                    Layout.topMargin: 6
+                    Layout.alignment: parent.estreito ? (Qt.AlignTop | Qt.AlignLeft) : (Qt.AlignTop | Qt.AlignRight)
+                    Layout.topMargin: parent.estreito ? 0 : 6
                     spacing: 12
                 }
             }

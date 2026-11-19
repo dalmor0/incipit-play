@@ -9,6 +9,10 @@ T.AbstractButton {
     property string tipo: "normal"
     property string icone: ""
     property bool compacto: false
+    property string dica: ""             // dica ao passar o mouse (botão só com ícone)
+    property bool dicaFora: false
+    onPressed: dicaFora = true
+    onHoveredChanged: if (!hovered) dicaFora = false
     readonly property var tema: root.tema
 
     implicitHeight: compacto ? 36 : 44
@@ -44,6 +48,22 @@ T.AbstractButton {
             border.width: 2
             border.color: b.tema.foco
         }
+    }
+
+    T.ToolTip {
+        id: balao
+        parent: b
+        visible: b.dica !== "" && b.hovered && !b.dicaFora
+        delay: 600
+        timeout: 3000
+        y: b.height + 6
+        x: Math.round((b.width - width) / 2)
+        padding: 8
+        leftPadding: 10
+        rightPadding: 10
+        text: b.dica
+        background: Rectangle { color: b.tema.sup3; border.width: 1; border.color: b.tema.linha }
+        contentItem: Text { text: balao.text; font.family: b.tema.sans; font.pixelSize: 13; color: b.tema.texto }
     }
 
     contentItem: Item {
