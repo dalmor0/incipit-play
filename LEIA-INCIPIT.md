@@ -16,7 +16,14 @@ em janela própria do Edge) e Switch (placa de captura UVC), com clipes no atalh
 - Instalador: `scripts/incipit-play.iss`. Build: `.github/workflows/incipit-windows.yml` (só roda na mão).
 - Binários prontos: os do Actions (passo 3 abaixo); o zip publicado vai no release do Incipit Instalador.
 - Conferência: `ferramentas/conferir_app.py` (abertura, RAM, prints), `ferramentas/testar_atalho.py`
-  (transmite e salva um clipe), `ferramentas/testar_conexao.py`.
+  (transmite e salva um clipe), `ferramentas/testar_conexao.py`, `ferramentas/testar_rolagem.py` (roda do mouse nas
+  abas, antes e depois) e `ferramentas/medir_abertura.py` (tempo até a janela, N vezes).
+  Com outro Incipit Play aberto, `--direto` abre o `IncipitPlay-app.exe` sem o lançador (a cópia única não deixa
+  abrir outro pelo lançador). Com o TeamViewer aberto, `--postar` manda clique e tecla como mensagem do Windows, porque
+  o clique sintético não chega. Coordenada de clique muda com o layout: o clique antigo do "Registrar" cai no Jogar,
+  que acorda o PS5 de verdade.
+- Identidade (18/11): tokens da família Incipit em `Tema.qml` (azul-marinho `#121624`, botão forte sempre no azul do
+  logo, degradê `luz1`/`luz2` só em recompensa, `mono` em número e atalho). Botões: `forte`, `normal`, `quieto`, `perigo`.
 
 - Edição automática dos clipes ("Mandar pra edição"): motor em `edicao/` (Python, ver `edicao/README.md`), ligado
   ao app por `gui/src/incipitedicao.cpp` (baixa o pacote com SHA-256 fixo, roda num Job do Windows com prioridade
